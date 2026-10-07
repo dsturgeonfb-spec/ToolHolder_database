@@ -34,7 +34,7 @@ export interface ReportImage {
   key: string
   /** src exactly as written in the report. */
   src: string
-  /** Absolute path on disk (null for embedded data: images and web links). */
+  /** Absolute path on disk (null for embedded data: images, web links and pictures not found). */
   path: string | null
   /** Where the image goes in the imports/ copy, relative to the copied report (null = nothing to copy). */
   copyAs: string | null
@@ -44,6 +44,8 @@ export interface ReportImage {
   mime: string
   /** Why the bytes could not be read. */
   error: string | null
+  /** Set when the link was not followed as written (network or outside the report's folder; see imageLookup). */
+  outside: ImageLinkOutside | null
 }
 
 export interface ParsedHolder {
@@ -371,48 +373,104 @@ const safeDecode = (s: string) => {
   }
 }
 const isWindowsAbsolute = (p: string) => /^[A-Za-z]:[\\/]/.test(p) || /^\\\\/.test(p)
+/** \\server\share or //server/share (and \\?\…, \\.\… device paths): not one of this PC's own folders. */
+const isNetworkPath = (p: string) => /^[\\/]{2}/.test(p)
+
+/** Why a picture link in the report was not followed as written. */
+export type ImageLinkOutside = 'network' | 'outside'
+
+export interface ImageLookup {
+  /** Paths to try, in order. Every one is inside the report's folder (or a folder below it). */
+  candidates: string[]
+  /**
+   * 'network' — the link names another computer (UNC path, //server/share, file://server/…);
+   * 'outside' — a full path or ../ path that leaves the report's folder, or a link that is not a file path.
+   * Either way it is not opened: only its file name is looked for in the report's own folders.
+   */
+  outside: ImageLinkOutside | null
+}
+
+/** Where `p` lies relative to `dir`, worked out from the text alone (nothing on disk or the network is touched). */
+function placeOf(dir: string, p: string): 'inside' | 'self' | 'outside' {
+  const rel = relative(dir, p)
+  if (rel === '') return 'self'
+  return rel === '..' || rel.startsWith('..' + sep) || isAbsolute(rel) ? 'outside' : 'inside'
+}
 
 /**
- * Resolves an <img src> relative to the report file: relative paths, file:// URLs, %20 escapes and
- * Windows backslashes. When the written path does not exist (a report copied off the CAM PC still
- * pointing at C:\Users\Public\…), the same file name is looked for next to the report and in its
- * "<report>_files" folder. Returns candidate paths in the order to try.
+ * Works out where an <img src> may be read from. Only the report's own folder is ever looked at:
+ *  - a relative path (backslashes, ./ and %20 escapes allowed) is used when it stays inside the report's folder;
+ *  - a full path, file:/// URL or ../ path that leads elsewhere on this PC, and any network path (\\server\share,
+ *    //server/share, file://server/…), is NOT stat-ed or read — so a report can't make this PC open a network
+ *    share (sending the Windows user's credentials to it) or pull pictures from anywhere else on its disks.
+ *    Only its file name is used (below). A full path that is inside the report's folder is used as written;
+ *  - by file name, the picture is looked for next to the report, in its "<report>_files" and "<report>-Dateien"
+ *    folders, and in a folder next to the report named like the one the link names (for a report copied off
+ *    the CAM PC still pointing at C:\Users\Public\…).
  */
-export function imageCandidates(src: string, reportPath: string): string[] {
-  const dir = dirname(reportPath)
-  let s = src.trim().replace(/[?#].*$/, '')
+export function imageLookup(src: string, reportPath: string): ImageLookup {
+  const dir = resolve(dirname(reportPath))
+  const s = src.trim().replace(/[?#].*$/, '')
   const out: string[] = []
   const add = (p: string) => {
     if (p && !out.includes(p)) out.push(p)
   }
-  if (/^file:/i.test(s)) {
-    try {
-      add(fileURLToPath(s))
-    } catch {
-      /* not a valid file URL on this OS — fall through to the manual form */
-    }
-    s = safeDecode(s.replace(/^file:\/*/i, '')).replace(/^localhost\//i, '')
-    // file:///C:/x → C:/x ; file:///home/x → /home/x
-    add(isWindowsAbsolute(s) ? s : '/' + s)
+  // The path as written: %-decoded and as-is (a file may really have "%20" in its name), with / for \.
+  let written: string[]
+  let link = true // a file path, not some other kind of link
+  const file = /^file:(?:\/\/([^/\\]*))?(.*)$/is.exec(s)
+  if (file) {
+    // file://server/share/x is a network share; file:///C:/x, file://localhost/C:/x and file:/x are this PC.
+    const host = (file[1] ?? '').toLowerCase()
+    const rest = file[2]!
+    const p = host && host !== 'localhost' ? `//${host}${/^[\\/]/.test(rest) ? '' : '/'}${rest}` : rest
+    written = [safeDecode(p), p].map((v) => v.replace(/^[\\/](?=[A-Za-z]:)/, ''))
+  } else if (/^[a-z][a-z0-9+.-]+:/i.test(s)) {
+    // Some other kind of link (smb:, ftp:, cid:…): not a file of this PC.
+    link = false
+    written = [safeDecode(s)]
   } else {
-    for (const v of [safeDecode(s), s]) {
-      const p = v.replace(/\\/g, '/')
-      if (isWindowsAbsolute(v)) add(sep === '\\' ? normalize(v) : v)
-      else if (isAbsolute(p)) add(p)
-      else add(resolve(dir, p))
-    }
+    written = [safeDecode(s), s]
   }
-  // Fallbacks by file name, for reports moved off the PC that wrote them.
-  const name = basename(safeDecode(s).replace(/\\/g, '/'))
+  written = written.map((v) => v.replace(/\\/g, '/'))
+
+  let followed = false
+  const skipped = new Set<ImageLinkOutside>(link ? [] : ['outside'])
+  const follow = (target: string | null, otherwise: ImageLinkOutside) => {
+    const where = target ? placeOf(dir, target) : 'outside'
+    if (where === 'inside') {
+      add(target!)
+      followed = true
+    } else if (where === 'outside') skipped.add(otherwise)
+  }
+  for (const v of link ? written : []) {
+    if (!v) continue
+    // A network path is followed only when it is the report's own folder (a report opened from that share).
+    if (isNetworkPath(v)) follow(sep === '\\' ? normalize(v) : null, 'network')
+    // A drive path C:/x; a drive-relative C:x is never followed.
+    else if (/^[A-Za-z]:/.test(v)) follow(sep === '\\' && /^[A-Za-z]:\//.test(v) ? normalize(v) : null, 'outside')
+    else follow(isAbsolute(v) ? resolve(v) : resolve(dir, v), 'outside')
+  }
+  // Worth a warning: any network path at all, or a link none of whose spellings stays in the report's folder.
+  const outside: ImageLinkOutside | null = skipped.has('network') ? 'network' : !followed && skipped.has('outside') ? 'outside' : null
+
+  // By file name, in the report's own folders.
+  const last = written[0] ?? ''
+  const name = basename(last)
   const stem = basename(reportPath, extname(reportPath))
-  if (name) {
+  if (name && name !== '.' && name !== '..') {
     add(join(dir, name))
     add(join(dir, `${stem}_files`, name))
     add(join(dir, `${stem}-Dateien`, name))
-    const parent = basename(dirname(safeDecode(s).replace(/\\/g, '/')))
-    if (parent && parent !== '.' && parent !== '/') add(join(dir, parent, name))
+    const parent = basename(dirname(last))
+    if (parent && parent !== '.' && parent !== '..' && parent !== '/' && !/^[A-Za-z]:$/.test(parent)) add(join(dir, parent, name))
   }
-  return out
+  return { candidates: out.filter((p) => placeOf(dir, p) === 'inside'), outside }
+}
+
+/** The paths imageLookup tries for an <img src>, in order — all inside the report's folder. */
+export function imageCandidates(src: string, reportPath: string): string[] {
+  return imageLookup(src, reportPath).candidates
 }
 
 interface ImageLoadBudget {
@@ -432,13 +490,14 @@ function loadImage(src: string, reportPath: string, budget: ImageLoadBudget): Re
     const hash = sha256(bytes)
     const t = sniffImage(bytes)
     const shortSrc = trimmed.slice(0, 60) + (trimmed.length > 60 ? '…' : '')
-    if (!t) return { key: `data:${hash}`, src: shortSrc, path: null, copyAs: null, bytes: null, sha256: null, ext: '.png', mime: 'image/png', error: `embedded image is ${NOT_A_PICTURE}` }
-    return { key: `data:${hash}`, src: shortSrc, path: null, copyAs: null, bytes, sha256: hash, ...t, error: null }
+    if (!t) return { key: `data:${hash}`, src: shortSrc, path: null, copyAs: null, bytes: null, sha256: null, ext: '.png', mime: 'image/png', error: `embedded image is ${NOT_A_PICTURE}`, outside: null }
+    return { key: `data:${hash}`, src: shortSrc, path: null, copyAs: null, bytes, sha256: hash, ...t, error: null, outside: null }
   }
-  if (/^(https?:)?\/\//i.test(trimmed)) {
-    return { key: `url:${trimmed}`, src: trimmed, path: null, copyAs: null, bytes: null, sha256: null, ext: '.png', mime: 'image/png', error: 'image is a web link — not downloaded' }
+  if (/^https?:\/\//i.test(trimmed)) {
+    return { key: `url:${trimmed}`, src: trimmed, path: null, copyAs: null, bytes: null, sha256: null, ext: '.png', mime: 'image/png', error: 'image is a web link — not downloaded', outside: null }
   }
-  const candidates = imageCandidates(trimmed, reportPath)
+  // Only paths inside the report's folder are ever stat-ed or read (see imageLookup).
+  const { candidates, outside } = imageLookup(trimmed, reportPath)
   const found = candidates.find((p) => {
     try {
       return statSync(p).isFile()
@@ -446,18 +505,23 @@ function loadImage(src: string, reportPath: string, budget: ImageLoadBudget): Re
       return false
     }
   })
-  const path = found ?? candidates[0] ?? trimmed
-  const key = `file:${sep === '\\' ? path.toLowerCase() : path}`
-  const fallbackExt = extname(path) || '.png'
-  if (!found) return { key, src: trimmed, path, copyAs: null, bytes: null, sha256: null, ext: fallbackExt.toLowerCase(), mime: MIME_BY_EXT[fallbackExt.toLowerCase()] ?? 'image/png', error: `image file not found (${path})` }
+  if (!found) {
+    // Keyed by the link itself: two different links that are both missing are not "the same picture".
+    const shown = candidates[0] ?? trimmed
+    const ext = (extname(shown) || '.png').toLowerCase()
+    const where = outside ? ` — looked for by name in the report's folder only (${candidates[0] ?? 'no file name'})` : ` (${shown})`
+    return { key: `missing:${trimmed}`, src: trimmed, path: null, copyAs: null, bytes: null, sha256: null, ext, mime: MIME_BY_EXT[ext] ?? 'image/png', error: `image file not found${where}`, outside }
+  }
+  const key = `file:${sep === '\\' ? found.toLowerCase() : found}`
+  const fallbackExt = extname(found) || '.png'
   const size = statSync(found).size
   if (size > MAX_IMAGE_BYTES || budget.total + size > MAX_TOTAL_IMAGE_BYTES)
-    return { key, src: trimmed, path: found, copyAs: null, bytes: null, sha256: null, ext: fallbackExt, mime: 'image/png', error: 'image file is too large to import' }
+    return { key, src: trimmed, path: found, copyAs: null, bytes: null, sha256: null, ext: fallbackExt, mime: 'image/png', error: 'image file is too large to import', outside }
   const bytes = readFileSync(found)
   const type = sniffImage(bytes)
-  if (!type) return { key, src: trimmed, path: found, copyAs: null, bytes: null, sha256: null, ext: '.png', mime: 'image/png', error: `${found} is ${NOT_A_PICTURE}` }
+  if (!type) return { key, src: trimmed, path: found, copyAs: null, bytes: null, sha256: null, ext: '.png', mime: 'image/png', error: `${found} is ${NOT_A_PICTURE}`, outside }
   budget.total += bytes.length
-  const rel = relative(dirname(reportPath), found)
+  const rel = relative(resolve(dirname(reportPath)), found)
   const inside = rel && !rel.startsWith('..') && !isAbsolute(rel)
   return {
     key,
@@ -468,7 +532,31 @@ function loadImage(src: string, reportPath: string, budget: ImageLoadBudget): Re
     sha256: sha256(bytes),
     ...type,
     error: null,
+    outside,
   }
+}
+
+/** One report-level warning per kind of picture link that was not followed as written. */
+function linkWarnings(links: Array<{ src: string; outside: ImageLinkOutside; found: boolean }>): ReportWarning[] {
+  const warnings: ReportWarning[] = []
+  for (const why of ['network', 'outside'] as const) {
+    const these = links.filter((l) => l.outside === why)
+    if (!these.length) continue
+    const n = these.length
+    const found = these.filter((l) => l.found).length
+    const eg = these[0]!.src.length > 120 ? these[0]!.src.slice(0, 120) + '…' : these[0]!.src
+    const head = `${n} picture link${n === 1 ? ' in the report points' : 's in the report point'}`
+    const they = n === 1 ? 'it was' : 'they were'
+    warnings.push({
+      seq: null,
+      cam_name: null,
+      message:
+        why === 'network'
+          ? `${head} at a network location (e.g. ${eg}). Network paths named in a report are never opened, so ${they} looked for by file name in the report's own folder: ${found} of ${n} found.`
+          : `${head} outside its folder (e.g. ${eg}). Pictures are only read from the report's own folder, so ${they} looked for there by file name: ${found} of ${n} found.`,
+    })
+  }
+  return warnings
 }
 
 // ------------------------------------------------------------------------------------------ the report
@@ -522,10 +610,12 @@ export function parseReport(bytes: Buffer, reportPath: string, modified = new Da
   const images: ReportImage[] = []
   const indexBySrc = new Map<string, number>()
   const indexByKey = new Map<string, number>()
+  const linksNotFollowed: Array<{ src: string; outside: ImageLinkOutside; found: boolean }> = []
   const imageIndex = (src: string): number => {
     const known = indexBySrc.get(src)
     if (known !== undefined) return known
     const img = loadImage(src, reportPath, budget)
+    if (img.outside) linksNotFollowed.push({ src: img.src, outside: img.outside, found: img.path !== null })
     let idx = indexByKey.get(img.key)
     if (idx === undefined) {
       idx = images.length
@@ -573,6 +663,8 @@ export function parseReport(bytes: Buffer, reportPath: string, modified = new Da
   })
   if (format === 'txt' && holders.length)
     warnings.push({ seq: null, cam_name: null, message: 'A text export has no pictures — profile images are left as they are. Import the .html report to bring images in.' })
+  // First, as they explain any "not found" warnings for single holders that follow.
+  warnings.unshift(...linkWarnings(linksNotFollowed))
 
   return {
     path: reportPath,

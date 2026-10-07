@@ -1,11 +1,12 @@
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import fs, { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { syncBuiltinESMExports } from 'node:module'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { FIXTURES } from '../helpers.js'
-import { findReport, parseCoupling, parseReport, readReportFile, type ParsedReport } from '../../src/server/hypermill/parse.js'
+import { findReport, imageCandidates, parseCoupling, parseReport, readReportFile, type ParsedReport } from '../../src/server/hypermill/parse.js'
 
 let dir: string
 const PNG = (n: number) => Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from(`fake image ${n}`)])
@@ -105,6 +106,100 @@ test('a report moved off the CAM PC: Windows paths and file:///C:/ URLs fall bac
   )
   assert.equal(imgOf(r, 0)!.bytes!.toString('latin1').slice(-1), '1')
   assert.equal(imgOf(r, 1)!.bytes!.toString('latin1').slice(-1), '2')
+  // Those C:\ paths are not this report's folder, so they were only used for their file names — and the preview says so.
+  assert.equal(r.warnings.length, 1)
+  assert.match(r.warnings[0]!.message, /2 picture links in the report point outside its folder .*2 of 2 found/)
+})
+
+/** Every path the parser stats or reads while `fn` runs (node:fs named imports follow syncBuiltinESMExports). */
+function fsPathsTouched(fn: () => void): string[] {
+  const seen: string[] = []
+  const orig = { statSync: fs.statSync, lstatSync: fs.lstatSync, readFileSync: fs.readFileSync, existsSync: fs.existsSync }
+  const spy =
+    <F extends (...a: any[]) => any>(f: F) =>
+    (...a: Parameters<F>) => {
+      seen.push(String(a[0]))
+      return f(...a)
+    }
+  Object.assign(fs, { statSync: spy(orig.statSync), lstatSync: spy(orig.lstatSync), readFileSync: spy(orig.readFileSync), existsSync: spy(orig.existsSync) })
+  syncBuiltinESMExports()
+  try {
+    fn()
+  } finally {
+    Object.assign(fs, orig)
+    syncBuiltinESMExports()
+  }
+  return seen
+}
+
+test('network picture links (UNC, //server, file://server) are never opened: looked for by name in the report folder, with a warning', () => {
+  const srcs = [
+    '\\\\evil-host\\share\\My Report_files\\img 1.png',
+    'file://evil-host/share/My%20Report_files/img%202.png',
+    '//evil-host/share/My Report_files/img 3.png',
+    'file:////evil-host/share/img%204.png',
+  ]
+  let r!: ParsedReport
+  const touched = fsPathsTouched(() => {
+    r = parse(srcs.map((s, i) => `<p>Holder: (HSK63) X A63.140.0${i + 3} 80GL</p><img src="${s}">`).join(''))
+  })
+  assert.deepEqual(touched.filter((p) => /evil-host/.test(p) || /^[\\/]{2}/.test(p)), [], 'no network path is stat-ed or read')
+  for (const p of touched) assert.ok(p.startsWith(dir), `only the report's folder is looked at (${p})`)
+  // Found by file name in the report's own folder instead.
+  for (let i = 0; i < 4; i++) {
+    const img = imgOf(r, i)!
+    assert.equal(img.bytes!.toString('latin1').slice(-1), String(i + 1), `holder ${i + 1}`)
+    assert.equal(img.path, join(dir, 'My Report_files', `img ${i + 1}.png`))
+  }
+  const net = r.warnings.filter((w) => /network/.test(w.message))
+  assert.equal(net.length, 1, JSON.stringify(r.warnings))
+  assert.equal(net[0]!.seq, null)
+  assert.match(net[0]!.message, /4 picture links/)
+  assert.match(net[0]!.message, /evil-host/)
+  assert.match(net[0]!.message, /never opened/)
+  assert.match(net[0]!.message, /4 of 4 found/)
+  for (const s of srcs) for (const c of imageCandidates(s, REPORT())) assert.ok(c.startsWith(dir), `${s} → ${c}`)
+})
+
+test('a picture outside the report folder (full path, file:/// URL or ../) is not read; the report says so', () => {
+  const outside = mkdtempSync(join(tmpdir(), 'hc-hm-outside-'))
+  try {
+    const secret = join(outside, 'private photo.png')
+    writeFileSync(secret, PNG(9))
+    const srcs = [secret, pathToFileURL(secret).href, `../${basename(outside)}/private%20photo.png`]
+    let r!: ParsedReport
+    const touched = fsPathsTouched(() => {
+      r = parse(srcs.map((s, i) => `<p>Holder: (HSK63) X A63.140.0${i + 3} 80GL</p><img src="${s}">`).join(''))
+    })
+    assert.deepEqual(touched.filter((p) => p.startsWith(outside)), [], 'nothing outside the report folder is touched')
+    assert.deepEqual(r.holders.map((h) => h.image), [null, null, null])
+    assert.ok(r.images.every((i) => i.bytes === null))
+    const msg = r.warnings.map((w) => w.message).join('\n')
+    assert.match(msg, /3 picture links in the report point outside its folder/)
+    assert.match(msg, /0 of 3 found/)
+    assert.match(msg, /image file not found/)
+    for (const s of srcs) for (const c of imageCandidates(s, REPORT())) assert.ok(c.startsWith(dir), `${s} → ${c}`)
+  } finally {
+    rmSync(outside, { recursive: true, force: true })
+  }
+})
+
+test('a full path that is inside the report folder is used as written, without a warning', () => {
+  mkdirSync(join(dir, 'deep', 'er'), { recursive: true })
+  writeFileSync(join(dir, 'deep', 'er', 'img 7.png'), PNG(7))
+  const r = parse(`<p>Holder: (HSK63) X A63.140.03 80GL</p><img src="${join(dir, 'deep', 'er', 'img 7.png')}">`)
+  assert.equal(imgOf(r, 0)!.bytes!.toString('latin1').slice(-1), '7')
+  assert.equal(imgOf(r, 0)!.copyAs, 'deep/er/img 7.png')
+  assert.deepEqual(r.warnings, [])
+  // Also as a file:/// URL when the report's own folder has a space in its name ("OPEN MIND"): the %20
+  // spelling is not taken for a path outside the folder.
+  const spaced = join(dir, 'OPEN MIND', 'Holder_1')
+  mkdirSync(spaced, { recursive: true })
+  writeFileSync(join(spaced, 'pic 8.png'), PNG(8))
+  const r2 = parse(`<p>Holder: (HSK63) X A63.140.03 80GL</p><img src="${pathToFileURL(join(spaced, 'pic 8.png')).href}">`, join(spaced, 'Holder report.html'))
+  assert.match(pathToFileURL(join(spaced, 'pic 8.png')).href, /OPEN%20MIND/)
+  assert.equal(imgOf(r2, 0)!.bytes!.toString('latin1').slice(-1), '8')
+  assert.deepEqual(r2.warnings, [])
 })
 
 test('pictures printed before their "Holder:" label are still matched to the right holder', () => {

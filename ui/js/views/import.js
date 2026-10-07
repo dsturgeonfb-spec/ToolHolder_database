@@ -2,6 +2,7 @@
 // change in the catalogue, and apply it only when the person approves. The server re-checks the plan at
 // apply time, so what is applied is exactly what was previewed.
 import { api } from '../api.js'
+import { loadMeta } from '../state.js'
 import { esc, fmt, fmtDate, toast, toastError, confirmDialog, infoDialog, emptyHTML } from '../ui.js'
 
 const DEFAULT_PATH = 'C:\\Users\\Public\\Documents\\OPEN MIND\\tooldbReport\\Holder_HSK63 HOLDERS_1\\Holder_HSK63 HOLDERS.html'
@@ -178,6 +179,21 @@ function previewHTML(p) {
   </section>`
 }
 
+/**
+ * The way into counting what the import booked. Count can start a run at one holder (#/count?holder=…) but
+ * not limit it to a set, so with several new holders the button opens the first and says so — the others
+ * each have their own "count it" link in the list.
+ */
+function countButtonHTML(r) {
+  const first = r.new_holders[0]
+  if (first) {
+    const label = r.new_holders.length === 1 ? 'Count the new holder' : 'Count the first new holder'
+    return `<a class="btn ghost" data-count-new href="#/count?holder=${encodeURIComponent(first.holder_id)}" title="Opens Count on ${esc(first.manufacturer)} ${esc(first.order_no)}">${label}</a>`
+  }
+  // Opening balances for holders that were already in the catalogue (now linked to hyperMILL): plain Count.
+  return r.transactions ? '<a class="btn ghost" data-count-new href="#/count">Go to Count</a>' : ''
+}
+
 function resultHTML(r) {
   const c = r.counts
   const newList = r.new_holders.length
@@ -186,7 +202,11 @@ function resultHTML(r) {
           (h) =>
             `<li>${holderLink(h.holder_id, h.manufacturer, h.order_no)} <span class="muted small">${esc(h.holder_id)}</span> · <a class="small" href="#/count?holder=${encodeURIComponent(h.holder_id)}">count it</a></li>`,
         )
-        .join('')}</ul>`
+        .join('')}</ul>${
+        r.new_holders.length > 1
+          ? '<p class="muted small">Each is booked as 1 at “Unassigned – count required” until it is counted — use “count it” next to each one.</p>'
+          : ''
+      }`
     : ''
   return `<section class="card hm-done" data-result-done>
     <h3>Import applied</h3>
@@ -198,7 +218,7 @@ function resultHTML(r) {
     <p class="muted small">A copy of the report and its pictures is kept in the data folder under <span class="mono">${esc(r.folder)}</span>.</p>
     <div class="btnrow">
       ${r.flags_raised ? '<a class="btn" href="#/issues">Open issues</a>' : ''}
-      ${r.transactions ? '<a class="btn ghost" href="#/count">Count the new holders</a>' : ''}
+      ${countButtonHTML(r)}
       <button type="button" class="btn ghost" data-act="again">Preview again</button>
     </div>
   </section>`
@@ -347,10 +367,17 @@ export async function render(root, ctx) {
     try {
       const r = await api.post('/api/import/hypermill/apply', { token: current.token })
       current = null
+      ctx.refreshSummary()
+      // The import may have added makers (or a maker's first holders): reload the reference data so the
+      // maker lists in Catalogue, Add holder and Count offer them now, not after a restart.
+      try {
+        await loadMeta()
+      } catch (err) {
+        console.warn('reloading the reference data failed', err)
+      }
       if (!el.isConnected) return
       resultBox.innerHTML = resultHTML(r)
       toast('hyperMILL import applied', 'ok')
-      ctx.refreshSummary()
       loadHistory()
     } catch (e) {
       current = null

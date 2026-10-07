@@ -556,6 +556,21 @@ describe('pictures, comments and holders linked to hyperMILL later', () => {
     assert.ok(wrong.body.warnings.some((w: any) => /H0001 is an HSK-A63 holder/.test(w.message)))
   })
 
+  test('picture links to a network share are not opened: the preview finds them in the report folder and warns', async () => {
+    const html = readFileSync(join(dir, 'report_54.html'), 'utf8')
+      .replace('src="report_54_files/holder%2001.png"', 'src="\\\\cam-pc\\share\\report_54_files\\holder 01.png"')
+      .replace('src="report_54_files/holder%2002.png"', 'src="file://cam-pc/share/report_54_files/holder%2002.png"')
+      .replace('src="report_54_files/holder%2003.png"', 'src="C:\\Users\\Someone\\report_54_files\\holder 03.png"')
+    assert.equal((html.match(/cam-pc|Someone/g) ?? []).length, 3)
+    writeFileSync(join(dir, 'unc.html'), html)
+    const r = await preview(t, join(dir, 'unc.html'))
+    assert.equal(r.status, 200, JSON.stringify(r.body))
+    assert.equal(r.body.report.images, 54, 'all three are found by file name next to the report')
+    const msgs = r.body.warnings.map((w: any) => w.message)
+    assert.ok(msgs.some((m: string) => /2 picture links in the report point at a network location .*cam-pc.* never opened.*2 of 2 found/.test(m)), msgs.join('\n'))
+    assert.ok(msgs.some((m: string) => /1 picture link in the report points outside its folder .*1 of 1 found/.test(m)), msgs.join('\n'))
+  })
+
   test('most linked holders missing from a report is warned about before anything is written', async () => {
     const html = readFileSync(join(dir, 'report_54.html'), 'utf8')
     const items = html.split('<div class="item">')

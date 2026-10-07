@@ -80,6 +80,12 @@ test('preview and apply the changed report through the UI', async () => {
   assert.equal(await p.getAttribute('[data-result-done] a[href="#/holder/H0089"]', 'href'), '#/holder/H0089')
   assert.ok(await p.$('[data-result-done] a[href="#/holder/H0090"]'))
   assert.ok(await p.$('[data-result-done] a[href="#/issues"]'))
+  // The count button goes to counting the new holders (a run can start at one holder; each has its own "count it").
+  const countBtn = await p.$('[data-result-done] [data-count-new]')
+  assert.ok(countBtn, 'a button to count the new holders')
+  assert.equal(await countBtn.getAttribute('href'), '#/count?holder=H0089')
+  assert.equal((await countBtn.textContent())!.trim(), 'Count the first new holder')
+  assert.ok(await p.$('[data-result-done] a[href="#/count?holder=H0090"]'), 'the second one has its own count link')
   assert.equal(Number(db().value('SELECT COUNT(*) FROM holders')), before + 2)
   // Header strip refreshed: 56 on site, 2 more to count.
   await p.waitForFunction(() => document.getElementById('tTotal')?.textContent === '56')
@@ -100,6 +106,19 @@ test('preview and apply the changed report through the UI', async () => {
   // The new holder opens from the link.
   await e.goto('#/holder/H0089')
   await p.waitForFunction(() => /A63\.140\.14/.test(document.getElementById('view')!.textContent!))
+
+  // The maker the import added can be picked straight away, without restarting the app.
+  await e.goto('#/catalogue')
+  await p.waitForSelector('#fmk')
+  assert.ok((await p.$$eval('#fmk option', (os) => os.map((o) => (o as HTMLOptionElement).value))).includes('NIKKEN'), 'catalogue maker filter')
+  await e.goto('#/count')
+  await p.waitForSelector('select[data-f=mk]')
+  assert.ok((await p.$$eval('select[data-f=mk] option', (os) => os.map((o) => (o as HTMLOptionElement).value))).includes('NIKKEN'), 'count maker filter')
+
+  // The count link opens Count on the new holder.
+  await e.goto('#/count?holder=H0089')
+  await p.waitForSelector('[data-card] .cm-ord')
+  assert.match((await p.textContent('[data-card]'))!, /A63\.140\.14/)
   assert.deepEqual(unexpectedErrors(), [])
 })
 
