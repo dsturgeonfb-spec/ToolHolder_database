@@ -298,3 +298,33 @@ test('locations: add from a suggestion, take it off site, delete it', async () =
   assert.equal(await p.$(`[data-del="${CRIB}"]`), null)
   assert.deepEqual(unexpectedErrors([/status of 409/]), [])
 })
+
+test('count mode: blind count hides booked quantities and starts with an empty number', async () => {
+  const p = e.page
+  await e.goto('#/count')
+  await p.waitForSelector('.cm-loc')
+  await p.click(`.cm-loc[data-loc="${CRIB}"]`)
+  await p.check('[data-f=blind]')
+  await p.waitForFunction(() => /holders in the list/.test(document.querySelector('[data-preview]')!.textContent!))
+  await p.selectOption('[data-f=show]', 'today')
+  await p.click('[data-act=start]')
+  await p.waitForSelector('.cm-ord')
+  assert.equal(await p.inputValue('[data-qty]'), '', 'no pre-filled quantity')
+  const card = (await p.textContent('[data-card]'))!
+  assert.doesNotMatch(card, /Booked here|Total on site/)
+  assert.match(card, /Blind count/)
+  // Enter with nothing typed must not post.
+  const before = txnTotal()
+  await p.keyboard.press('Enter')
+  assert.equal(txnTotal(), before)
+  const ord = await currentOrderNo()
+  const id = holderIdOf(ord)
+  await p.keyboard.press('1')
+  assert.match((await p.textContent('[data-hint]'))!, /Confirm records 1 at Tool crib/)
+  await p.keyboard.press('Enter')
+  await p.waitForFunction((o) => document.querySelector('.cm-ord')?.textContent?.trim() !== o, ord)
+  assert.equal(qtyAt(id, CRIB), 1)
+  // The setting is remembered on this device.
+  assert.equal(await p.evaluate(() => localStorage.getItem('hc.count.blind')), '1')
+  await p.evaluate(() => localStorage.removeItem('hc.count.blind'))
+})

@@ -11,6 +11,7 @@ import { state } from '../state.js'
 
 const UNASSIGNED = 'Unassigned – count required'
 const LS_LOC = 'hc.count.location'
+const LS_BLIND = 'hc.count.blind'
 const KIND = { crib: 'Crib / store', machine: 'Machine', external: 'External', holding: 'Holding' }
 const SCOPES = [
   { id: 'site', label: 'Expected on site', help: 'Every holder the books say is on site, wherever it is booked. The usual choice for a stock-take.' },
@@ -64,6 +65,9 @@ export async function render(root, ctx) {
     type: q.get('type') || '',
     mk: q.get('mk') || '',
     show: 'all',
+    // Blind count: booked quantities stay hidden and the number starts empty, so the counter records what they
+    // see rather than confirming what the books say (the usual audit practice). Remembered per device.
+    blind: store.get(LS_BLIND) === '1',
     reference: q.get('ref') || '',
     list: [], // count list for the current choices
     listKey: '',
@@ -176,6 +180,7 @@ export async function render(root, ctx) {
             .join('')}</select></label>
           <label class="field">Show <select data-f="show">${SHOW.map((x) => `<option value="${x.id}" ${x.id === s.show ? 'selected' : ''}>${esc(x.label)}</option>`).join('')}</select></label>
         </div>
+        <label class="chk cm-blind"><input type="checkbox" data-f="blind" ${s.blind ? 'checked' : ''}> Blind count — hide the booked quantities; the counter enters what they see (recommended for audits and stock-takes)</label>
         <label class="fld cm-ref"><span>Count sheet reference (optional)</span>
           <input data-f="ref" maxlength="120" autocomplete="off" value="${esc(s.reference)}" placeholder="${esc(defaultRef())}">
           <span class="help">Leave blank to use the one shown. If you counted on a printed sheet, use its number.</span></label>
@@ -317,7 +322,7 @@ export async function render(root, ctx) {
     const cur = i === s.idx && s.step === 2
     return `<li><button type="button" class="cm-item${cur ? ' current' : ''}${h.counted_here_today ? ' done' : ''}" data-jump="${i}"${cur ? ' aria-current="true"' : ''}>
       <span class="cm-item-id"><span class="mk">${esc(h.manufacturer)}</span> <span class="mono">${esc(h.order_no)}</span></span>
-      <span class="cm-item-sub">${esc(h.clamp_spec || h.type_name || '')}${h.gauge_length_mm != null ? ` · GL ${esc(fmt(h.gauge_length_mm))}` : ''}${h.qty_at_location ? ` · ${esc(h.qty_at_location)} here` : ''}</span>
+      <span class="cm-item-sub">${esc(h.clamp_spec || h.type_name || '')}${h.gauge_length_mm != null ? ` · GL ${esc(fmt(h.gauge_length_mm))}` : ''}${h.qty_at_location && !s.blind ? ` · ${esc(h.qty_at_location)} here` : ''}</span>
       ${badge(h)}
     </button></li>`
   }
@@ -342,7 +347,7 @@ export async function render(root, ctx) {
     s.idx = Math.max(0, Math.min(i, s.run.length))
     const h = current()
     if (h) {
-      s.qty = expected(h)
+      s.qty = s.blind ? null : expected(h)
       s.fresh = true
     }
     updateItem(prev)
@@ -402,11 +407,15 @@ export async function render(root, ctx) {
           </dl>
         </div>
       </div>
-      <div class="cm-booked">
+      ${
+        s.blind
+          ? `<div class="cm-booked"><div class="cm-where-all"><span class="k">Blind count</span><span>Booked quantities are hidden — enter what you can see.</span></div></div>`
+          : `<div class="cm-booked">
         <div><span class="k">Booked here</span><span class="v mono">${esc(h.qty_at_location)}</span></div>
         <div><span class="k">Total on site</span><span class="v mono">${esc(h.qty_on_site)}</span></div>
         <div class="cm-where-all"><span class="k">Booked at</span><span>${esc(whereText(h))}</span></div>
-      </div>
+      </div>`
+      }
       <div class="cm-entry">
         <label class="cm-q-label" for="cm-qty">How many are physically at ${esc(locName())}?</label>
         <div class="cm-stepper">
@@ -458,6 +467,7 @@ export async function render(root, ctx) {
 
   function hintText(h) {
     if (s.qty == null) return 'Enter the number you counted — 0 if there are none here.'
+    if (s.blind) return `Confirm records ${s.qty} at ${locName()}.`
     const delta = s.qty - h.qty_at_location
     const clears = !atUnassigned() && h.count_status !== 'counted' && h.qty_unassigned > 0
     const parts = []
@@ -611,6 +621,10 @@ export async function render(root, ctx) {
     if (f === 'type') s.type = e.target.value
     if (f === 'mk') s.mk = e.target.value
     if (f === 'show') s.show = e.target.value
+    if (f === 'blind') {
+      s.blind = e.target.checked
+      store.set(LS_BLIND, s.blind ? '1' : '0')
+    }
     updatePreview()
   })
 
@@ -679,7 +693,7 @@ export async function render(root, ctx) {
       const str = s.qty == null ? '' : String(s.qty).slice(0, -1)
       setQty(str === '' ? null : Number(str), false)
     } else if (k === 'Escape' && !inQty) {
-      setQty(expected(current()), true)
+      setQty(s.blind ? null : expected(current()), true)
     }
   }
   document.addEventListener('keydown', onKey)
