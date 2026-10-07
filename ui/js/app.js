@@ -49,6 +49,7 @@ async function route() {
   }
   const tab = TAB_OF[name] || name
   document.querySelectorAll('#tabs .tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === tab)))
+  document.querySelector('#tabs .tab[aria-selected="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest' })
   root.innerHTML = '<div class="loading">Loading…</div>'
   try {
     const mod = await import(`./views/${VIEWS[name]}.js`)

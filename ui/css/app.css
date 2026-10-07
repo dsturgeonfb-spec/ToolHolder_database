@@ -252,7 +252,8 @@ dialog.dlg::backdrop{background:rgba(10,16,22,.45)}
 .x{background:none;border:0;font-size:22px;line-height:1;cursor:pointer;color:var(--ink-3)}
 
 /* toasts */
-#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:1000;max-width:min(440px,calc(100vw - 32px))}
+/* Toasts never take taps: on a tablet they sit over the count screen's Confirm button. */
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:1000;max-width:min(440px,calc(100vw - 32px));pointer-events:none}
 .toast{background:var(--ink);color:var(--paper);padding:10px 14px;border-radius:var(--r);font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.2);animation:tin .18s ease-out}
 .toast.error{background:var(--high);color:#fff}
 .toast.ok{background:var(--ok);color:#fff}
@@ -280,5 +281,14 @@ table.data td.actions{white-space:nowrap;text-align:right}
 
 /* login overlay for network clients */
 .login{max-width:380px;margin:12vh auto;display:flex;flex-direction:column;gap:14px}
+
+/* Text on the green / red buttons and toasts: white on the light theme's dark fills, dark on the dark theme's
+   light fills (white on #62C58F / #F0857A is ~2:1 — unreadable on a shop-floor screen). */
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.ok,:root:not([data-theme="light"]) .btn.danger,
+  :root:not([data-theme="light"]) .toast.ok,:root:not([data-theme="light"]) .toast.error{color:#0E141A}}
+:root[data-theme="dark"] .btn.ok,:root[data-theme="dark"] .btn.danger,:root[data-theme="dark"] .toast.ok,:root[data-theme="dark"] .toast.error{color:#0E141A}
+
+/* Ten tabs: tighter below desktop width so they fit, and the active one is scrolled into view (app.js). */
+@media (max-width:1100px){.tab{padding:8px 9px 7px;font-size:16px}.tab .n{display:none}}
 
 @media print{.topbar,.tabs,.strip,#toasts,.noprint{display:none!important}body{background:#fff}}

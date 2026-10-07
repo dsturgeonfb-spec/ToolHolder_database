@@ -12,8 +12,8 @@
  */
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { randomBytes, randomInt, timingSafeEqual } from 'node:crypto'
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, createReadStream } from 'node:fs'
-import { networkInterfaces } from 'node:os'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, createReadStream, writeFileSync } from 'node:fs'
+import { hostname, networkInterfaces } from 'node:os'
 import { dirname, extname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { openDatabase, migrate } from './db.js'
@@ -30,7 +30,8 @@ import {
   sendJson,
   type Req,
 } from './http.js'
-import { getSetting, setSetting, requireUser, getSummary, today } from './domain.js'
+import { getSetting, setSetting, requireUser, getSummary, today, nowStamp, logEvent } from './domain.js'
+import { backupIfDue } from './modules/system.js'
 import { toCsv } from './lib/csv.js'
 import { registerModules } from './modules/index.js'
 
@@ -42,6 +43,8 @@ export interface AppOptions {
   seedDir?: string
   version?: string
   log?: Logger
+  /** Daily backup check while the server runs (3 s after start, then hourly). Default on; tests turn it off. */
+  autoBackup?: boolean
 }
 
 export function defaultAppRoot(): string {
@@ -112,12 +115,26 @@ export class AppServer {
   private shareState: ShareState = { enabled: false, port: 8763, pin: null, urls: [] }
   private sessions = new Map<string, { name: string; expires: number }>()
   private pinAttempts = new Map<string, { n: number; since: number }>()
+  /** Wrong PINs from ANY address in the last hour — a LAN-wide guessing attempt locks sign-in until a new PIN. */
+  private pinFailures: number[] = []
+  private timers: NodeJS.Timeout[] = []
+  private readonly lockFile: string
+  private readonly autoBackup: boolean
 
   constructor(opts: AppOptions) {
     const log = opts.log ?? consoleLog
     const paths = resolvePaths(opts)
     ensureDataFolder(paths, log)
-    const db = openDatabase(paths.dbPath)
+    this.lockFile = join(paths.dataDir, 'holder_catalogue.lock')
+    acquireDataLock(this.lockFile, log)
+    this.autoBackup = opts.autoBackup ?? true
+    let db
+    try {
+      db = openDatabase(paths.dbPath)
+    } catch (err) {
+      releaseDataLock(this.lockFile)
+      throw err
+    }
     migrate(db, readFileSync(paths.schemaPath, 'utf8'))
     const version = opts.version ?? readVersion(paths.appRoot)
     this.ctx = {
@@ -128,6 +145,8 @@ export class AppServer {
       log,
       share: { get: () => this.getShare(), set: (o) => this.setShare(o) },
     }
+    // Retry keys older than a week are of no further use.
+    db.run(`DELETE FROM request_keys WHERE at < ?`, [nowStamp(new Date(Date.now() - 7 * 24 * 3600_000))])
     const saved = getSetting<{ enabled?: boolean; port?: number; pin?: string } | null>(db, 'share', null)
     if (saved) this.shareState = { enabled: false, port: saved.port ?? 8763, pin: saved.pin ?? null, urls: [] }
     this.registerCoreRoutes()
@@ -149,6 +168,19 @@ export class AppServer {
         this.ctx.log('warn', `Could not resume network sharing: ${err instanceof Error ? err.message : err}`)
       }
     }
+    // Keep the data lock fresh so another PC can tell this one is alive.
+    this.timers.push(setInterval(() => touchDataLock(this.lockFile), 60_000))
+    if (this.autoBackup) {
+      const tick = () => {
+        try {
+          backupIfDue(this.ctx)
+        } catch (err) {
+          this.ctx.log('error', `Automatic backup failed: ${err instanceof Error ? err.message : err}`)
+        }
+      }
+      this.timers.push(setTimeout(tick, 3000), setInterval(tick, 3600_000))
+    }
+    for (const t of this.timers) t.unref()
     const addr = this.local.address()
     return typeof addr === 'object' && addr ? addr.port : port
   }
@@ -159,6 +191,8 @@ export class AppServer {
   }
 
   async close(): Promise<void> {
+    for (const t of this.timers) clearTimeout(t)
+    this.timers = []
     this.ctx.jobs.cancelAll()
     await Promise.all([closeServer(this.local), closeServer(this.shared)])
     this.local = this.shared = null
@@ -168,6 +202,7 @@ export class AppServer {
       /* best effort */
     }
     this.ctx.db.close()
+    releaseDataLock(this.lockFile)
   }
 
   getShare(): ShareState {
@@ -181,6 +216,7 @@ export class AppServer {
     if (!pin || o.regeneratePin) {
       pin = String(randomInt(0, 1_000_000)).padStart(6, '0')
       this.sessions.clear()
+      this.pinFailures = []
     }
     await closeServer(this.shared)
     this.shared = null
@@ -208,12 +244,20 @@ export class AppServer {
     return this.getShare()
   }
 
+  private isOwnHost(header: string | undefined): boolean {
+    const h = String(header ?? '').toLowerCase()
+    return h === `127.0.0.1:${this.port}` || h === `localhost:${this.port}` || h === `[::1]:${this.port}`
+  }
+
   /** Request handler — exported for tests that want to call it on an ephemeral server. */
   async handle(req: IncomingMessage, res: ServerResponse, viaShare: boolean): Promise<void> {
     const url = new URL(req.url ?? '/', 'http://local')
     const path = url.pathname
     const isHost = !viaShare && isLoopback(req.socket.remoteAddress)
     try {
+      // DNS rebinding: a web page whose name resolves to 127.0.0.1 would otherwise get the host's rights.
+      // The app's own window always asks for 127.0.0.1:<port> (or localhost).
+      if (!viaShare && !this.isOwnHost(req.headers.host)) throw new HttpError(421, 'Wrong host name for this server')
       if (path.startsWith('/api/')) {
         await this.handleApi(req, res, url, isHost, viaShare)
         return
@@ -261,7 +305,32 @@ export class AppServer {
       user: isHost ? (headerUser ?? (method === 'GET' ? url.searchParams.get('by')?.trim().slice(0, 80) || null : null)) : sessionUser,
       isHost,
     }
+    // Retry-safe writes: the same Idempotency-Key on the same route returns the first answer.
+    const key = method !== 'GET' && method !== 'HEAD' ? String(req.headers['idempotency-key'] ?? '').trim() : ''
+    if (key) {
+      if (key.length > 100) throw new HttpError(400, 'Idempotency-Key is too long')
+      const prev = this.ctx.db.get<{ method: string; path: string; status: number; body_json: string | null }>(
+        `SELECT method, path, status, body_json FROM request_keys WHERE key = ?`,
+        [key],
+      )
+      if (prev) {
+        if (prev.method !== method || prev.path !== url.pathname) throw new HttpError(409, 'That request key was used for a different request')
+        return sendJson(res, prev.status, prev.body_json ? JSON.parse(prev.body_json) : null, { 'Idempotent-Replay': 'true' })
+      }
+    }
     const out = await m.route.handler(r)
+    if (key && !(out instanceof Download)) {
+      const status = out instanceof Reply ? out.status : out === undefined ? 204 : 200
+      if (status < 300)
+        this.ctx.db.run(`INSERT OR IGNORE INTO request_keys(key, method, path, status, body_json, at) VALUES (?,?,?,?,?,?)`, [
+          key,
+          method,
+          url.pathname,
+          status,
+          JSON.stringify(out instanceof Reply ? out.body : (out ?? null)),
+          nowStamp(),
+        ])
+    }
     if (out instanceof Download) return sendDownload(res, out)
     if (out instanceof Reply) return sendJson(res, out.status, out.body, out.headers)
     if (out === undefined) {
@@ -319,6 +388,9 @@ export class AppServer {
       const a = this.pinAttempts.get(ip) ?? { n: 0, since: Date.now() }
       if (Date.now() - a.since > 60_000) Object.assign(a, { n: 0, since: Date.now() })
       if (a.n >= 8) throw new HttpError(429, 'Too many wrong PINs — wait a minute and try again')
+      this.pinFailures = this.pinFailures.filter((t) => Date.now() - t < 3600_000)
+      if (this.pinFailures.length >= GLOBAL_PIN_FAILURES)
+        throw new HttpError(429, 'Network sign-in is locked after too many wrong PINs. On the host PC: Settings → Share on network → New PIN.')
       const pin = String(req.body?.pin ?? '')
       const name = requireUser(req.body?.name)
       const want = this.shareState.pin ?? ''
@@ -326,8 +398,13 @@ export class AppServer {
       if (!ok) {
         a.n++
         this.pinAttempts.set(ip, a)
+        this.pinFailures.push(Date.now())
+        this.ctx.log('warn', `Wrong network PIN from ${ip} (name given: ${name}); ${this.pinFailures.length} in the last hour`)
+        if (this.pinFailures.length === GLOBAL_PIN_FAILURES)
+          this.ctx.log('warn', 'Network sign-in locked after too many wrong PINs — make a new PIN to unlock it')
         throw new HttpError(401, 'Wrong PIN')
       }
+      this.ctx.log('info', `Network sign-in: ${name} from ${ip}`)
       this.pinAttempts.delete(ip)
       const token = randomBytes(24).toString('base64url')
       this.sessions.set(token, { name, expires: Date.now() + SESSION_TTL_MS })
@@ -369,24 +446,33 @@ export class AppServer {
     // Settings that travel with the data (who books counts, inspection interval, vendor contact).
     r.get('/api/settings', () => readSettings(ctx))
     r.put('/api/settings', (req) => {
-      requireUser(req.user)
+      const user = requireUser(req.user)
       const b = req.body ?? {}
+      // Validate everything first, then write it all in one transaction — a bad field changes nothing.
+      const next: Record<string, unknown> = {}
       if (b.users !== undefined) {
         if (!Array.isArray(b.users)) throw new HttpError(400, 'users must be a list of names')
-        const users = [...new Set(b.users.map((u: unknown) => String(u).trim()).filter(Boolean))].slice(0, 100)
-        setSetting(ctx.db, 'users', users)
+        next.users = [...new Set(b.users.map((u: unknown) => String(u).trim().slice(0, 80)).filter(Boolean))].slice(0, 100)
       }
       if (b.unit_inspection_days !== undefined) {
         const n = Number(b.unit_inspection_days)
         if (!Number.isInteger(n) || n < 1 || n > 3650) throw new HttpError(400, 'Inspection interval must be 1–3650 days')
-        setSetting(ctx.db, 'unit_inspection_days', n)
+        next.unit_inspection_days = n
       }
-      if (b.vendor_contact !== undefined) setSetting(ctx.db, 'vendor_contact', String(b.vendor_contact).trim().slice(0, 200))
+      if (b.vendor_contact !== undefined) next.vendor_contact = String(b.vendor_contact).trim().slice(0, 200)
       if (b.default_interface !== undefined) {
         const code = String(b.default_interface)
         if (!ctx.db.value(`SELECT 1 FROM interfaces WHERE interface_code = ?`, [code])) throw new HttpError(400, `Unknown interface ${code}`)
-        setSetting(ctx.db, 'default_interface', code)
+        next.default_interface = code
       }
+      const before = readSettings(ctx) as Record<string, unknown>
+      ctx.db.tx(() => {
+        for (const [k, v] of Object.entries(next)) {
+          if (JSON.stringify(before[k]) === JSON.stringify(v)) continue
+          setSetting(ctx.db, k, v)
+          logEvent(ctx.db, { entity: 'setting', entity_id: k, action: 'EDIT', detail: { from: before[k] ?? null, to: v }, by_user: user })
+        }
+      })
       return readSettings(ctx)
     })
 
@@ -451,6 +537,74 @@ export function readSettings(ctx: AppContext) {
     unit_inspection_days: getSetting<number>(ctx.db, 'unit_inspection_days', 180),
     vendor_contact: getSetting<string>(ctx.db, 'vendor_contact', ''),
     default_interface: getSetting<string>(ctx.db, 'default_interface', 'HSK-A63'),
+  }
+}
+
+const GLOBAL_PIN_FAILURES = 50
+const LOCK_STALE_MS = 3 * 60_000
+
+interface DataLock {
+  host: string
+  pid: number
+  started: string
+  heartbeat: string
+}
+
+/**
+ * One process — on one PC — may open a data folder. SQLite on a shared drive corrupts with two writers,
+ * so a second PC (or a second app on this PC) is refused while the first keeps its lock fresh.
+ * A lock not refreshed for 3 minutes is left over from a crash and is taken over.
+ */
+function acquireDataLock(file: string, log: Logger): void {
+  if (existsSync(file)) {
+    let lock: DataLock | null = null
+    try {
+      lock = JSON.parse(readFileSync(file, 'utf8')) as DataLock
+    } catch {
+      lock = null
+    }
+    const fresh = lock && Date.now() - new Date(lock.heartbeat).getTime() < LOCK_STALE_MS
+    const sameHost = lock?.host === hostname()
+    const alive = lock && sameHost && (lock.pid === process.pid || pidAlive(lock.pid))
+    if (lock && fresh && (!sameHost || alive))
+      throw new Error(
+        `This catalogue is already open ${sameHost ? 'in another Holder Catalogue on this PC' : `on PC "${lock.host}"`} (since ${lock.started}).\n\n` +
+          'Only one PC may open the data folder. To use it from several PCs, keep it on one PC and turn on Settings → Share on network there.',
+      )
+    if (lock) log('warn', `Taking over a stale lock left by ${lock.host} (pid ${lock.pid}, last seen ${lock.heartbeat})`)
+  }
+  writeLock(file, new Date().toISOString())
+}
+
+function writeLock(file: string, started: string): void {
+  const lock: DataLock = { host: hostname(), pid: process.pid, started, heartbeat: new Date().toISOString() }
+  writeFileSync(file, JSON.stringify(lock, null, 2), 'utf8')
+}
+
+function touchDataLock(file: string): void {
+  try {
+    const cur = JSON.parse(readFileSync(file, 'utf8')) as DataLock
+    if (cur.pid === process.pid && cur.host === hostname()) writeLock(file, cur.started)
+  } catch {
+    /* the folder may be briefly unreachable; the next tick tries again */
+  }
+}
+
+function releaseDataLock(file: string): void {
+  try {
+    const cur = JSON.parse(readFileSync(file, 'utf8')) as DataLock
+    if (cur.pid === process.pid && cur.host === hostname()) rmSync(file, { force: true })
+  } catch {
+    /* nothing to release */
+  }
+}
+
+function pidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (err) {
+    return (err as NodeJS.ErrnoException).code === 'EPERM'
   }
 }
 

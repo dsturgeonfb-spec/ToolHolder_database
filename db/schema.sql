@@ -187,6 +187,17 @@ CREATE TABLE IF NOT EXISTS audit_events (
 );
 CREATE INDEX IF NOT EXISTS ix_audit_entity ON audit_events(entity, entity_id);
 
+-- Retry-safe bookings: a dialog sends the same Idempotency-Key on every attempt, so a resend after a network
+-- error returns the first result instead of booking twice. Kept for a week.
+CREATE TABLE IF NOT EXISTS request_keys (
+    key               TEXT PRIMARY KEY,
+    method            TEXT NOT NULL,
+    path              TEXT NOT NULL,
+    status            INTEGER NOT NULL,
+    body_json         TEXT,
+    at                TEXT NOT NULL
+);
+
 -- Small key/value store for settings that belong with the data (people who book counts, inspection interval)
 CREATE TABLE IF NOT EXISTS app_settings (
     key               TEXT PRIMARY KEY,
@@ -247,18 +258,30 @@ FROM holders h JOIN holder_types ht USING (type_code) JOIN v_stock_on_hand s USI
 WHERE s.qty_on_site > 0 AND h.clamp_min_mm = h.clamp_max_mm
 GROUP BY h.clamp_dia_mm, ht.type_code ORDER BY h.clamp_dia_mm;
 
--- Count status per holder: 'counted' once any physical count has been booked; 'unverified' while the only
--- evidence is the hyperMILL opening balance; 'booked' when stock came in by receipt etc. without a count yet.
+-- Count status per holder:
+--  'unverified' while any of its hyperMILL opening balance is still waiting at "Unassigned – count required"
+--               (the holder has not been located yet — a count of 0 at ONE location doesn't settle that: it may be
+--               in another magazine);
+--  'counted'    once it has a physical count and nothing is left waiting at Unassigned (found, or written off by
+--               counting 0 at Unassigned itself);
+--  'booked'     on site through receipts etc., not counted yet;
+--  'none'       not on site (never booked, or everything booked has gone out again).
 CREATE VIEW IF NOT EXISTS v_count_status AS
-SELECT h.holder_id,
-       EXISTS (SELECT 1 FROM stock_transactions t WHERE t.holder_id = h.holder_id AND t.txn_type = 'OPENING_BALANCE') AS has_opening,
-       EXISTS (SELECT 1 FROM stock_transactions t WHERE t.holder_id = h.holder_id AND t.txn_type = 'COUNT_ADJUST')    AS has_count,
-       (SELECT MAX(t.txn_date) FROM stock_transactions t WHERE t.holder_id = h.holder_id AND t.txn_type = 'COUNT_ADJUST') AS last_count_date,
-       CASE WHEN EXISTS (SELECT 1 FROM stock_transactions t WHERE t.holder_id = h.holder_id AND t.txn_type = 'COUNT_ADJUST') THEN 'counted'
-            WHEN EXISTS (SELECT 1 FROM stock_transactions t WHERE t.holder_id = h.holder_id AND t.txn_type = 'OPENING_BALANCE') THEN 'unverified'
-            WHEN EXISTS (SELECT 1 FROM stock_transactions t WHERE t.holder_id = h.holder_id) THEN 'booked'
+SELECT x.holder_id, x.has_opening, x.has_count, x.last_count_date, x.qty_unassigned,
+       CASE WHEN x.has_opening = 1 AND x.qty_unassigned > 0 THEN 'unverified'
+            WHEN x.has_count = 1 THEN 'counted'
+            WHEN x.has_any = 1 AND x.qty_on_site > 0 THEN 'booked'
             ELSE 'none' END AS count_status
-FROM holders h;
+FROM (SELECT h.holder_id,
+             EXISTS (SELECT 1 FROM stock_transactions t WHERE t.holder_id = h.holder_id AND t.txn_type = 'OPENING_BALANCE') AS has_opening,
+             EXISTS (SELECT 1 FROM stock_transactions t WHERE t.holder_id = h.holder_id AND t.txn_type = 'COUNT_ADJUST')    AS has_count,
+             EXISTS (SELECT 1 FROM stock_transactions t WHERE t.holder_id = h.holder_id)                                    AS has_any,
+             (SELECT MAX(t.txn_date) FROM stock_transactions t WHERE t.holder_id = h.holder_id AND t.txn_type = 'COUNT_ADJUST') AS last_count_date,
+             COALESCE((SELECT SUM(t.qty_delta) FROM stock_transactions t JOIN locations l USING (location_id)
+                       WHERE t.holder_id = h.holder_id AND l.name = 'Unassigned – count required'), 0) AS qty_unassigned,
+             COALESCE((SELECT SUM(t.qty_delta) FROM stock_transactions t JOIN locations l USING (location_id)
+                       WHERE t.holder_id = h.holder_id AND l.counts_as_on_site = 1), 0) AS qty_on_site
+      FROM holders h) x;
 
 CREATE VIEW IF NOT EXISTS v_tally_by_location AS
 SELECT l.location_id, l.name AS location, l.kind, l.counts_as_on_site,

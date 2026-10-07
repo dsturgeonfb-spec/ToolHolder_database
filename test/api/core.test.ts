@@ -106,3 +106,72 @@ test('network share: PIN login gates the API; host-only routes refused', async (
   const off = await t.api('PUT', '/api/system/share', { enabled: false })
   assert.equal(off.body.enabled, false)
 })
+
+test('loopback requests with a foreign Host header are refused (DNS rebinding)', async () => {
+  const { request } = await import('node:http')
+  const status = await new Promise<number>((ok, fail) => {
+    const req = request({ host: '127.0.0.1', port: t.app.port, path: '/api/summary', headers: { Host: `evil.example:${t.app.port}` } }, (res) => {
+      res.resume()
+      ok(res.statusCode!)
+    })
+    req.on('error', fail)
+    req.end()
+  })
+  assert.equal(status, 421)
+  assert.equal((await t.api('GET', '/api/summary')).status, 200)
+})
+
+test('malformed % encoding in an API path is a 400, not a 500', async () => {
+  assert.equal((await t.api('GET', '/api/holders/%E0%A4%A')).status, 400)
+})
+
+test('settings: a bad field changes nothing; changes are audited with old and new values', async () => {
+  const before = (await t.api('GET', '/api/settings')).body
+  const bad = await t.api('PUT', '/api/settings', { unit_inspection_days: 30, default_interface: 'NOPE' })
+  assert.equal(bad.status, 400)
+  assert.equal((await t.api('GET', '/api/settings')).body.unit_inspection_days, before.unit_inspection_days)
+  await t.api('PUT', '/api/settings', { unit_inspection_days: 120 }, { user: 'QA Lead' })
+  const ev = (await t.api('GET', '/api/audit?entity=setting&entity_id=unit_inspection_days')).body
+  assert.equal(ev[0].by_user, 'QA Lead')
+  assert.deepEqual(ev[0].detail, { from: before.unit_inspection_days, to: 120 })
+})
+
+test('Idempotency-Key: a resent write returns the first answer and books nothing more', async () => {
+  const key = 'test-key-' + Date.now()
+  const send = () =>
+    fetch(t.base + '/api/flags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'HolderCatalogue', 'X-User': 'Tester', 'Idempotency-Key': key },
+      body: JSON.stringify({ severity: 'LOW', category: 'Test', message: 'retry-safe ' + key }),
+    })
+  const n0 = Number(t.app.ctx.db.value('SELECT COUNT(*) FROM data_flags'))
+  const a = await send()
+  const b = await send()
+  assert.ok(a.status < 300)
+  assert.equal(b.status, a.status)
+  assert.equal(b.headers.get('idempotent-replay'), 'true')
+  assert.deepEqual(await b.json(), await a.json())
+  assert.equal(Number(t.app.ctx.db.value('SELECT COUNT(*) FROM data_flags')), n0 + 1)
+})
+
+test('the data folder is locked: a second server on the same folder is refused while the first runs', async () => {
+  const { AppServer } = await import('../../src/server/app.js')
+  const { REPO } = await import('../helpers.js')
+  assert.throws(() => new AppServer({ dataDir: t.dataDir, appRoot: REPO, log: () => {}, autoBackup: false }), /already open/)
+})
+
+test('network PIN: a LAN-wide guessing run locks sign-in until a new PIN is made', async () => {
+  const port = 20000 + Math.floor(Math.random() * 20000)
+  const share = (await t.api('PUT', '/api/system/share', { enabled: true, port })).body
+  const login = (pin: string) =>
+    fetch(`http://127.0.0.1:${port}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'HolderCatalogue' },
+      body: JSON.stringify({ pin, name: 'Tab' }),
+    })
+  ;(t.app as any).pinFailures = Array.from({ length: 50 }, () => Date.now())
+  assert.equal((await login(share.pin)).status, 429, 'even the right PIN is refused while locked')
+  const fresh = (await t.api('PUT', '/api/system/share', { enabled: true, port, regeneratePin: true })).body
+  assert.equal((await login(fresh.pin)).status, 200)
+  await t.api('PUT', '/api/system/share', { enabled: false })
+})

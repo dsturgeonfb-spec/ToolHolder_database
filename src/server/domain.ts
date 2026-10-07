@@ -142,7 +142,7 @@ export function raiseFlag(db: Db, f: FlagInput, dedupe = true): { flag_id: numbe
 }
 
 export interface EventInput {
-  entity: 'location' | 'wishlist' | 'unit'
+  entity: 'location' | 'wishlist' | 'unit' | 'setting'
   entity_id: string | number
   action: 'ADD' | 'EDIT' | 'DELETE' | 'STATUS' | 'INSPECT' | 'NOTE'
   detail?: Record<string, unknown>
@@ -168,7 +168,7 @@ export function getSummary(db: Db) {
   const cs = db.get<{ counted: number; to_count: number; counted_of_opening: number }>(
     `SELECT COUNT(CASE WHEN count_status='counted' THEN 1 END) AS counted,
             COUNT(CASE WHEN has_opening = 1 THEN 1 END) AS to_count,
-            COUNT(CASE WHEN has_opening = 1 AND has_count = 1 THEN 1 END) AS counted_of_opening
+            COUNT(CASE WHEN has_opening = 1 AND count_status = 'counted' THEN 1 END) AS counted_of_opening
      FROM v_count_status`,
   )!
   const fl = db.get<{ open: number; high: number; info: number }>(

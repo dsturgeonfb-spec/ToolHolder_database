@@ -105,7 +105,11 @@ export class Router {
         continue
       }
       const params: Record<string, string> = {}
-      r.keys.forEach((k, i) => (params[k] = decodeURIComponent(m[i + 1]!)))
+      try {
+        r.keys.forEach((k, i) => (params[k] = decodeURIComponent(m[i + 1]!)))
+      } catch {
+        throw new HttpError(400, 'Bad path (malformed % encoding)')
+      }
       return { route: r, params }
     }
     return allowed.length ? { allowed } : null
@@ -202,11 +206,11 @@ export function str(v: unknown, name: string, max = 2000): string {
   if (s.length > max) throw new HttpError(400, `${name} is too long`)
   return s
 }
-/** Optional string: trimmed, or null when blank. */
-export function optStr(v: unknown, max = 4000): string | null {
+/** Optional string: trimmed, or null when blank. `label` names the field in the error. */
+export function optStr(v: unknown, max = 4000, label = 'A value'): string | null {
   if (v === null || v === undefined) return null
   const s = String(v).trim()
   if (!s) return null
-  if (s.length > max) throw new HttpError(400, 'Value is too long')
+  if (s.length > max) throw new HttpError(400, `${label} is too long (at most ${max} characters)`)
   return s
 }

@@ -20,9 +20,22 @@ export function onUnauthorized(fn) {
   listeners.unauthorized.push(fn)
 }
 
+/**
+ * A key for one booking. Create it when a dialog opens and send it with every attempt
+ * (api.post(path, body, { idempotencyKey })): if the first attempt reached the server but the answer
+ * was lost, the resend returns that first result instead of booking twice.
+ * crypto.getRandomValues works on plain-http network clients too (randomUUID needs a secure context).
+ */
+export function newRequestKey() {
+  const b = new Uint8Array(16)
+  crypto.getRandomValues(b)
+  return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')
+}
+
 async function request(method, path, body, opts = {}) {
   const headers = { 'X-Requested-With': 'HolderCatalogue' }
   if (currentUser) headers['X-User'] = encodeURIComponent(currentUser)
+  if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey
   let payload
   if (opts.raw !== undefined) {
     payload = opts.raw
@@ -50,9 +63,9 @@ async function request(method, path, body, opts = {}) {
 
 export const api = {
   get: (path) => request('GET', path),
-  post: (path, body) => request('POST', path, body),
-  put: (path, body) => request('PUT', path, body),
-  patch: (path, body) => request('PATCH', path, body),
+  post: (path, body, opts) => request('POST', path, body, opts),
+  put: (path, body, opts) => request('PUT', path, body, opts),
+  patch: (path, body, opts) => request('PATCH', path, body, opts),
   del: (path, body) => request('DELETE', path, body),
   /** POST raw text (CSV import etc.). */
   postText: (path, text, contentType) => request('POST', path, undefined, { raw: text, contentType }),

@@ -30,7 +30,7 @@ export interface TestApp {
 
 export async function startTestApp(): Promise<TestApp> {
   const dataDir = mkdtempSync(join(tmpdir(), 'hc-test-'))
-  const app = new AppServer({ dataDir, appRoot: REPO, log: () => {} })
+  const app = new AppServer({ dataDir, appRoot: REPO, log: () => {}, autoBackup: false })
   const port = await app.listen(0)
   const base = `http://127.0.0.1:${port}`
   return {

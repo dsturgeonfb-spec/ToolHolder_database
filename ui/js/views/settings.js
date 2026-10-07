@@ -8,7 +8,7 @@ const kb = (n) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max
 const when = (iso) => {
   if (!iso) return 'never'
   const d = new Date(iso)
-  return `${fmtDate(iso.slice(0, 10))} ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+  return `${d.toLocaleDateString('en-GB')} ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
 }
 
 export async function render(root, ctx) {
@@ -36,7 +36,7 @@ async function renderPeople(root, ctx) {
   const users = state.meta?.settings?.users || []
   box.innerHTML = `<h2>People who book</h2>
     <p class="note" style="margin:0">Names offered in "Who's booking?". Every count, receipt, move, closed issue and catalogue edit records the name. Removing a name here does not change past records.</p>
-    ${users.length ? `<table class="data"><tbody>${users.map((u) => `<tr><td>${esc(u)}</td><td class="actions"><button class="btn ghost sm danger" data-rm="${esc(u)}" type="button">Remove</button></td></tr>`).join('')}</tbody></table>` : emptyHTML('No names yet — they are added the first time someone books.')}
+    ${users.length ? `<table class="data"><tbody>${users.map((u) => `<tr><td>${esc(u)}</td><td class="actions"><button class="btn ghost sm danger" data-rm="${esc(u)}" type="button">Remove</button></td></tr>`).join('')}</tbody></table>` : emptyHTML('No names yet — a name is added when someone picks it in “Who\'s booking?” on this PC, or here.')}
     <div class="btnrow"><button class="btn sm" type="button" data-add>Add a name</button></div>`
   box.onclick = async (e) => {
     const rm = e.target.closest('[data-rm]')
@@ -140,7 +140,7 @@ async function renderData(root) {
     <details><summary class="small">How to restore a backup</summary>
       <ol class="small" style="margin:6px 0 0;padding-left:18px">
         <li>Close Holder Catalogue.</li>
-        <li>In the data folder, rename <span class="mono">holder_catalogue.sqlite</span> to keep it (e.g. <span class="mono">…-broken.sqlite</span>) and delete any <span class="mono">-wal</span>/<span class="mono">-shm</span> files beside it.</li>
+        <li>In the data folder, rename <span class="mono">holder_catalogue.sqlite</span> <b>and</b> its <span class="mono">-wal</span> and <span class="mono">-shm</span> files to the same new name (e.g. <span class="mono">holder_catalogue-old.sqlite</span>, <span class="mono">holder_catalogue-old.sqlite-wal</span>) — they belong together; never delete a -wal file on its own.</li>
         <li>Copy the backup you want from <span class="mono">backups\\</span> into the data folder and rename it <span class="mono">holder_catalogue.sqlite</span>.</li>
         <li>Start the app. Use File → Move data folder… to put the data somewhere else.</li>
       </ol></details>`
