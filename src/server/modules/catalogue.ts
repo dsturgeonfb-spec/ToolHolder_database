@@ -3,12 +3,13 @@
  * and catalogue/tally exports. Routes and shapes: docs/API.md "Catalogue".
  * The work lives in ../catalogue/*; this file only maps routes to it.
  */
-import type { Router, Req } from '../http.js'
+import type { Router } from '../http.js'
 import type { AppContext } from '../context.js'
 import { countAllHolders, holderDetail, listHolders, parseFilters } from '../catalogue/holders.js'
 import { createHolder, updateHolder } from '../catalogue/write.js'
 import { buildTally } from '../catalogue/tally.js'
 import { catalogueCsv, catalogueXlsx, tallyCsv, tallyXlsx } from '../catalogue/exports.js'
+import { getSummary } from '../domain.js'
 
 export function register(r: Router, ctx: AppContext): void {
   r.get('/api/holders', (req) => {
@@ -19,13 +20,8 @@ export function register(r: Router, ctx: AppContext): void {
   r.post('/api/holders', (req) => createHolder(ctx, req))
   r.patch('/api/holders/:id', (req) => updateHolder(ctx, req))
 
-  // The tally's summary must be exactly the header strip's numbers, so reuse the core /api/summary handler
-  // rather than a second copy of its SQL.
-  const summary = async (req: Req) => {
-    const m = r.match('GET', '/api/summary')
-    return m && 'route' in m ? m.route.handler(req) : null
-  }
-  r.get('/api/tally', async (req) => buildTally(ctx, await summary(req)))
+  // The tally's summary is exactly the header strip's numbers (one query, in domain.ts).
+  r.get('/api/tally', () => buildTally(ctx, getSummary(ctx.db)))
 
   r.get('/api/export/catalogue.csv', (req) => catalogueCsv(ctx, req.query))
   r.get('/api/export/catalogue.xlsx', (req) => catalogueXlsx(ctx, req.query))

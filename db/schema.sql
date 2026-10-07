@@ -174,6 +174,19 @@ CREATE TABLE IF NOT EXISTS import_runs (
     summary_json      TEXT
 );
 
+-- Who changed what outside the stock ledger and the catalogue: locations, want-list lines, serialised units
+-- (each runout inspection is an INSPECT event with the measured value and the result).
+CREATE TABLE IF NOT EXISTS audit_events (
+    event_id          INTEGER PRIMARY KEY,
+    entity            TEXT NOT NULL,                 -- 'location', 'wishlist', 'unit'
+    entity_id         TEXT NOT NULL,
+    action            TEXT NOT NULL,                 -- 'ADD', 'EDIT', 'DELETE', 'STATUS', 'INSPECT', 'NOTE'
+    detail_json       TEXT,
+    by_user           TEXT,
+    at                TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_audit_entity ON audit_events(entity, entity_id);
+
 -- Small key/value store for settings that belong with the data (people who book counts, inspection interval)
 CREATE TABLE IF NOT EXISTS app_settings (
     key               TEXT PRIMARY KEY,

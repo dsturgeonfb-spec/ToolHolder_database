@@ -77,7 +77,11 @@ export async function render(root, ctx) {
     </div>
     <div class="lg-holder" data-holder></div>
     <div class="lg-status muted small" data-status role="status" aria-live="polite"></div>
-    <div class="tablewrap scrollbox lg-wrap" data-table><div class="loading">Loading the ledger…</div></div>`
+    <div class="tablewrap scrollbox lg-wrap" data-table><div class="loading">Loading the ledger…</div></div>
+    <details class="card lg-audit" data-audit>
+      <summary><h3 style="display:inline">Other changes</h3> <span class="muted small">locations, want-list lines, serialised units (inspections, status) — who and when</span></summary>
+      <div data-audit-body><div class="loading">Loading…</div></div>
+    </details>`
 
   const params = (withLimit) => {
     const p = new URLSearchParams()
@@ -201,6 +205,46 @@ export async function render(root, ctx) {
         b.disabled = false
       }
     }
+  })
+
+  // Changes outside the stock ledger (audit_events), loaded when opened.
+  const ENTITY = { location: 'Location', wishlist: 'Want list', unit: 'Serialised unit' }
+  const describe = (e) => {
+    const d = e.detail || {}
+    if (e.entity === 'unit' && e.action === 'INSPECT')
+      return `Runout ${d.runout_check_um ?? '–'} µm — ${d.passed ? 'passed' : 'FAILED'}${d.status_after !== d.status_before ? ` (${d.status_before} → ${d.status_after})` : ''}${d.note ? ` · ${d.note}` : ''}`
+    if (d.from && d.to && typeof d.from === 'object') return Object.keys(d.to).map((k) => `${k}: ${d.from[k] ?? '–'} → ${d.to[k] ?? '–'}`).join(' · ')
+    if (d.from && d.to) return `${d.from} → ${d.to}${d.note ? ` · ${d.note}` : ''}`
+    if (Array.isArray(d.changes) && d.changes.length) return d.changes.join(' · ') + (d.note ? ` · ${d.note}` : '')
+    return Object.entries(d)
+      .filter(([, v]) => v !== null && v !== '' && v !== undefined)
+      .map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`)
+      .join(' · ')
+  }
+  const audit = el.querySelector('[data-audit]')
+  audit.addEventListener('toggle', async () => {
+    if (!audit.open || audit.dataset.loaded) return
+    const body = audit.querySelector('[data-audit-body]')
+    try {
+      const events = await api.get('/api/audit?limit=500')
+      audit.dataset.loaded = '1'
+      body.innerHTML = events.length
+        ? `<div class="btnrow" style="margin:6px 0"><button type="button" class="btn ghost sm" data-act="audit-csv">Export CSV</button></div>
+           <div class="tablewrap scrollbox"><table class="data small"><thead><tr><th>When</th><th>What</th><th>Which</th><th>Change</th><th>By</th></tr></thead><tbody>
+           ${events
+             .map(
+               (e) => `<tr><td class="nowrap">${stamp(e.at)}</td><td>${esc(ENTITY[e.entity] || e.entity)} · ${esc(e.action.toLowerCase())}</td>
+               <td class="mono">${e.entity === 'unit' ? `<a href="#/units?q=${encodeURIComponent(e.entity_id)}">${esc(e.entity_id)}</a>` : esc(e.detail?.name || e.detail?.holder_id || '#' + e.entity_id)}</td>
+               <td>${esc(describe(e))}</td><td>${esc(e.by_user || '')}</td></tr>`,
+             )
+             .join('')}</tbody></table></div>`
+        : '<div class="empty">No changes recorded yet.</div>'
+    } catch (err) {
+      body.innerHTML = `<div class="errorbox">${esc(err.message)}</div>`
+    }
+  })
+  audit.addEventListener('click', (ev) => {
+    if (ev.target.closest('[data-act=audit-csv]')) api.download('/api/export/audit.csv', 'audit-events.csv').catch(toastError)
   })
 
   await load()

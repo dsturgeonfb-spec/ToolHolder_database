@@ -8,7 +8,7 @@
 import type { Router, Req } from '../http.js'
 import { Download, HttpError, int, optStr, str } from '../http.js'
 import type { AppContext } from '../context.js'
-import { UNASSIGNED_LOCATION, requireUser, today } from '../domain.js'
+import { UNASSIGNED_LOCATION, logEvent, requireUser, today } from '../domain.js'
 import { toCsv } from '../lib/csv.js'
 import { holderById, holderRows } from '../stock/holders.js'
 import {
@@ -123,7 +123,11 @@ export function register(r: Router, ctx: AppContext): void {
     // Somewhere off site (vendor, regrind) doesn't count in the site tally unless the person says so.
     const onSite = b.counts_as_on_site === undefined || b.counts_as_on_site === null ? kind !== 'external' : !!b.counts_as_on_site
     assertNameFree(ctx, name)
-    const id = db.run(`INSERT INTO locations(name, kind, counts_as_on_site) VALUES (?,?,?)`, [name, kind, onSite]).lastInsertRowid
+    const id = db.tx(() => {
+      const newId = db.run(`INSERT INTO locations(name, kind, counts_as_on_site) VALUES (?,?,?)`, [name, kind, onSite]).lastInsertRowid
+      logEvent(db, { entity: 'location', entity_id: newId, action: 'ADD', detail: { name, kind, counts_as_on_site: onSite }, by_user: user })
+      return newId
+    })
     ctx.log('info', `Location added by ${user}: "${name}" (${kind}, ${onSite ? 'counts' : 'does not count'} as on site)`)
     return locationRow(ctx, id)
   })
@@ -162,7 +166,10 @@ export function register(r: Router, ctx: AppContext): void {
       }
     }
     if (Object.keys(set).length) {
-      db.run(`UPDATE locations SET ${Object.keys(set).map((k) => `${k} = :${k}`).join(', ')} WHERE location_id = :id`, { ...set, id })
+      db.tx(() => {
+        db.run(`UPDATE locations SET ${Object.keys(set).map((k) => `${k} = :${k}`).join(', ')} WHERE location_id = :id`, { ...set, id })
+        logEvent(db, { entity: 'location', entity_id: id, action: 'EDIT', detail: { name: loc.name, changes }, by_user: user })
+      })
       ctx.log('info', `Location ${id} changed by ${user}: ${changes.join('; ')}`)
     }
     return locationRow(ctx, id)
@@ -181,7 +188,10 @@ export function register(r: Router, ctx: AppContext): void {
       )
     const units = Number(db.value(`SELECT COUNT(*) FROM holder_units WHERE location_id = ?`, [id]))
     if (units) throw new HttpError(409, `${units} serialised unit${units === 1 ? ' is' : 's are'} recorded at ${loc.name} — move ${units === 1 ? 'it' : 'them'} first.`)
-    db.run(`DELETE FROM locations WHERE location_id = ?`, [id])
+    db.tx(() => {
+      db.run(`DELETE FROM locations WHERE location_id = ?`, [id])
+      logEvent(db, { entity: 'location', entity_id: id, action: 'DELETE', detail: { name: loc.name }, by_user: user })
+    })
     ctx.log('info', `Location deleted by ${user}: "${loc.name}" (never used)`)
     return { deleted: id }
   })

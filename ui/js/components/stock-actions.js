@@ -3,7 +3,7 @@
 //   openStockAction(kind, holder, opts?) -> Promise<boolean>   (true if a transaction was posted)
 //     kind: 'receipt' | 'move' | 'scrap' | 'return' | 'adjust'
 //     holder: { holder_id, manufacturer, order_no, ... } (any holder object from the API)
-//     opts: { locationId?: number }  preselects a location
+//     opts: { locationId?: number, qty?: number, reference?: string }  preselects a location / pre-fills qty and reference
 // 'adjust' doesn't open a dialog: a correction is a physical count, so it opens Count mode on the holder.
 import { api } from '../api.js'
 import { esc, formDialog, infoDialog, toast, todayIso } from '../ui.js'
@@ -57,7 +57,7 @@ export async function openStockAction(kind, holder, opts = {}) {
     return false
   }
 
-  const qtyField = (help) => ({ name: 'qty', label: 'Quantity', type: 'number', required: true, value: 1, min: 1, step: 1, help })
+  const qtyField = (help) => ({ name: 'qty', label: 'Quantity', type: 'number', required: true, value: Number.isInteger(opts.qty) && opts.qty > 0 ? opts.qty : 1, min: 1, step: 1, help })
   const noteField = (labelText = 'Note', placeholder = '') => ({ name: 'note', label: labelText, type: 'textarea', placeholder })
   const intro = (text) => `<b>${esc(name)}</b>${holder.series ? ` · ${esc(holder.series)}` : ''}<br>${esc(text)}`
 
@@ -70,7 +70,7 @@ export async function openStockAction(kind, holder, opts = {}) {
       fields: [
         { name: 'location_id', label: 'Put away at', type: 'select', required: true, options: realOptions, value: defaultInbound(locations, opts.locationId)?.location_id },
         qtyField(),
-        { name: 'reference', label: 'PO no.', placeholder: 'e.g. PO 4500123', help: 'The purchase order it came on — leave blank only if there is none.' },
+        { name: 'reference', label: 'PO no.', value: opts.reference || '', placeholder: 'e.g. PO 4500123', help: 'The purchase order it came on — leave blank only if there is none.' },
         { name: 'txn_date', label: 'Date received', type: 'date', required: true, value: todayIso(), max: todayIso() },
         noteField('Note', 'e.g. delivery note no., condition'),
       ],

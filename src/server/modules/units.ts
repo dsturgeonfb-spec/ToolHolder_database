@@ -16,7 +16,7 @@ import type { Router, Req } from '../http.js'
 import { Download, HttpError, Reply, optStr } from '../http.js'
 import type { AppContext } from '../context.js'
 import type { Db } from '../db.js'
-import { getSetting, qtyOnSite, requireUser, today } from '../domain.js'
+import { getSetting, logEvent, qtyOnSite, requireUser, today } from '../domain.js'
 import { toCsv, type Column } from '../lib/csv.js'
 
 export const UNIT_STATUSES = ['IN_SERVICE', 'QUARANTINE', 'SCRAPPED'] as const
@@ -349,6 +349,13 @@ export function register(r: Router, ctx: AppContext): void {
         // Whoever enters an inspection date vouches for it, so they are recorded as the inspector.
         [unitId, holderId, locationId, serial, runout, lastInspected, line, lastInspected ? user : null],
       )
+      logEvent(db, {
+        entity: 'unit',
+        entity_id: unitId,
+        action: 'ADD',
+        detail: { holder_id: holderId, serial_no: serial, location_id: locationId, runout_check_um: runout, last_inspected: lastInspected, note },
+        by_user: user,
+      })
       return new Reply(201, { ...getUnit(db, unitId), warnings: stockWarnings(db, holderId) })
     })
   })
@@ -416,6 +423,7 @@ export function register(r: Router, ctx: AppContext): void {
       // A note sent with an edit is a remark added to the log — the log itself is never rewritten.
       const text = [changes.length ? `Edited: ${changes.join('; ')}.` : '', remark ? `Note: ${remark}` : ''].filter(Boolean).join(' ')
       appendLog(db, id, logLine(user, text))
+      logEvent(db, { entity: 'unit', entity_id: id, action: sets.length ? 'EDIT' : 'NOTE', detail: { changes, note: remark }, by_user: user })
       const out = getUnit(db, id)
       return has(b, 'holder_id') ? { ...out, warnings: stockWarnings(db, out.holder_id) } : out
     })
@@ -443,6 +451,14 @@ export function register(r: Router, ctx: AppContext): void {
       ])
       const result = passed ? 'passed' : quarantine ? 'FAILED — quarantined' : 'FAILED — stays in quarantine'
       appendLog(db, id, logLine(user, `Inspected: runout ${um(runout)}, ${result}.${note ? ` ${note}` : ''}`))
+      // The inspection as a quality record: measured value, result, status before/after, who, when.
+      logEvent(db, {
+        entity: 'unit',
+        entity_id: id,
+        action: 'INSPECT',
+        detail: { holder_id: cur.holder_id, runout_check_um: runout, passed, status_before: cur.status, status_after: passed ? cur.status : 'QUARANTINE', note },
+        by_user: user,
+      })
       return { ...getUnit(db, id), passed, status_changed: quarantine }
     })
   })
@@ -461,6 +477,7 @@ export function register(r: Router, ctx: AppContext): void {
       if (cur.status === status) throw new HttpError(409, `Unit ${cur.unit_id} is already ${STATUS_LABEL[status as UnitStatus]}.`)
       db.run(`UPDATE holder_units SET status = ? WHERE unit_id = ?`, [status, id])
       appendLog(db, id, logLine(user, `Status ${STATUS_LABEL[cur.status]} → ${STATUS_LABEL[status as UnitStatus]}: ${note}`))
+      logEvent(db, { entity: 'unit', entity_id: id, action: 'STATUS', detail: { holder_id: cur.holder_id, from: cur.status, to: status, note }, by_user: user })
       return getUnit(db, id)
     })
   })

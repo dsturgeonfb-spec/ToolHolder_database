@@ -231,3 +231,49 @@ Links with `target="_blank"` to http(s) sites open in the system browser automat
   the tokens and components in `app.css` (`.card`, `.btn`, `.chip`, `.row`, `.fld`, `table.data`, `.tag`…).
 - Shop-floor first: big touch targets in count mode, works at tablet width (≥ 768 px) and phone width.
 - Dates shown DD/MM/YYYY (`fmtDate`); stored ISO.
+
+## Additions and decisions made during the build
+
+The modules were built in parallel against the contract above; where a builder had to choose, the choice is
+recorded here so the contract matches the code.
+
+**Core**
+- `GET /api/audit?entity=location|wishlist|unit&entity_id=&action=&limit=` and `GET /api/export/audit.csv` —
+  the `audit_events` table: location add/edit/delete, want-list add/top-up/status, serialised-unit add/edit/
+  inspection/status. A unit inspection is an `INSPECT` event with `{runout_check_um, passed, status_before,
+  status_after, note}`. Shown in the Log view under "Other changes". Helper: `domain.logEvent()`.
+- `domain.getSummary(db)` is the one query behind `/api/summary` and the tally's summary.
+- Printable pages (`api.openPrintable`) add `?by=<name>`; on the host a GET without `X-User` uses it for display
+  only ("Printed … by").
+
+**Catalogue** — `GET /api/holders/:id` adds `transactions_total`; glCheck rows add maker/type/series/cam_name and a
+plain-English `note`. POST/PATCH refuse unknown fields (incl. stock fields); a duplicate maker + order no. is 409
+with `details.holder_id`. PATCH sets `last_checked` only when maker data changes (not for a notes-only edit).
+`scope=cat` is `qty_on_site <= 0`. `fit` accepts a decimal comma.
+
+**Stock** — `GET /api/count/list` returns `{location, date, holders[], counted_today}`; holders add
+`qty_at_location, counted_here_today, last_count_here, qty_unassigned, stock[]`. `GET /api/stock` also takes
+`holder_id`. Stricter rules: SCRAP needs a reference (NCR no.); nothing is received or moved INTO the Unassigned
+location; `txn_date` not in the future; quantities ≤ 9999. Count mode has an optional **blind count** (per device).
+Count sheets list what is booked at the location plus holders still on the opening balance.
+
+**Issues** — `GET /api/flags/:id`; reopen needs a note and keeps the earlier closure in `action`; closing a closed
+issue is 409. `GET /api/writeback` returns `{generated_on, categories, count, holders, items[]}`.
+URL params: `#/issues?holder=&status=&severity=&category=&q=`, `#/issues/writeback`.
+
+**hyperMILL import** — host-only preview picture route `GET /api/import/hypermill/preview/:token/images/:n`.
+Preview adds `expires_at, counts, has_work, report{file, format, title, date, images}`; apply returns
+`{run_id, folder, counts, new_holders[], updated_holders[], …}` (404 = token expired/used, 409 = catalogue changed
+since the preview). A name that differs only in the GL token is "changed" (MEDIUM Gauge length issue), not
+"renamed". A matched holder with no stock history gets the opening balance of 1. Blocks with an unknown maker go to
+Unmatched. Coupling rows are parsed and shown but not stored.
+
+**Vendors** — `GET /api/vendors` returns `{vendors[], sources[], user_agent, vendor_contact_set, …}`; scans return
+`{job_id, job}`; `GET /api/vendors/runs`. Curated text fields (series, clamp_spec, coolant, balance, notes) are
+only proposed when empty; type and interface only on insert. Proposals and file-import tokens live in memory
+(same app session; tokens expire after 2 h). Tests inject pages with `HOLDER_CATALOGUE_VENDOR_FIXTURES=<dir>`
+(see `src/server/vendors/fixtures.ts`).
+
+**Want list / units** — want-list rows carry `purchasing_notes` (open Purchasing issues); POST returns 201 new /
+200 merged. `GET /api/units/:id`; units keep a dated, append-only log in `note` as well as `audit_events`.
+"Book receipt now" from the want list pre-fills the quantity (`openStockAction(kind, holder, {qty, reference})`).

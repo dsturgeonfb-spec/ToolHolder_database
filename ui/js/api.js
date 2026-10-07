@@ -89,6 +89,8 @@ export const api = {
 
   /** Opens a printable page (count sheet, RFQ, write-back list) in a new window. */
   openPrintable(path) {
-    window.open(path, '_blank', 'noopener')
+    // A new window can't carry the X-User header; ?by= lets the page print who produced it.
+    const url = currentUser ? `${path}${path.includes('?') ? '&' : '?'}by=${encodeURIComponent(currentUser)}` : path
+    window.open(url, '_blank', 'noopener')
   },
 }

@@ -30,7 +30,8 @@ import {
   sendJson,
   type Req,
 } from './http.js'
-import { getSetting, setSetting, requireUser } from './domain.js'
+import { getSetting, setSetting, requireUser, getSummary, today } from './domain.js'
+import { toCsv } from './lib/csv.js'
 import { registerModules } from './modules/index.js'
 
 export interface AppOptions {
@@ -255,8 +256,9 @@ export class AppServer {
       query: url.searchParams,
       body: await readBody(req),
       raw: req,
-      // A network client is always recorded under the name it signed in with.
-      user: isHost ? headerUser : sessionUser,
+      // A network client is always recorded under the name it signed in with. Printable pages are opened
+      // in a new window (no custom headers), so a host GET may name the person in ?by= — display only, never a write.
+      user: isHost ? (headerUser ?? (method === 'GET' ? url.searchParams.get('by')?.trim().slice(0, 80) || null : null)) : sessionUser,
       isHost,
     }
     const out = await m.route.handler(r)
@@ -402,34 +404,44 @@ export class AppServer {
     }))
 
     // The numbers in the header strip on every screen.
-    r.get('/api/summary', () => {
-      const db = ctx.db
-      const site = db.get<{ holders: number; articles: number }>(
-        `SELECT COALESCE(SUM(qty_on_site),0) AS holders, COUNT(CASE WHEN qty_on_site > 0 THEN 1 END) AS articles FROM v_stock_on_hand`,
-      )!
-      const cs = db.get<{ counted: number; to_count: number; counted_of_opening: number }>(
-        `SELECT COUNT(CASE WHEN count_status='counted' THEN 1 END) AS counted,
-                COUNT(CASE WHEN has_opening = 1 THEN 1 END) AS to_count,
-                COUNT(CASE WHEN has_opening = 1 AND has_count = 1 THEN 1 END) AS counted_of_opening
-         FROM v_count_status`,
-      )!
-      const fl = db.get<{ open: number; high: number; info: number }>(
-        `SELECT COUNT(CASE WHEN severity <> 'INFO' THEN 1 END) AS open, COUNT(CASE WHEN severity='HIGH' THEN 1 END) AS high,
-                COUNT(CASE WHEN severity='INFO' THEN 1 END) AS info
-         FROM data_flags WHERE status = 'OPEN'`,
-      )!
-      return {
-        holders_on_site: Number(site.holders),
-        articles_on_site: Number(site.articles),
-        articles_in_catalogue: Number(db.value(`SELECT COUNT(*) FROM holders`)),
-        counted: Number(cs.counted),
-        to_count: Number(cs.to_count),
-        counted_of_opening: Number(cs.counted_of_opening),
-        open_flags: Number(fl.open),
-        open_high: Number(fl.high),
-        open_info: Number(fl.info),
+    r.get('/api/summary', () => getSummary(ctx.db))
+
+    // Changes outside the stock ledger and the catalogue (locations, want list, serialised units).
+    const auditRows = (q: URLSearchParams) => {
+      const where: string[] = []
+      const params: string[] = []
+      for (const k of ['entity', 'entity_id', 'action'] as const) {
+        const v = (q.get(k) ?? '').trim()
+        if (v) {
+          where.push(`${k} = ?`)
+          params.push(v)
+        }
       }
-    })
+      const limit = Math.min(5000, Math.max(1, Number(q.get('limit')) || 500))
+      type AuditRow = { event_id: number; entity: string; entity_id: string; action: string; by_user: string | null; at: string; detail_json: string | null }
+      return ctx.db
+        .all<AuditRow>(
+          `SELECT * FROM audit_events ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY event_id DESC LIMIT ${limit}`,
+          params,
+        )
+        .map(({ detail_json, ...e }) => ({ ...e, detail: detail_json ? JSON.parse(detail_json) : null }))
+    }
+    r.get('/api/audit', (req) => auditRows(req.query))
+    r.get('/api/export/audit.csv', (req) =>
+      new Download(
+        `audit_events_${today()}.csv`,
+        'text/csv; charset=utf-8',
+        toCsv(auditRows(req.query), [
+          { header: 'event_id', value: (e) => e.event_id },
+          { header: 'at', value: (e) => e.at },
+          { header: 'entity', value: (e) => e.entity },
+          { header: 'entity_id', value: (e) => e.entity_id },
+          { header: 'action', value: (e) => e.action },
+          { header: 'by_user', value: (e) => e.by_user },
+          { header: 'detail', value: (e) => (e.detail ? JSON.stringify(e.detail) : '') },
+        ]),
+      ),
+    )
   }
 }
 

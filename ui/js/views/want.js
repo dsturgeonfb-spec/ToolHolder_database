@@ -212,7 +212,7 @@ export async function render(root, ctx) {
       { ok: 'Book receipt now' },
     )
     if (!go) return
-    const posted = await openStockAction('receipt', r)
+    const posted = await openStockAction('receipt', r, { qty: Number(r.qty_wanted) })
     if (posted) await afterWrite()
   }
 

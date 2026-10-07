@@ -141,6 +141,54 @@ export function raiseFlag(db: Db, f: FlagInput, dedupe = true): { flag_id: numbe
   return { flag_id: r.lastInsertRowid, created: true }
 }
 
+export interface EventInput {
+  entity: 'location' | 'wishlist' | 'unit'
+  entity_id: string | number
+  action: 'ADD' | 'EDIT' | 'DELETE' | 'STATUS' | 'INSPECT' | 'NOTE'
+  detail?: Record<string, unknown>
+  by_user: string
+}
+/** Append-only record of changes outside the stock ledger and the catalogue (audit_events). */
+export function logEvent(db: Db, e: EventInput): void {
+  db.run(`INSERT INTO audit_events(entity, entity_id, action, detail_json, by_user, at) VALUES (?,?,?,?,?,?)`, [
+    e.entity,
+    String(e.entity_id),
+    e.action,
+    e.detail ? JSON.stringify(e.detail) : null,
+    e.by_user,
+    nowStamp(),
+  ])
+}
+
+/** The numbers in the header strip (also the tally's summary). */
+export function getSummary(db: Db) {
+  const site = db.get<{ holders: number; articles: number }>(
+    `SELECT COALESCE(SUM(qty_on_site),0) AS holders, COUNT(CASE WHEN qty_on_site > 0 THEN 1 END) AS articles FROM v_stock_on_hand`,
+  )!
+  const cs = db.get<{ counted: number; to_count: number; counted_of_opening: number }>(
+    `SELECT COUNT(CASE WHEN count_status='counted' THEN 1 END) AS counted,
+            COUNT(CASE WHEN has_opening = 1 THEN 1 END) AS to_count,
+            COUNT(CASE WHEN has_opening = 1 AND has_count = 1 THEN 1 END) AS counted_of_opening
+     FROM v_count_status`,
+  )!
+  const fl = db.get<{ open: number; high: number; info: number }>(
+    `SELECT COUNT(CASE WHEN severity <> 'INFO' THEN 1 END) AS open, COUNT(CASE WHEN severity='HIGH' THEN 1 END) AS high,
+            COUNT(CASE WHEN severity='INFO' THEN 1 END) AS info
+     FROM data_flags WHERE status = 'OPEN'`,
+  )!
+  return {
+    holders_on_site: Number(site.holders),
+    articles_on_site: Number(site.articles),
+    articles_in_catalogue: Number(db.value(`SELECT COUNT(*) FROM holders`)),
+    counted: Number(cs.counted),
+    to_count: Number(cs.to_count),
+    counted_of_opening: Number(cs.counted_of_opening),
+    open_flags: Number(fl.open),
+    open_high: Number(fl.high),
+    open_info: Number(fl.info),
+  }
+}
+
 /** Reads a JSON value from app_settings. */
 export function getSetting<T>(db: Db, key: string, fallback: T): T {
   const v = db.value<string>(`SELECT value FROM app_settings WHERE key = ?`, [key])

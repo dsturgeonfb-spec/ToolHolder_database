@@ -18,7 +18,7 @@ import type { Router, Req } from '../http.js'
 import { Download, HttpError, Reply, int, optStr } from '../http.js'
 import type { AppContext } from '../context.js'
 import type { Db } from '../db.js'
-import { getSetting, requireUser, today } from '../domain.js'
+import { getSetting, logEvent, requireUser, today } from '../domain.js'
 import { toCsv, type Column } from '../lib/csv.js'
 import { buildXlsx, XLSX_TYPE, type XlsxColumn, type XlsxSheet } from '../lib/xlsx.js'
 import { esc, printPage } from '../lib/html.js'
@@ -368,18 +368,20 @@ export function register(r: Router, ctx: AppContext): void {
           today(),
           open.wish_id,
         ])
+        logEvent(db, { entity: 'wishlist', entity_id: open.wish_id, action: 'EDIT', detail: { holder_id: holderId, added_qty: qty, qty_wanted: total, reason }, by_user: user })
         return new Reply(200, { ...getWish(db, open.wish_id), merged: true, added_qty: qty })
       }
       const res = db.run(
         `INSERT INTO wishlist(holder_id, qty_wanted, reason, added_on, status, added_by, updated_on) VALUES (?, ?, ?, ?, 'OPEN', ?, NULL)`,
         [holderId, qty, reason, today(), user],
       )
+      logEvent(db, { entity: 'wishlist', entity_id: res.lastInsertRowid, action: 'ADD', detail: { holder_id: holderId, qty_wanted: qty, reason }, by_user: user })
       return new Reply(201, { ...getWish(db, res.lastInsertRowid), merged: false, added_qty: qty })
     })
   })
 
   r.patch('/api/wishlist/:id', (req) => {
-    requireUser(req.user)
+    const user = requireUser(req.user)
     const id = wishId(req)
     const b = (req.body ?? {}) as Record<string, unknown>
     if (!has(b, 'qty_wanted') && !has(b, 'reason') && !has(b, 'status'))
@@ -405,13 +407,15 @@ export function register(r: Router, ctx: AppContext): void {
       const params = Object.values(changed)
       if (!sets.length) return cur
       db.run(`UPDATE wishlist SET ${sets.join(', ')}, updated_on = ? WHERE wish_id = ?`, [...params, today(), id])
+      const from = Object.fromEntries(Object.keys(changed).map((k) => [k, (cur as unknown as Record<string, unknown>)[k] ?? null]))
+      logEvent(db, { entity: 'wishlist', entity_id: id, action: changed.status ? 'STATUS' : 'EDIT', detail: { holder_id: cur.holder_id, from, to: changed }, by_user: user })
       return getWish(db, id)
     })
   })
 
   // "Delete" cancels: the line stays as part of the purchasing record.
   r.delete('/api/wishlist/:id', (req) => {
-    requireUser(req.user)
+    const user = requireUser(req.user)
     const id = wishId(req)
     return db.tx(() => {
       const cur = getWish(db, id)
@@ -419,6 +423,7 @@ export function register(r: Router, ctx: AppContext): void {
       if (cur.status === 'RECEIVED')
         throw new HttpError(409, `Line #${id} was already received — it can't be cancelled. If holders went back to the maker, book that in the stock ledger.`)
       db.run(`UPDATE wishlist SET status = 'CANCELLED', updated_on = ? WHERE wish_id = ?`, [today(), id])
+      logEvent(db, { entity: 'wishlist', entity_id: id, action: 'STATUS', detail: { holder_id: cur.holder_id, from: { status: cur.status }, to: { status: 'CANCELLED' } }, by_user: user })
       return getWish(db, id)
     })
   })
