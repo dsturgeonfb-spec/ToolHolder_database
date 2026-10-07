@@ -272,6 +272,36 @@ test('POST /api/holders refuses a duplicate maker + order no. with a pointer to 
   assert.equal(r.body.details.holder_id, 'H0049')
 })
 
+// Review finding: "a63.140.12" was accepted as a second article next to HAIMER A63.140.12 (H0049), although the
+// hyperMILL import and vendor sync treat order nos. case-insensitively — stock and flags split over two records.
+test('the duplicate check ignores letter case and outer spaces, on POST and on PATCH', async () => {
+  const n0 = Number(db().value('SELECT COUNT(*) FROM holders'))
+  for (const order_no of ['a63.140.12', '  A63.140.12 ', 'a63.140.12\t']) {
+    const r = await t.api('POST', '/api/holders', { ...NEW, manufacturer: 'haimer', order_no })
+    assert.equal(r.status, 409, `${JSON.stringify(order_no)} → ${r.status} ${JSON.stringify(r.body)}`)
+    assert.equal(r.body.details.holder_id, 'H0049')
+    // The message names the record as it is stored, so the person recognises it.
+    assert.match(r.body.error, /HAIMER order no\. A63\.140\.12 is already in the catalogue \(H0049\)/)
+    if (/a63/.test(order_no)) assert.match(r.body.error, /"a63\.140\.12" is the same order no\. in other capitals/)
+  }
+  // KEMMLER A63.06.12.3 (H0005) typed in lower case under another type is still the same article.
+  const k = await t.api('POST', '/api/holders', { ...NEW, manufacturer: 'kemmler', order_no: 'a63.06.12.3', type_code: 'SCREW_IN', clamp_dia_mm: null })
+  assert.equal(k.status, 409, JSON.stringify(k.body))
+  assert.equal(k.body.details.holder_id, 'H0005')
+  // PATCH: renaming one holder to a case variant of another is the same clash.
+  const p = await t.api('PATCH', '/api/holders/H0050', { order_no: 'a63.140.12', data_source: 'typo fix' })
+  assert.equal(p.status, 409, JSON.stringify(p.body))
+  assert.equal(p.body.details.holder_id, 'H0049')
+  assert.equal(Number(db().value('SELECT COUNT(*) FROM holders')), n0, 'no holder created')
+  // A holder may still correct the letter case of its own order no.
+  const own = db().value<string>(`SELECT order_no FROM holders WHERE holder_id = 'H0050'`)!
+  const lower = await t.api('PATCH', '/api/holders/H0050', { order_no: own.toLowerCase(), data_source: 'case check' })
+  assert.equal(lower.status, 200, JSON.stringify(lower.body))
+  const back = await t.api('PATCH', '/api/holders/H0050', { order_no: own, data_source: 'as the maker prints it' })
+  assert.equal(back.status, 200, JSON.stringify(back.body))
+  assert.equal(back.body.order_no, own)
+})
+
 test('POST /api/holders creates the holder: fixed-bore min=max, defaults, provenance, change log, no stock', async () => {
   const txBefore = txnCount()
   const r = await t.api('POST', '/api/holders', NEW, { user: 'Dave Sturgeon' })
@@ -382,12 +412,51 @@ test('PATCH validation: unknown holder, bad values, identity clash, read-only fi
   assert.match(bad.body.error, /max rpm must be a number/i)
   const clash = await t.api('PATCH', '/api/holders/H0048', { order_no: 'A63.140.12', data_source: 'typo fix' })
   assert.equal(clash.status, 409)
-  const ro = await t.api('PATCH', '/api/holders/H0048', { holder_id: 'H0001', data_source: 'x' })
+  assert.equal(clash.body.details.holder_id, 'H0049')
+  const ro =await t.api('PATCH', '/api/holders/H0048', { holder_id: 'H0001', data_source: 'x' })
   assert.equal(ro.status, 400)
   const st = await t.api('PATCH', '/api/holders/H0048', { data_status: '', data_source: 'x' })
   assert.equal(st.status, 400)
   const notObj = await t.api('PATCH', '/api/holders/H0048', [1, 2])
   assert.equal(notObj.status, 400)
+})
+
+// Review finding: "25,000" — the way the app itself shows max rpm — was stored as 25 (comma read as a decimal mark).
+test('max rpm: thousands separators are read as thousands; anything ambiguous is refused, never stored as 25', async () => {
+  const rpm = () => db().value<number>(`SELECT max_rpm FROM holders WHERE holder_id = 'H0010'`)
+  const changes = () => Number(db().value(`SELECT COUNT(*) FROM holder_changes WHERE holder_id = 'H0010'`))
+  assert.equal(rpm(), 25000)
+  const src = db().value<string>(`SELECT data_source FROM holders WHERE holder_id = 'H0010'`)
+  const n0 = changes()
+  // Re-typing the value as shown (en-GB "25,000") or as a maker page prints it is the same value: nothing logged.
+  for (const v of ['25,000', '25 000', '25.000', '25\u202F000', '25\u00A0000', "25'000", '25000', ' 25,000 ', '25,000 rpm', '25.000 1/min', 25000]) {
+    const r = await t.api('PATCH', '/api/holders/H0010', { max_rpm: v, data_source: src })
+    assert.equal(r.status, 200, `${JSON.stringify(v)} → ${JSON.stringify(r.body)}`)
+    assert.equal(r.body.max_rpm, 25000, JSON.stringify(v))
+  }
+  assert.equal(changes(), n0, 'the same value in another format is not a change')
+  const up = await t.api('PATCH', '/api/holders/H0010', { max_rpm: '30,000', data_source: 'MAPAL catalogue 2025 p. 9' })
+  assert.equal(up.status, 200, JSON.stringify(up.body))
+  assert.equal(rpm(), 30000)
+  assert.deepEqual(
+    db().all<any>(`SELECT old_value, new_value FROM holder_changes WHERE holder_id = 'H0010' AND field = 'max_rpm'`).map((c) => [c.old_value, c.new_value]),
+    [['25000', '30000']],
+  )
+  // A decimal mark, or groups that are not three digits, could be a typo of either reading: refused, value kept.
+  for (const v of ['25,5', '25,00', '25,0', '1.5', '25.0000', '2,50,000', '25,000.5', '25.000,0', '25,000,00', ',500', '25,', '25 00', '1 000.000']) {
+    const r = await t.api('PATCH', '/api/holders/H0010', { max_rpm: v, data_source: 'x' })
+    assert.equal(r.status, 400, `${JSON.stringify(v)} → ${r.status} ${JSON.stringify(r.body)}`)
+    assert.match(r.body.error, /max rpm/i)
+    assert.match(r.body.error, /whole number/i, JSON.stringify(v))
+  }
+  assert.equal((await t.api('PATCH', '/api/holders/H0010', { max_rpm: '1,500,000', data_source: 'x' })).status, 400, 'too large')
+  assert.equal(rpm(), 30000)
+  // POST reads it the same way.
+  const bad = await t.api('POST', '/api/holders', { ...NEW, order_no: 'RPM.TEST', max_rpm: '25,5' })
+  assert.equal(bad.status, 400)
+  assert.match(bad.body.error, /whole number/i)
+  const back = await t.api('PATCH', '/api/holders/H0010', { max_rpm: 25000, data_source: 'MAPAL catalogue 2025 p. 9' })
+  assert.equal(back.status, 200)
 })
 
 test('PATCH can change the maker (logged by name) and keeps holders when renaming', async () => {
@@ -509,6 +578,28 @@ test('tally.xlsx has the six sheets and opens in openpyxl', async (tc) => {
   assert.equal(gl.length, 5)
   assert.ok(gl.some((g: any) => g.order_no === 'A63.140.08' && g.delta_mm === -1 && g.note === null))
   assert.equal(s['GL check'], 1 + gl.length)
+})
+
+// Review finding: a holder received and then scrapped showed "0 on site · Booked in" and was missing from the
+// "Not on site" filter. With v_count_status, 'booked' means on site by receipt etc.; nothing on site is 'none'.
+test('count status: received then scrapped is "none" (not on site), never "booked"; the filters agree', async () => {
+  const has = async (qs: string) => (await list(qs)).holders.some((h) => h.holder_id === 'H0061')
+  const rec = await t.api('POST', '/api/transactions', { holder_id: 'H0061', location_id: 2, txn_type: 'RECEIPT', qty: 1, reference: 'PO 2' })
+  assert.ok(rec.status < 300, JSON.stringify(rec.body))
+  let h = (await t.api('GET', '/api/holders/H0061')).body
+  assert.deepEqual([h.qty_on_site, h.count_status], [1, 'booked'])
+  assert.ok(await has('status=booked'))
+  const scrap = await t.api('POST', '/api/transactions', { holder_id: 'H0061', location_id: 2, txn_type: 'SCRAP', qty: 1, reference: 'NCR-1' })
+  assert.ok(scrap.status < 300, JSON.stringify(scrap.body))
+  h = (await t.api('GET', '/api/holders/H0061')).body
+  assert.deepEqual([h.qty_on_site, h.count_status], [0, 'none'])
+  assert.ok(!(await has('status=booked')), 'nothing on site is never "booked"')
+  assert.ok(await has('status=none'))
+  assert.ok(await has('scope=cat&status=none'))
+  // Every 'booked' holder has something on site; every 'none' holder has nothing.
+  const all = (await list()).holders
+  assert.ok(all.filter((x) => x.count_status === 'booked').every((x) => x.qty_on_site > 0))
+  assert.ok(all.filter((x) => x.count_status === 'none').every((x) => x.qty_on_site <= 0))
 })
 
 test('data rules hold after all the writes above: 54 on site, nothing deleted, flags untouched', async () => {
