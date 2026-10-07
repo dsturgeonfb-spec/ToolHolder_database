@@ -1,1 +1,134 @@
-/* Styles owned by the stock module. Base tokens and components are in app.css. */
+/* Styles owned by the stock module: Count mode (.cm-*), the ledger (.lg-*), locations (.loc-*).
+   Base tokens and components are in app.css; colours come only from its variables so dark mode works. */
+
+/* ------------------------------------------------------------------ count mode: step 1 */
+.cm{display:flex;flex-direction:column;gap:14px}
+.cm-setup{gap:14px}
+.cm-setup h3{display:flex;align-items:center;gap:8px}
+.cm-stepno{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:15px}
+.cm-locs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:10px}
+.cm-loc{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:76px;padding:12px 14px;text-align:left;cursor:pointer;
+  background:var(--panel);border:2px solid var(--rule);border-radius:10px;color:var(--ink)}
+.cm-loc b{font-family:var(--f-display);font-size:20px;font-weight:600;line-height:1.1}
+.cm-loc span{font-size:13px;color:var(--ink-2)}
+.cm-loc .cm-loc-help{font-size:12px;color:var(--ink-3)}
+.cm-loc:hover{border-color:var(--accent)}
+.cm-loc[aria-checked="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.cm-loc.unassigned{border-style:dashed}
+.cm-loc.unassigned b{font-size:16px;color:var(--ink-2)}
+.cm-scope{align-self:flex-start;flex-wrap:wrap}
+.cm-scope button{padding:9px 14px;font-size:15px}
+.cm-setup .note{margin:-4px 0 0}
+.cm-ref{max-width:520px}
+.cm-go{gap:12px}
+
+/* ------------------------------------------------------------------ count mode: step 2 */
+.cm-head h2{font-size:24px}
+.cm-where{color:var(--accent)}
+.cm-progress{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--ink-2)}
+.cm-progress .meter{flex:1;margin:0;height:10px;border-radius:5px}
+.cm-run{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.cm-card{gap:14px;outline:none}
+.cm-card:focus-visible{box-shadow:0 0 0 2px var(--accent)}
+.cm-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 12px}
+.cm-pos{font-family:var(--f-display);font-size:15px;letter-spacing:.04em;color:var(--ink-3);text-transform:uppercase}
+.cm-chips{display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cm-chips a.chip{text-decoration:none}
+.cm-body{display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);gap:18px;align-items:start}
+.cm-img .prof{width:100%;height:auto;aspect-ratio:3/2;cursor:default}
+.cm-ident{display:flex;flex-direction:column;gap:4px;min-width:0}
+.cm-ident .mk{font-size:16px}
+.cm-ord{font-size:clamp(26px,3.4vw,36px);font-weight:600;line-height:1.1;overflow-wrap:anywhere;color:var(--ink)}
+.cm-ident .series{font-size:15px}
+.cm-kv{margin-top:6px;font-size:15px}
+.cm-booked{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px 22px;padding:10px 14px;background:var(--paper);border:1px solid var(--rule-2);border-radius:var(--r)}
+.cm-booked > div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.cm-booked .k{font-size:12px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;font-family:var(--f-display)}
+.cm-booked .v{font-size:26px;font-weight:600;line-height:1.1}
+.cm-where-all span:last-child{font-size:14px;color:var(--ink-2);overflow-wrap:anywhere}
+.cm-entry{display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:4px}
+.cm-q-label{font-size:16px;font-weight:600;text-align:center}
+.cm-stepper{display:flex;align-items:center;gap:12px}
+.cm-pm{width:76px;height:76px;border-radius:14px;border:1px solid var(--rule);background:var(--panel);color:var(--ink);font-size:40px;line-height:1;cursor:pointer;
+  touch-action:manipulation;user-select:none}
+.cm-pm:hover{background:var(--accent-soft)}
+.cm-pm:active{transform:translateY(1px)}
+.cm-pm:disabled{opacity:.35;cursor:default;background:var(--panel)}
+.cm-qty{width:3.4em;height:84px;font-size:58px;font-weight:600;text-align:center;border:2px solid var(--accent);border-radius:14px;background:var(--panel);color:var(--ink);padding:0}
+.cm-hint{margin:0;font-size:14px;color:var(--ink-2);text-align:center;min-height:1.4em;max-width:60ch}
+.cm-note{width:min(100%,460px)}
+.cm-note > span{font-weight:400}
+.cm-entry .errorbox{width:100%}
+.cm-actions{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:10px}
+.cm-actions .btn{justify-content:center;min-height:56px;touch-action:manipulation}
+/* --accent-ink is light on the light theme and dark on the dark one, so the label stays readable on --ok in both. */
+.cm-confirm{font-size:19px;font-weight:600;color:var(--accent-ink)}
+.cm-keys{margin:0;text-align:center}
+.cm-end{display:flex;flex-direction:column;gap:12px;padding:20px 4px;text-align:center;align-items:center}
+.cm-end h3{font-size:22px}
+.cm-alldone{color:var(--ok)}
+
+/* the run list */
+.cm-side{position:sticky;top:12px;max-height:calc(100vh - 40px);gap:8px;padding:12px}
+.cm-list{list-style:none;margin:0;padding:0;overflow:auto;display:flex;flex-direction:column;gap:2px;min-height:0}
+.cm-item{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"id b" "sub b";gap:0 8px;align-items:center;width:100%;
+  text-align:left;padding:7px 8px;border:1px solid transparent;border-radius:6px;background:none;cursor:pointer;color:var(--ink)}
+.cm-item:hover{background:var(--rule-2)}
+.cm-item.current{border-color:var(--accent);background:var(--accent-soft)}
+.cm-item-id{grid-area:id;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cm-item-id .mk{font-size:12px}
+.cm-item-sub{grid-area:sub;font-size:12px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cm-badge{grid-area:b;font-size:12px;padding:1px 7px;border-radius:999px;white-space:nowrap;background:var(--low-soft);color:var(--low)}
+.cm-badge.ok{background:var(--ok-soft);color:var(--ok);font-weight:600}
+.cm-badge.unver{background:var(--med-soft);color:var(--med)}
+.cm-badge.booked{background:var(--accent-soft);color:var(--accent)}
+
+@media (max-width:1000px){
+  .cm-run{grid-template-columns:minmax(0,1fr)}
+  .cm-side{position:static;max-height:none}
+  .cm-list{max-height:45vh}
+}
+@media (max-width:640px){
+  .cm-body{grid-template-columns:minmax(0,1fr)}
+  .cm-img{max-width:240px}
+  .cm-booked{grid-template-columns:1fr 1fr}
+  .cm-where-all{grid-column:1/-1}
+  .cm-actions{grid-template-columns:1fr 1fr}
+  .cm-confirm{grid-column:1/-1;grid-row:1}
+  .cm-pm{width:64px;height:64px}
+  .cm-qty{height:72px;font-size:48px}
+}
+
+/* ------------------------------------------------------------------ ledger */
+.lg{display:flex;flex-direction:column;gap:12px}
+.lg-filters .field input[type=search]{width:min(240px,100%)}
+.lg-chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:3px 4px 3px 10px}
+.lg-chip .x{font-size:18px;padding:0 4px}
+.lg-wrap{max-height:68vh}
+.lg-table td{font-size:13.5px}
+.lg-h a{text-decoration:none;color:var(--ink)}
+.lg-h a:hover{color:var(--accent)}
+.lg-h .mk{font-size:12.5px}
+.lg-h .linkbtn{display:block;color:var(--ink-3);font-size:11.5px}
+.lg-delta{font-family:var(--f-data);font-weight:600}
+.lg-delta.plus{color:var(--ok)}
+.lg-delta.minus{color:var(--high)}
+.lg-delta.zero{color:var(--ink-3)}
+.lg-note{min-width:180px;max-width:320px;color:var(--ink-2)}
+
+/* ------------------------------------------------------------------ locations */
+.loc{display:flex;flex-direction:column;gap:14px}
+.loc-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.loc-table td{vertical-align:middle}
+.loc-acts{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.loc-switch{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--ink-2)}
+.loc-switch input{width:18px;height:18px;accent-color:var(--accent)}
+.loc-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.loc-chip{border:1px dashed var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:999px;padding:4px 11px;font-size:13px;cursor:pointer}
+.loc-chip:hover{border-style:solid}
+@media (max-width:900px){
+  .loc-grid{grid-template-columns:minmax(0,1fr)}
+}
+
+/* ------------------------------------------------------------------ stock-action dialogs */
+.sa-warn{display:inline-block;margin-top:6px;padding:6px 9px;border-radius:var(--r);background:var(--med-soft);color:var(--ink)}
