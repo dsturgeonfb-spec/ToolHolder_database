@@ -35,7 +35,7 @@ jobs:
         run: npm run build
 
       - name: Unit and API tests (incl. BUILD_SPEC §7 acceptance checks)
-        run: node --test --test-concurrency=2 "dist/test/unit/**/*.test.js" "dist/test/api/**/*.test.js"
+        run: node --test --test-concurrency=2 "dist/test/{unit,api}/**/*.test.js"
 
       - name: Install Chromium for the browser tests
         run: npx playwright-core install --with-deps chromium

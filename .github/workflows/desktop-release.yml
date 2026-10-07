@@ -70,7 +70,7 @@ jobs:
         run: npm run build
 
       - name: Unit and API tests on Windows
-        run: node --test --test-concurrency=2 "dist/test/unit/**/*.test.js" "dist/test/api/**/*.test.js"
+        run: node --test --test-concurrency=2 "dist/test/{unit,api}/**/*.test.js"
 
       - name: Build the installer
         run: npx electron-builder --win --config electron-builder.yml --publish never
