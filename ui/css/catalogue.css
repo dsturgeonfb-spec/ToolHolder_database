@@ -1,1 +1,129 @@
-/* Styles owned by the catalogue module. Base tokens and components are in app.css. */
+/* Styles owned by the catalogue module (catalogue list, holder record, tally, holder form).
+   Base tokens and components are in app.css — colours only via its variables so dark mode follows. */
+
+/* ------------------------------------------------------------------ catalogue list */
+.cat-toolbar{display:flex;flex-direction:column;gap:10px}
+.cat-filters .field select{max-width:15em}
+.cat-filters #q{width:min(260px,100%)}
+.cat-list.is-loading{opacity:.55;transition:opacity .15s}
+.cat-list .row{grid-template-columns:92px minmax(0,1.6fr) minmax(0,1fr) 150px 64px 156px}
+.cat-prof{display:block;width:92px;padding:0;border:0;background:none;cursor:pointer;border-radius:4px;color:inherit}
+.cat-prof .prof{cursor:inherit}
+.cat-prof:hover .prof{border-color:var(--accent)}
+.cat-toggle{display:inline-grid;place-items:center;width:24px;height:24px;margin-left:-4px;border:0;border-radius:4px;background:none;color:var(--ink-3);cursor:pointer;font-size:13px;line-height:1}
+.cat-toggle:hover{background:var(--accent-soft);color:var(--ink)}
+.cat-toggle span{display:inline-block;transition:transform .15s}
+.cat-toggle[aria-expanded="true"] span{transform:rotate(90deg)}
+.cat-list a.ord{text-decoration:none}
+.cat-list a.ord:hover{text-decoration:underline}
+.cat-issues{font-size:12px}
+.cat-dist{font-size:10.5px}
+.cat-qty{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:baseline;gap:4px 5px;font-size:12.5px;color:var(--ink-3)}
+.cat-qty .chip{margin-left:2px}
+.cat-qty b{font-family:var(--f-data);font-size:18px;font-weight:600;color:var(--ink)}
+.cat-qty b.zero{color:var(--ink-3);font-weight:400}
+.cat-acts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.cat-acts .btn.sm{padding:3px 9px}
+.cat-detail-side{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cat-detail-main{display:flex;flex-direction:column;gap:12px;min-width:0}
+.cat-open{font-weight:600}
+.cat-empty{display:flex;flex-direction:column;align-items:center;gap:10px}
+
+@media (max-width:880px){
+  .cat-list .row{grid-template-columns:92px minmax(0,1fr) auto;grid-template-areas:"p i s" "p c s" "g g n"}
+  .cat-list .row > .cat-prof{grid-area:p}
+  .cat-filters .count-line{margin-left:0;width:100%}
+}
+@media (max-width:480px){
+  .cat-list .row{grid-template-columns:72px minmax(0,1fr);grid-template-areas:"p i" "c c" "g n" "s s"}
+  .cat-prof,.cat-prof .prof{width:72px}
+  .cat-prof .prof{height:48px}
+  .cat-list .row .stock{flex-direction:row;flex-wrap:wrap;justify-content:space-between;align-items:center}
+}
+
+/* shop-floor tablets: finger-sized targets */
+@media (pointer:coarse){
+  .cat-toggle{width:36px;height:36px}
+  .cat-acts .btn.sm,.cat-list .want{padding:8px 14px;font-size:14px}
+  .hv .btn.sm{padding:8px 13px;font-size:14px}
+  .cat-filters .seg button{padding:9px 14px}
+}
+
+/* data-status chips (provenance) */
+.chip.ds-verified{background:var(--ok-soft);color:var(--ok)}
+.chip.ds-partial,.chip.ds-catalogue_pdf{background:var(--accent-soft);color:var(--accent)}
+.chip.ds-distributor_only,.chip.ds-unverified{background:var(--med-soft);color:var(--med)}
+
+/* ------------------------------------------------------------------ holder record */
+.hv{display:flex;flex-direction:column;gap:14px}
+.hv-crumbs{font-size:14px}
+.hv-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 24px;align-items:start}
+.hv-title{display:flex;flex-direction:column;gap:4px;min-width:0}
+.hv-title h2{font-family:var(--f-data);font-size:clamp(22px,3vw,30px);font-weight:600;letter-spacing:0;overflow-wrap:anywhere}
+.hv-sub{margin:0;color:var(--ink-2);font-size:15px}
+.hv-spec{margin:0;font-family:var(--f-data);font-size:13.5px;color:var(--ink-2);overflow-wrap:anywhere}
+.hv-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.hv-stock{display:flex;flex-direction:column;align-items:flex-end;gap:6px;text-align:right}
+.hv-stock .v{font-family:var(--f-display);font-size:44px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.hv-stock .k{font-size:13px;color:var(--ink-2)}
+.hv-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+.hv-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px}
+.hv-media{display:flex;flex-direction:column;gap:10px}
+.hv-prof{background:var(--img-bg);border:1px solid var(--rule-2);border-radius:4px;aspect-ratio:3/2;overflow:hidden}
+.hv-prof img{display:block;width:100%;height:100%;object-fit:contain;filter:var(--img-filter)}
+.hv-prof.none{display:grid;place-items:center;color:var(--ink-3);font-size:13px;text-align:center;padding:12px}
+.hv-photo{background:var(--panel);border:1px solid var(--rule-2);border-radius:4px;padding:6px;text-align:center}
+.hv-photo img{max-width:100%;max-height:240px;object-fit:contain}
+.hv-sec-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 12px}
+.hv-sec-head h3{font-size:19px}
+.hv-glcmp{display:flex;flex-direction:column;gap:5px;padding:10px 12px;border:1px solid var(--rule-2);border-radius:var(--r);background:var(--paper)}
+.hv-glrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:14px}
+.hv-glrow .num{font-family:var(--f-data);font-size:15px;font-weight:500}
+.hv-glcmp .ruler{height:12px}
+.hv-glcmp .note{margin:2px 0 0;max-width:none}
+.hv-glcmp .ok{color:var(--ok)}
+.hv-dims{width:auto;min-width:min(100%,460px)}
+.hv-dims td:first-child{color:var(--ink-2);padding-right:28px}
+.hv-dims td.v{font-family:var(--f-data)}
+.hv .issue .act{white-space:pre-wrap}
+.hv .issue .closed{font-size:13px;color:var(--ink-3)}
+.hv .issue.is-closed{opacity:.75}
+.hv-delta-pos{color:var(--ok);font-family:var(--f-data)}
+.hv-delta-neg{color:var(--high);font-family:var(--f-data)}
+.hv-change pre{margin:4px 0 0;font-family:var(--f-data);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink-2)}
+.hv-change .old{color:var(--high);text-decoration:line-through;text-decoration-thickness:1px;overflow-wrap:anywhere}
+.hv-change .new{color:var(--ok);overflow-wrap:anywhere}
+.hv-more{font-size:13px;color:var(--ink-3);margin:0}
+@media (max-width:880px){
+  .hv-grid{grid-template-columns:1fr}
+  .hv-prof{width:100%;max-width:440px}
+  .hv-head{grid-template-columns:1fr}
+  .hv-stock{align-items:flex-start;text-align:left;flex-direction:row;flex-wrap:wrap;align-items:baseline}
+}
+
+/* ------------------------------------------------------------------ tally */
+.tv-progress{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 20px;align-items:center}
+.tv-progress .big{font-family:var(--f-display);font-size:30px;font-weight:600;line-height:1.1}
+.tv-progress .big b{font-variant-numeric:tabular-nums}
+.tv-progress .meter{height:10px;grid-column:1/-1}
+.tv-progress p{margin:0}
+.tv-progress .tv-go{justify-self:end}
+.tv-figs{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14px;color:var(--ink-2);grid-column:1/-1}
+.tv-figs b{font-family:var(--f-data);color:var(--ink)}
+.tv .bar small{color:var(--ink-3);font-size:12px;margin-left:4px}
+.tv tfoot td{font-weight:600;border-top:1px solid var(--rule)}
+.tv th{white-space:nowrap}
+.tv-arbors{margin:0;font-size:13.5px;color:var(--ink-2)}
+.tv-exports .btnrow .btn[aria-busy="true"]{opacity:.6}
+@media (max-width:640px){.tv-progress{grid-template-columns:1fr}.tv-progress .tv-go{justify-self:start}}
+
+/* ------------------------------------------------------------------ holder form (add / edit) */
+.hf-form{display:flex;flex-direction:column;gap:14px}
+.hf-sec{border:1px solid var(--rule-2);border-radius:var(--r);padding:10px 12px 12px;margin:0;min-width:0}
+.hf-sec legend{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.04em;color:var(--ink-2);padding:0 4px}
+.hf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px 12px}
+.hf-grid .wide{grid-column:1/-1}
+.hf-form .fld input.mono{font-family:var(--f-data)}
+.hf-form textarea{min-height:90px}
+.hf-form textarea.mono{font-family:var(--f-data);font-size:13px}
+.hf-form .fld.changed > span::before{content:"● ";color:var(--accent)}
