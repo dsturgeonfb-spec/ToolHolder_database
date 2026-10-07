@@ -80,7 +80,7 @@ export async function render(root, ctx) {
     <div class="tablewrap scrollbox lg-wrap" data-table><div class="loading">Loading the ledger…</div></div>
     <details class="card lg-audit" data-audit>
       <summary><h3 style="display:inline">Other changes</h3> <span class="muted small">locations, want-list lines, serialised units (inspections, status) — who and when</span></summary>
-      <div data-audit-body><div class="loading">Loading…</div></div>
+      <div data-audit-body><p class="muted small">Loading…</p></div>
     </details>`
 
   const params = (withLimit) => {

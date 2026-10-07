@@ -89,7 +89,7 @@ test('Print RFQ opens the printable MAPAL RFQ with the order nos and the purchas
   await e.page.click('.wl-group[data-maker="MAPAL"] [data-act="print"]')
   const p = await popup
   await p.waitForLoadState()
-  assert.match(p.url(), /\/api\/export\/rfq\.html\?maker=MAPAL$/)
+  assert.match(p.url(), /\/api\/export\/rfq\.html\?maker=MAPAL(&by=[^&]+)?$/)
   const text = (await p.textContent('body'))!
   assert.match(text, /Request for quotation — MAPAL/)
   assert.ok(text.includes('31396171') && text.includes('30524702'))
