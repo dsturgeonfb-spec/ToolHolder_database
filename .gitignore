@@ -1,0 +1,10 @@
+node_modules/
+dist/
+release/
+.devdata/
+*.log
+.DS_Store
+Thumbs.db
+# SQLite side files from a running app (the seeded DB itself is tracked)
+db/*.sqlite-wal
+db/*.sqlite-shm

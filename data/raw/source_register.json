@@ -1,0 +1,107 @@
+[
+  {
+    "vendor": "Sandvik Coromant",
+    "user_link_issue": "Link is a client-side rendered SPA. WebFetch got HTTP 200 but only meta tags (title 'Sandvik Coromant', CSP nonce), with no products. Whether the ADINTMS refiner value 'HSK -A -size 63' is correct is unverified because nothing rendered.",
+    "correct_hsk_a63_url": "https://www.sandvik.coromant.com/en-gb/tools/tooling-systems/rotating-holders?taxonomy=TL%2FADP%2FADPRS&filter=%7B%22refiners%22:%7B%22ADINTMS%22:%5B%22HSK%20-A%20-size%2063%22%5D%7D%7D (user link kept; content unverified, needs a real browser)",
+    "rendering": "JavaScript-rendered (SPA). WebFetch returned an empty shell for the listing, /tools/tool-data and /tools/digital-machining/coroplus-tool-library.",
+    "robots_notes": "No 403/404. robots.txt not checked. Every page returned only an empty JS shell.",
+    "product_page_pattern": "unverified. No product page was reached. Third-party listings use Sandvik EANs such as 7323221191641 (sourceatlantic.ca shrink-fit adapters), but none was confirmed as HSK-A63.",
+    "structured_data_sources": [
+      {"name": "Sandvik Coromant tool data page", "url": "https://www.sandvik.coromant.com/en-gb/tools/tool-data", "status": "exists (from search), content is a JS shell; formats offered are unverified"},
+      {"name": "CoroPlus Tool Library", "url": "https://www.sandvik.coromant.com/en-gb/tools/digital-machining/coroplus-tool-library", "status": "exists (from search), content is a JS shell; ISO 13399 / GTC export ability is unverified"},
+      {"name": "CoroPlus Tool Library getting started", "url": "https://sandvik.coromant.com/en-us/support/coroplus-tool-library-support/getting-started-coroplus-tool-library", "status": "found via search, not fetched"}
+    ],
+    "rough_hsk_a63_holder_count": "unverified (listing did not render)",
+    "recommended_method": "GTC/ISO13399 import",
+    "recommended_method_reason": "The website is a pure SPA that static fetches cannot read. Sandvik's official tool-data channel (tool-data page / CoroPlus Tool Library) is the intended machine-readable route. Its availability is unverified, so a Playwright scrape of the listing is the fallback.",
+    "risks": "The SPA probably uses an internal search API (not observed), which may be undocumented or rate-limited. CoroPlus Tool Library may need a login or account. Data licensing terms for ISO 13399 / GTC packages are unverified."
+  },
+  {
+    "vendor": "Haimer",
+    "user_link_issue": "User link is HSK-A50, not A63. The A63 category URL https://shop.haimer.com/en/Tool-Holders/HSK-Hollow-shank-DIN-69893/HSK-A63/ appears as a breadcrumb href on product pages. However, WebFetch got 404 on it, on the A50 link and on /en/Tool-Holders/. Category pages seem to 404 for non-browser clients while product pages load.",
+    "correct_hsk_a63_url": "https://shop.haimer.com/en/Tool-Holders/HSK-Hollow-shank-DIN-69893/HSK-A63/ (taken from breadcrumb; returned 404 to WebFetch, so check in a browser). Type sub-category example: https://shop.haimer.com/en/Tool-Holders/HSK-Hollow-shank-DIN-69893/HSK-A63/Hydraulic-Chuck/ (also 404 to WebFetch).",
+    "rendering": "Shopware storefront. Product pages are static HTML with spec table and images (verified). Category pages returned 404 to WebFetch.",
+    "robots_notes": "robots.txt: Allow / with Crawl-delay: 10. Disallowed: /printpage/, /downloadfile/, /widgets/, /search, /suggest, /checkout/, /account/, /wishlist (and /*/ language variants). Meta's AI crawler is fully disallowed. Sitemap: https://shop.haimer.com/sitemap.xml lists 2 gzipped child sitemaps (EN and DE), lastmod 2026-10-07. WebFetch could not decompress the .xml.gz; a local HTTP client can.",
+    "product_page_pattern": "https://shop.haimer.com/en/<Slug>/<OrderNo>, e.g. https://shop.haimer.com/en/Standard-Hydraulic-Chuck-DIN-69893-1-HSK-A63/A63.1H10.10 (D1=10, A=80, L=41, D2=26, D3=30, D4=50, L2=35, thread M8x1, 'short') and https://shop.haimer.com/en/Shrink-Fit-Chuck-Standard-Version-DIN-69893-1-HSK-A63/A63.147.05.1 (D1=5, A=120, D2=10, WT=0.957 kg, DF=63). Spec table is in HTML with DIN 4000 / ISO 13399 property labels. Image URLs are in HTML, e.g. https://shop.haimer.com/media/20/21/bd/1696844530/asset-113377-659.jpg (photo) and .../asset-113377-658.jpg (dimension drawing). Order numbers start with 'A63.'.",
+    "structured_data_sources": [
+      {"name": "Per-product CAD (DXF + STP)", "url": "https://haimer.com/us/services/cad-data", "status": "verified: free registration and login required; download path /downloadfile/ is robots-disallowed"},
+      {"name": "DIN 4000 / ISO 13399 properties on product pages", "url": "https://shop.haimer.com/en/Standard-Hydraulic-Chuck-DIN-69893-1-HSK-A63/A63.1H10.10", "status": "verified in HTML"},
+      {"name": "Sitemap (product URL discovery)", "url": "https://shop.haimer.com/sitemap.xml", "status": "verified, gzipped children"},
+      {"name": "WinTool tool management (Haimer partner/shareholding)", "url": "https://shop.haimer.com/en/WinTool-Tool-Management/WT-201-031", "status": "found via search, not fetched; tool-data import route unverified"},
+      {"name": "ToolsUnited / GTC package", "url": null, "status": "unverified"}
+    ],
+    "rough_hsk_a63_holder_count": "unverified (category pages would not load). Enumerate by filtering sitemap URLs on 'HSK-A63' or '/A63.'. Types seen: shrink fit (standard, mini/extra slim A63.177.xx), hydraulic (A63.1Hxx.xx).",
+    "recommended_method": "static HTML scrape",
+    "recommended_method_reason": "Product pages are static and carry a DIN 4000/ISO 13399-labelled spec table and image URLs. Discover URLs from the sitemap so the 404-ing category pages are not needed, and respect Crawl-delay 10.",
+    "risks": "Crawl-delay 10s means about 6 pages/min. /search and /widgets are disallowed, so do not use them for discovery. CAD downloads need an account and sit under a disallowed path, so fetch them manually or with Haimer's permission. Shop ToS not reviewed."
+  },
+  {
+    "vendor": "Kemmler",
+    "user_link_issue": "User path '/ISO-12164-1-HSK-A/...' returns 404. The homepage nav links to /en/Products-Shop/ISO-12164-HSK-A/ (no '-1'), but that also returned 404 to WebFetch, as did /en/Products-Shop/ and the catalogue chapter page. Shopware category pages seem to 404 for non-browser clients. The link also covers only ER collet chucks, not all holder types.",
+    "correct_hsk_a63_url": "https://www.kemmler-shop.de/en/Products-Shop/ISO-12164-HSK-A/ (from homepage nav; 404 to WebFetch, check in a browser). Breadcrumb on product pages: Products [Shop] > ISO 12164-1 (HSK-A) > Collet chucks for ER collets > HSK-A 63.",
+    "rendering": "Shopware 6. Homepage and product pages are static HTML (verified). Category pages returned 404 to WebFetch.",
+    "robots_notes": "https://www.kemmler-shop.de/robots.txt returned 404 (no robots.txt). Category URLs 404 via WebFetch.",
+    "product_page_pattern": "https://www.kemmler-shop.de/en/<Slug>/<OrderNo>, e.g. https://www.kemmler-shop.de/en/ER-Collet-chuck-HSK-63-2-20-75-ER-32/A63.02.20.0. Properties table uses ISO 13399 codes: ADINTMS=ISO 12164 (HSK-A), ADINTWS=ER, DCONWS=2-20, DLN=50, HSK=HSK-A 63, balance G2.5 / 25,000 rpm, weight 1 kg. The slug says 75, so check which field is gauge length A. Images: https://www.kemmler-shop.de/media/29/73/e7/1744329896/A63.02.20.0_1.jpg and ..._2.jpg. Price EUR 107.00 and stock (268 pcs) are shown. Order numbers follow A63.<type>.<size>.<variant>; A63.02 = ER collet chuck (verified). A63.70.xx and A63.HSL appear on distributor camcut-group.com, holder type unverified.",
+    "structured_data_sources": [
+      {"name": "Per-product CAD downloads (DXF 2D, STP 3D, PDF), no login", "url": "https://www.kemmler-shop.de/en/ER-Collet-chuck-HSK-63-2-20-75-ER-32/A63.02.20.0", "status": "verified on product page, e.g. A63.02.20.0_D_2D-Zeichnung.dxf / _D_3D-Zeichnung.stp"},
+      {"name": "Online catalogue chapter 5 ISO 12164 HSK", "url": "https://www.kemmler-shop.de/en/Catalogue/Chapter-5-ISO-12164-HSK/", "status": "linked from homepage, 404 to WebFetch; PDF availability unverified"},
+      {"name": "Distributor mirror camcut-group.com (spec table, image, STP)", "url": "https://www.camcut-group.com/en-us/products/tool-adaptors/a63-02-kemmler/4250001111601", "status": "verified: A63.02.13, ER, 2-13 mm, 100 mm, image https://cdn.camcut-group.com/ProductCatalog/18/SilverShop_Page_Product-17282/A63-02-16_1__ScaleMaxWidthWzE5MjBd_WebP~jpg.webp"},
+      {"name": "Shopware sitemap", "url": "https://www.kemmler-shop.de/sitemap.xml", "status": "unverified (not fetched)"}
+    ],
+    "rough_hsk_a63_holder_count": "unverified. Types seen: ER collet chucks (A63.02.xx); A63.70.xx and A63.HSL.xx families exist (holder types unverified).",
+    "recommended_method": "static HTML scrape",
+    "recommended_method_reason": "Product pages are static Shopware HTML with ISO 13399-coded properties, image URLs and free DXF/STP links. Discover A63.* order numbers via the sitemap (unverified) or a Playwright pass over category pages.",
+    "risks": "There is no robots.txt, so use a polite self-imposed rate. ToS not reviewed. Category pages may be bot-filtered, which needs a browser UA or Playwright. Gauge-length field naming (DLN vs A) needs checking against the drawing."
+  },
+  {
+    "vendor": "Cutwel (UK distributor)",
+    "user_link_issue": "User link loads but covers all HSK sizes and shows navigation only. An HSK63-specific landing page exists (below). Cutwel is a distributor (brands seen in nav: Dine GSK/HP3, EZChange), not a manufacturer.",
+    "correct_hsk_a63_url": "https://www.cutwel.co.uk/landing-pages/shop-by/shop-by-taper/hsk-din69893-spindle-tooling/hsk63-spindle-tooling (loads, nav only). Sub-page example: .../hsk63-spindle-tooling/hsk63-end-mill-holders (loads, no products in HTML). Whether 'HSK63' means only form A is unverified.",
+    "rendering": "JavaScript-rendered product grid. Static HTML has only navigation and the warning 'JavaScript seems to be disabled in your browser'. No names, SKUs, prices or images appear.",
+    "robots_notes": "All pages loaded (200), with no 403/404. robots.txt not checked.",
+    "product_page_pattern": "unverified. No product URL was seen in HTML or search results. Generic type categories: https://www.cutwel.co.uk/tool-holding/spindle-tooling/{hydraulic-expansion-chucks|shrink-fit-chucks|er-collet-chucks|end-mill-holders-side-lock-arbors|face-mill-arbors|tap-chucks|slim-collet-chucks}.",
+    "structured_data_sources": [
+      {"name": "Spindle Tooling Flyer 2026 (PDF on S3 CDN)", "url": "linked from https://www.cutwel.co.uk/landing-pages/shop-by/shop-by-taper/hsk-din69893-spindle-tooling", "status": "link seen, exact URL not captured; content unverified"},
+      {"name": "Underlying product/search JSON API used by the JS grid", "url": null, "status": "unverified; capture it with Playwright network logging"}
+    ],
+    "rough_hsk_a63_holder_count": "unverified (grid is JS). HSK63 holder types in nav: hydraulic, shrink fit, ER collet, end mill/side lock, face mill arbors, tap chucks.",
+    "recommended_method": "headless browser (Playwright) scrape",
+    "recommended_method_reason": "The product grid renders only with JS. Use Playwright to render or intercept the XHR JSON the grid loads, then parse product pages.",
+    "risks": "Distributor data (own descriptions and SKUs, not manufacturer order numbers). Dimensions may be in free text rather than structured fields. Possible bot protection on the JS API (unverified). ToS not reviewed."
+  },
+  {
+    "vendor": "Ceratizit",
+    "user_link_issue": "Hash-routed JS search. The '#category/<base64>' fragment decodes to '%24ESK-22-A05-B01-C13*' ('$ESK-22-A05-B01-C13*'), an internal classification code. The fragment is never sent to the server, so static fetch cannot use it. More importantly, every request to cuttingtools.ceratizit.com returned 403.",
+    "correct_hsk_a63_url": "unverified. The user link could not be loaded (403).",
+    "rendering": "Not observable. All fetches returned HTTP 403: the search URL, /gb/en.html and /robots.txt. The page is JS hash-routed by design.",
+    "robots_notes": "403 Forbidden on /robots.txt and all pages. This points to a WAF or anti-bot layer blocking non-browser clients.",
+    "product_page_pattern": "unverified. Distributor zedaro.com lists Ceratizit HSK-A63 items with 10-digit order numbers, e.g. 'Synchro JSF HSK-A63 20-96 Tapping Chuck With Adapter 8432802057' (https://www.zedaro.com/products/0682220), plus MQL variants 8432812057 and 8432813257.",
+    "structured_data_sources": [
+      {"name": "Ceratizit tool data (ISO 13399 / GTC / ToolsUnited)", "url": null, "status": "unverified. Searches returned no Ceratizit-specific tool-data page. Ask the Ceratizit rep for an ISO 13399 / GTC package."},
+      {"name": "Ceratizit tooling-systems PDF catalogue", "url": null, "status": "unverified, not located in this pass"}
+    ],
+    "rough_hsk_a63_holder_count": "unverified. Only tapping chucks (Synchro JSF HSK-A63) were seen, via a distributor.",
+    "recommended_method": "PDF catalogue parse",
+    "recommended_method_reason": "The site blocks automated access (403 even on robots.txt). An official PDF catalogue, or an ISO 13399/GTC package obtained from Ceratizit, is the reliable route. Both are unverified.",
+    "risks": "An active WAF/anti-bot layer means scraping around it would likely breach ToS, so do not try to evade it. Data licensing of any supplied GTC package is unverified."
+  },
+  {
+    "vendor": "MAPAL",
+    "user_link_issue": "No web link was supplied. The project has 3 PDFs: MAPAL-UNIQ-2025-EN.pdf (UNIQ hydraulic chucks), 240709-MMS-Bearbeitung-EN.pdf (MQL machining) and Spannfutter-HSK-C-HSK-E-EN.pdf (HSK-C/HSK-E, so NOT form A and out of scope for A63). mapal.com/en/services/tool-data/ returned a server error.",
+    "correct_hsk_a63_url": "https://shop.mapal.com/Spannen/Spannfutter/c/chucks?q=%3Adiameter-asc%3AClampingConnectionCodeMachineSide%3AHSK0506 (loads, German locale). Facet value HSK0506 was reported as HSK-A63 but shows 1,147 items labelled 'HSK-A', so whether it is A63-only or all HSK-A sizes is unverified. Family drill-down: append %3Afamily%3A<familyId>, e.g. ...%3AHSK0506%3Afamily%3AST-MTC-0100-MAPAL.",
+    "rendering": "Mostly server-rendered HTML (facets, family names and counts in HTML). Menus load via JS.",
+    "robots_notes": "shop.mapal.com loaded fine. https://www.mapal.com/en/services/tool-data/ returned a fetch server error. robots.txt not checked.",
+    "product_page_pattern": "Not reached (only listings fetched). MAPAL designations encode the geometry and are parseable, e.g. MHC-HSK-A063-16-095-A-0-A-AAA (HydroChuck, d1=16, A=95; order no. 30386380), HTC-HSK-A063-10-120-1-0-A (High Torque Chuck slim 3°, d1=10, A=120; 30639852), MHC-HSK-A063-25-145-1-1-A (HydroChuck Compensation; 30631566). These were seen on distributor zedaro.com. Whether product pages show dims and image URLs in HTML is unverified.",
+    "structured_data_sources": [
+      {"name": "MAPAL eShop (facet-filterable listings)", "url": "https://shop.mapal.com/de-de/Spannen/Spannfutter/c/chucks", "status": "verified: about 20 families with counts in HTML; ?q= facet syntax"},
+      {"name": "Project PDF: MAPAL-UNIQ-2025-EN.pdf", "url": "project file", "status": "available locally in project"},
+      {"name": "Project PDF: 240709-MMS-Bearbeitung-EN.pdf", "url": "project file", "status": "available locally in project"},
+      {"name": "MAPAL tool data / c-Com / ISO 13399", "url": "https://www.mapal.com/en/services/tool-data/", "status": "fetch failed; c-Com availability unverified"},
+      {"name": "Tool management info", "url": "https://mapal.com/toolmanagement", "status": "linked from homepage, not fetched"}
+    ],
+    "rough_hsk_a63_holder_count": "Under the HSK0506 facet: 1,147 items (A63-only vs all HSK-A is unverified). Top families: ThermoChuck MTC Standard MMS 2-channel 204, HydroChuck MHC Standard MMS 2-channel 204, ThermoChuck MTC Standard 146, HydroChuck MHC Standard 108. Unfiltered chucks category: Thermo Chuck MTC Standard 386, HTC slim 3° 146, UNIQ DReaM 4.5° 121, Adapter 83, shell mill arbors 58 (all interfaces).",
+    "recommended_method": "static HTML scrape",
+    "recommended_method_reason": "shop.mapal.com serves facet-filtered listings in HTML, and designations encode taper, d1 and A. Use the UNIQ and MQL project PDFs (PDF catalogue parse) to cross-check and fill in images and drawings.",
+    "risks": "Large volume (about 1,100+ rows) means heavy pagination, so throttle requests. Prices or CAD may need a login (unverified). ToS not reviewed. The HSK-C/E PDF is not form A and must be excluded."
+  }
+]

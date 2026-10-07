@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Holder Catalogue</title>
+<link rel="icon" href="/ui/favicon.png">
+<link rel="stylesheet" href="/ui/css/app.css">
+</head>
+<body>
+<div class="wrap" id="app">
+  <header class="topbar">
+    <div class="id">
+      <span class="iface"><b id="ifaceCode">HSK-A63</b> <span id="ifaceStd">DIN 69893-1 / ISO 12164-1 form A · gauge line = flange face</span></span>
+      <h1>Holder Catalogue</h1>
+    </div>
+    <div class="who">
+      <span class="save" id="save" role="status" aria-live="polite"></span>
+      <span class="hostbadge" id="hostBadge"></span>
+      <button class="userbtn none" id="userBtn" type="button" title="Who is booking — every count, receipt and fix is recorded against this name"><span class="dot"></span><span id="userName">Who's booking?</span></button>
+    </div>
+  </header>
+
+  <section class="strip" aria-label="Stock tally">
+    <div class="stat"><a href="#/tally"><span class="v" id="tTotal">–</span><span class="k">holders on site</span></a></div>
+    <div class="stat"><a href="#/tally"><span class="v" id="tArticles">–</span><span class="k">different articles on site</span></a></div>
+    <div class="stat"><a href="#/count"><span class="v" id="tCounted">–</span><span class="k" id="tCountedK">articles physically counted</span><div class="meter"><i id="tMeter"></i></div></a></div>
+    <div class="stat"><a href="#/issues"><span class="v" id="tFlags">–</span><span class="k">open issues · <span id="tHigh"></span></span></a></div>
+  </section>
+
+  <nav class="tabs" aria-label="Views" id="tabs">
+    <a class="tab" href="#/catalogue" data-tab="catalogue">Catalogue<span class="n" id="nCat"></span></a>
+    <a class="tab" href="#/count" data-tab="count">Count</a>
+    <a class="tab" href="#/tally" data-tab="tally">Tally</a>
+    <a class="tab" href="#/issues" data-tab="issues">Issues<span class="n" id="nIss"></span></a>
+    <a class="tab" href="#/want" data-tab="want">Want list</a>
+    <a class="tab" href="#/units" data-tab="units">Serialised</a>
+    <a class="tab" href="#/import" data-tab="import">hyperMILL</a>
+    <a class="tab" href="#/vendors" data-tab="vendors">Vendors</a>
+    <a class="tab" href="#/log" data-tab="log">Log</a>
+    <a class="tab" href="#/settings" data-tab="settings">Settings</a>
+  </nav>
+
+  <main id="view" class="view" tabindex="-1"><div class="loading">Loading…</div></main>
+</div>
+<div id="toasts" aria-live="polite"></div>
+<script type="module" src="/ui/js/app.js"></script>
+</body>
+</html>

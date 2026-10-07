@@ -1,0 +1,709 @@
+[
+ {
+  "seq": 1,
+  "cam_name": "(HSK63) HAIMER SPIGOT ARBOR 16mm A63.050.16.KKB 67GL",
+  "cam_comment": "HAIMER SPIGOT ARBOR 16mm A63-050-16-KKB",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_01.png"
+ },
+ {
+  "seq": 2,
+  "cam_name": "(HSK63) HAIMER SPIGOT ARBOR 22mm A63.050.22.KKB 69GL",
+  "cam_comment": "HAIMER SPIGOT ARBOR 22mm A63-050-22-KKB.KKB",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_02.png"
+ },
+ {
+  "seq": 3,
+  "cam_name": "(HSK63) HAIMER SPIGOT ARBOR 22mm A63.051.22.KKB 119GL",
+  "cam_comment": "HAIMER SPIGOT ARBOR 22mm A63-051-22-KKB",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_03.png"
+ },
+ {
+  "seq": 4,
+  "cam_name": "(HSK63) HAIMER SPIGOT ARBOR 27mm A63.051.27.KKB 121GL",
+  "cam_comment": "HAIMER SPIGOT ARBOR 27mm A63-051-27-KKB",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_04.png"
+ },
+ {
+  "seq": 5,
+  "cam_name": "(HSK63) KEMMLER A63.06.12.3 M12 ARBOR 126GL",
+  "cam_comment": "",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_05.png"
+ },
+ {
+  "seq": 6,
+  "cam_name": "(HSK63) HAIMER ER16 COLLET CHUCK A63.020.16 100GL",
+  "cam_comment": "HAIMER ER16 COLLET CHUCK A63-020-16",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_06.png"
+ },
+ {
+  "seq": 7,
+  "cam_name": "(HSK63) HAIMER ER32 COLLET CHUCK A63.020.32 100GL",
+  "cam_comment": "HAIMER ER32 COLLET CHUCK A63-020-32",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_07.png"
+ },
+ {
+  "seq": 8,
+  "cam_name": "(HSK63) HAIMER ER16 POWER COLLET CHUCK A63.022.16.3 160GL",
+  "cam_comment": "HAIMER ER16 POWER COLLET CHUCK A63-022-16-3",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_08.png"
+ },
+ {
+  "seq": 9,
+  "cam_name": "(HSK63) HAIMER ER32 POWER COLLET CHUCK A63.022.32.3 160GL",
+  "cam_comment": "HAIMER ER32 POWER COLLET CHUCK A63-022-32-3",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_09.png"
+ },
+ {
+  "seq": 10,
+  "cam_name": "(HSK63) CERATIZIT ER11 SLIM COLLET CHUCK 84719607 100GL",
+  "cam_comment": "CERATIZIT ER11 SLIM PRECISON COLLET CHUCK 84719607",
+  "cam_coupling": [
+   {
+    "type": "adaptor",
+    "pos": "top",
+    "class": "SPINDLE 40TAPER"
+   },
+   {
+    "type": "unknown",
+    "pos": "bottom",
+    "class": "file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   5/27"
+   }
+  ],
+  "cam_image": "cam_10.png"
+ },
+ {
+  "seq": 11,
+  "cam_name": "(HSK63) CERATIZIT ER11 SLIM COLLET CHUCK 84719707 130GL",
+  "cam_comment": "CERATIZIT ER11 SLIM PRECISON COLLET CHUCK 84719707",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_11.png"
+ },
+ {
+  "seq": 12,
+  "cam_name": "(HSK63) CERATIZIT ER16 SLIM COLLET CHUCK 84719810 130GL",
+  "cam_comment": "CERATIZIT ER16 SLIM PRECISON COLLET CHUCK 84719810",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_12.png"
+ },
+ {
+  "seq": 13,
+  "cam_name": "(HSK63) CERATIZIT ER11 SLIM COLLET CHUCK 84719608 160GL",
+  "cam_comment": "CERATIZIT ER11 SLIM PRECISON COLLET CHUCK 84719608",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_13.png"
+ },
+ {
+  "seq": 14,
+  "cam_name": "(HSK63) CERATIZIT ER16 SLIM COLLET CHUCK 84719910 160GL",
+  "cam_comment": "CERATIZIT ER16 SLIM PRECISON COLLET CHUCK 84719910",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_14.png"
+ },
+ {
+  "seq": 15,
+  "cam_name": "(HSK63) CERATIZIT ER32 COLLET CHUCK 84722621 100GL",
+  "cam_comment": "CERATIZIT ER32 COLLET CHUCK 84722621",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_15.png"
+ },
+ {
+  "seq": 16,
+  "cam_name": "(HSK63) HAIMER HIGH-PRECISION COLLET CHUCK A63.120.01 120GL",
+  "cam_comment": "HAIMER HIGH-PRECISION COLLET CHUCK A63-120-01",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_16.png"
+ },
+ {
+  "seq": 17,
+  "cam_name": "(HSK63) HAIMER HIGH-PRECISION COLLET CHUCK A63.120.02 120GL",
+  "cam_comment": "HAIMER HIGH-PRECISION COLLET CHUCK A63-120-02",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_17.png"
+ },
+ {
+  "seq": 18,
+  "cam_name": "(HSK63) MAPAL 12MM HTC HYDRAULIC CHUCK 30524702 80GL",
+  "cam_comment": "Hydro High Pressure Chuck 12dia 606585650-000-00-e43",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_18.png"
+ },
+ {
+  "seq": 19,
+  "cam_name": "(HSK63) MAPAL 20MM HTC HYDRAULIC CHUCK 30490553 80GL",
+  "cam_comment": "Hydro High Pressure Chuck 20dia 606585663-000-00-e43",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_19.png"
+ },
+ {
+  "seq": 20,
+  "cam_name": "(HSK63) MAPAL 6MM HYDRAULIC CHUCK 31270591 65GL",
+  "cam_comment": "UNIQ hydraulic expansion 6dia 607517709-000-01-E43",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_20.png"
+ },
+ {
+  "seq": 21,
+  "cam_name": "(HSK63) MAPAL 8MM HYDRAULIC CHUCK 31270593 65GL",
+  "cam_comment": "UNIQ hydraulic expansion 8dia 607517711-000-01-E43",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_21.png"
+ },
+ {
+  "seq": 22,
+  "cam_name": "(HSK63) MAPAL 10MM HYDRAULIC CHUCK 31270595 75GL",
+  "cam_comment": "UNIQ hydraulic expansion 10dia 607517713-000-01-E43",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_22.png"
+ },
+ {
+  "seq": 23,
+  "cam_name": "(HSK63) MAPAL 12MM HYDRAULIC CHUCK 31229418 75GL",
+  "cam_comment": "UNIQ hydraulic expansion 12dia 607444571-000-02-E43",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_23.png"
+ },
+ {
+  "seq": 24,
+  "cam_name": "(HSK63) MAPAL 32MM HTC HYDRAULIC CHUCK 30588142 105GL",
+  "cam_comment": "",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_24.png"
+ },
+ {
+  "seq": 25,
+  "cam_name": "(HSK63) HAIMER 3mm POWER MINI SHRINK A63.182.03.8 160GL",
+  "cam_comment": "HAIMER 3mm POWER MINI SHRINK A63-182-03-8",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_25.png"
+ },
+ {
+  "seq": 26,
+  "cam_name": "(HSK63) HAIMER 4mm POWER MINI SHRINK A63.182.04.8 160GL",
+  "cam_comment": "HAIMER 4mm POWER MINI SHRINK A63-182-04-8",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_26.png"
+ },
+ {
+  "seq": 27,
+  "cam_name": "(HSK63) HAIMER 6mm POWER MINI SHRINK A63.182.06.8 160GL",
+  "cam_comment": "HAIMER 6mm POWER MINI SHRINK A63-182-06-8",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_27.png"
+ },
+ {
+  "seq": 28,
+  "cam_name": "(HSK63) HAIMER 3mm POWER MINI SHRINK A63.184.03.8 130GL",
+  "cam_comment": "HAIMER 3mm POWER MINI SHRINK A63-184-03-8",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_28.png"
+ },
+ {
+  "seq": 29,
+  "cam_name": "(HSK63) HAIMER 4mm POWER MINI SHRINK A63.184.04.8 130GL",
+  "cam_comment": "HAIMER 4mm POWER MINI SHRINK A63-184-04-8",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_29.png"
+ },
+ {
+  "seq": 30,
+  "cam_name": "(HSK63) HAIMER 6mm POWER MINI SHRINK A63.184.06.8 130GL",
+  "cam_comment": "HAIMER 6mm POWER MINI SHRINK A63-184-06-8",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_30.png"
+ },
+ {
+  "seq": 31,
+  "cam_name": "(HSK63) HAIMER 12mm POWER MINI SHRINK A63.184.12.8 130GL",
+  "cam_comment": "HAIMER 12mm POWER MINI SHRINK A63-184-12-8",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_31.png"
+ },
+ {
+  "seq": 32,
+  "cam_name": "(HSK63) HAIMER 6mm LNG POWER SHRINK A63.144.06.3 130GL",
+  "cam_comment": "HAIMER 6mm LNG POWER SHRINK A63-144-06-3",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_32.png"
+ },
+ {
+  "seq": 33,
+  "cam_name": "(HSK63) HAIMER 12mm LNG POWER SHRINK A63.144.12.3 130GL",
+  "cam_comment": "12mm LNG POWER SHRINK A63-144-12-3",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_33.png"
+ },
+ {
+  "seq": 34,
+  "cam_name": "(HSK63) HAIMER 3mm LNG SHRINK A63.144.03.1 130GL",
+  "cam_comment": "HAIMER 3mm LNG SHRINK A63-144-03-1",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_34.png"
+ },
+ {
+  "seq": 35,
+  "cam_name": "(HSK63) HAIMER 4mm LNG SHRINK A63.144.04.1 130GL",
+  "cam_comment": "HAIMER 4mm LNG SHRINK A63-144-04-1 130GL",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_35.png"
+ },
+ {
+  "seq": 36,
+  "cam_name": "(HSK63) HAIMER 6mm LNG SHRINK A63.144.06 130GL",
+  "cam_comment": "HAIMER 6mm LNG SHRINK A63-144-06",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_36.png"
+ },
+ {
+  "seq": 37,
+  "cam_name": "(HSK63) HAIMER 8mm LNG SHRINK A63.144.08 130GL",
+  "cam_comment": "HAIMER 8mm LNG SHRINK A63-144-08",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_37.png"
+ },
+ {
+  "seq": 38,
+  "cam_name": "(HSK63) HAIMER 12mm LNG SHRINK A63.144.12 130GL",
+  "cam_comment": "HAIMER 12mm LNG SHRINK A63-144-12",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_38.png"
+ },
+ {
+  "seq": 39,
+  "cam_name": "(HSK63) HAIMER 20mm HEAVY DUTY SHRINK A63.140.20.6 85GL",
+  "cam_comment": "HAIMER 20mm HEAVY DUTY SHRINK A63-140-20-6",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_39.png"
+ },
+ {
+  "seq": 40,
+  "cam_name": "(HSK63) HAIMER 6mm SHORT SHRINK A63.145.06.3 70GL",
+  "cam_comment": "HAIMER 6mm SHORT SHRINK A63-145-06-3",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_40.png"
+ },
+ {
+  "seq": 41,
+  "cam_name": "(HSK63) HAIMER 8mm SHORT SHRINK A63.145.08.3 70GL",
+  "cam_comment": "HAIMER 8mm SHORT SHRINK A63-145-08-3",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_41.png"
+ },
+ {
+  "seq": 42,
+  "cam_name": "(HSK63) HAIMER 12mm SHORT SHRINK A63.145.12.3 70GL",
+  "cam_comment": "HAIMER 12mm SHORT SHRINK A63-145-12-3",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_42.png"
+ },
+ {
+  "seq": 43,
+  "cam_name": "(HSK63) HAIMER 20mm SHORT SHRINK A63.145.20.3 75GL",
+  "cam_comment": "HAIMER 20mm SHORT SHRINK A63-145-20-3",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_43.png"
+ },
+ {
+  "seq": 44,
+  "cam_name": "(HSK63) HAIMER 3mm STD SLIT SHRINK A63.140.03 80GL",
+  "cam_comment": "HAIMER 3mm STD SHRINK A63-140-03",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_44.png"
+ },
+ {
+  "seq": 45,
+  "cam_name": "(HSK63) HAIMER 4mm STD SLIT SHRINK A63.140.04 80GL",
+  "cam_comment": "HAIMER 4mm STD SLIT SHRINK A63-140-04",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_45.png"
+ },
+ {
+  "seq": 46,
+  "cam_name": "(HSK63) HAIMER 6mm STD SHRINK A63.140.06 80GL",
+  "cam_comment": "HAIMER 6mm STD SHRINK A63-140-06",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_46.png"
+ },
+ {
+  "seq": 47,
+  "cam_name": "(HSK63) HAIMER 10mm STD SHRINK A63.140.10 85GL",
+  "cam_comment": "HAIMER 10mm STD SHRINK A63-140-10 90GL",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_47.png"
+ },
+ {
+  "seq": 48,
+  "cam_name": "(HSK63) HAIMER 8mm STD SHRINK A63.140.08 80GL",
+  "cam_comment": "HAIMER 8mm STD SHRINK A63-140-08 90GL",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_48.png"
+ },
+ {
+  "seq": 49,
+  "cam_name": "(HSK63) HAIMER 12mm STD SHRINK A63.140.12 90GL",
+  "cam_comment": "HAIMER 12mm STD SHRINK A63-140-12",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_49.png"
+ },
+ {
+  "seq": 50,
+  "cam_name": "(HSK63) HAIMER 16mm STD SHRINK A63.140.16 95GL",
+  "cam_comment": "HAIMER 16mm STD SHRINK A63-140-16",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_50.png"
+ },
+ {
+  "seq": 51,
+  "cam_name": "(HSK63) HAIMER 20mm STD SHRINK A63.140.20 100GL",
+  "cam_comment": "HAIMER 20mm STD SHRINK A63-140-20",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_51.png"
+ },
+ {
+  "seq": 52,
+  "cam_name": "(HSK63) CERATIZIT QC TAP CHUCK CLUTCHED 83724612 64GL",
+  "cam_comment": "",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_52.png"
+ },
+ {
+  "seq": 53,
+  "cam_name": "(HSK63) MAPAL DRILLING CHUCK 30259875 110GL",
+  "cam_comment": "MAPAL Drilling Chuck 0.5-12mm 606600509-000-00-E43",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_53.png"
+ },
+ {
+  "seq": 54,
+  "cam_name": "(HSK63) MAPAL DRILLING CHUCK 30259879 115GL",
+  "cam_comment": "MAPAL Drilling Chuck 2.5-16mm 606726740-000-00-E43",
+  "cam_coupling": [
+   {
+    "type": "unknown",
+    "pos": "top",
+    "class": "unknown           bottom"
+   }
+  ],
+  "cam_image": "cam_54.png"
+ }
+]

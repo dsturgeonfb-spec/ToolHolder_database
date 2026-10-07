@@ -1,0 +1,35 @@
+{
+  "name": "holder-catalogue",
+  "productName": "Holder Catalogue",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tool-holder catalogue and stock tally for a CNC shop (HSK-A63 first; any taper form later)",
+  "type": "module",
+  "main": "dist/src/main/main.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "//electron": "Pinned to the same Electron that RFQ Agent ships (42.11.8, Node 24). The database uses Node's built-in node:sqlite, so there is no native module to rebuild for Electron's ABI — the installer build is a plain electron-builder run.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-preload.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test --test-concurrency=4 \"dist/test/**/*.test.js\"",
+    "test:unit": "npm run build && node --test \"dist/test/unit/**/*.test.js\" \"dist/test/api/**/*.test.js\"",
+    "test:e2e": "npm run build && node --test --test-concurrency=1 \"dist/test/e2e/**/*.test.js\"",
+    "test:electron": "npm run build && node --test dist/test/electron/smoke.test.js",
+    "serve": "npm run build && node dist/src/server/standalone.js --data ./.devdata --port 8763",
+    "start": "npm run build && electron .",
+    "package:win": "npm run build && electron-builder --win --config electron-builder.yml --publish never",
+    "package:dir": "npm run build && electron-builder --dir --config electron-builder.yml --publish never"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "electron": "42.11.8",
+    "electron-builder": "^26.15.3",
+    "playwright-core": "1.56.1",
+    "typescript": "^5.9.3"
+  }
+}

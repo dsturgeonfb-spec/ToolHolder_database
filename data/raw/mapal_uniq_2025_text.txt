@@ -1,0 +1,866 @@
+Your technology partner for cost-effective machining
+
+UNIQ® – The new generation
+of hydraulic expansion technology
+2               CLAMPING | Hydro Chuck UNIQ
+
+
+
+
+INDUSTRIAL DESIGN
+WITH ADDED VALUE – UNIQ® CHUCK
+The newly-developed hydraulic clamping system enables high machining         In addition, the brilliant surface which MAPAL creates using a specially
+parameters through excellent stability and accuracy. It minimises self-ex-   developed polishing process ensures that the chucks are more resistant to
+cited vibration so that clamped tools are not exposed to micro-vibration.    dirt and corrosion. Users can safely clamp the tool in the holder with little
+This in turn leads to a reduced spindle load of up to 5 percent, enables a   force requirement. This is ensured by “foolproof handling”, i.e. simple and
+significantly longer tool life and guarantees optimal surface quality.       self-explanatory handling of the chucks. This saves a considerable amount
+                                                                             of time compared to other clamping mechanisms, especially with the Hydro
+                                                                             DReaM Chuck 4.5°.
+
+
+
+                                                                                         DESIGN                   DESIGN                   DESIGN
+                                                                                         AWARD                    AWARD                    AWARD
+
+
+
+
+                                                                                                         FUNCTION
+                                                                                                                   IGN –
+                                                                                                         MEETS DES
+                                                                                                                     DESIGN
+                                                                                                         INDUSTRIAL
+                                                                                                                      VALUE
+                                                                                                          WITH ADDED
+                                                                                                                   CLAMPING | Hydro Chuck UNIQ                          3
+
+
+
+
+Design features in detail:
+
+
+
+                     Design philosophy                                                                                             Polished surface
+                     FEM supported contours for maximum                                                                            Maximum resistance to
+                     rigidity with minimum use of resources                                                                        corrosion and dirt
+
+
+
+
+                    Blue actuator screw
+                    – Optical control element – foolproof
+                    – Reduced risk of errors and accidents                                                                         Reduced tightening torque
+                                                                                                                                   – Reduction of non-productive time
+                                                                                                                                   – Ergonomic handling
+
+
+                                                                                                                                   Signature elements
+                                                                                                                                   Information on function
+                                                                                                                                   and product
+
+
+
+
+Formal language – Bionic contours                             Polished surfaces                                     Blue actuation screw | Signature Elements
+- Higher stability and accuracy of the overall system         - Dirt resistance (corrosion resistance) increased    - Clear assignment of the operating screw and
+- Less displacement of the tool                               - Highest balancing qualities due to compacted          easier actuation by reducing the up to 70 %
+- The tool cutting edge is constantly in intervention           surfaces                                              reduced tightening torque of the operating screw
+- Less weight due to minimal use of resources                                                                       - Clarity of the product created, important
+- Fits well in the hand when setting up the tool                                                                      functional and product information
+  magazine                                                                                                            immediately available
+- Self-excited vibrations are minimized
+- The tools are not exposed to micro vibrations
+4          CLAMPING | Hydro Chuck UNIQ
+
+
+
+
+DirectCool-System
+Configuration for the UNIQ series
+
+
+
+
+                                                               Advantages of the DirectCool system
+                                                                         Decentralised cooling
+                                                                         For longer tool life and stable
+                                     UNIQ DReaM Chuck, 4.5°              processes.
+
+
+
+
+                                                                         Maximum tool life
+                                                                         Wear is reduced thanks to cooled
+                                                                         tools and chucks.
+
+                                                                         Cost-efficient and flexible
+                                                                         No expensive shank grooves neces-
+                                                                         sary. Standard an other tools with-
+                                                                         out internal cooling can be used.
+
+
+
+                                                                         Effective chip removal
+                                                                         Flushing effect improves process
+                                         UNIQ Mill Chuck, HA
+                                                                         reliability and surface quality.
+
+
+                                                                         Compatibility with no restrictions
+                                                                         No change to tool restriction with
+                                                                         simple integration into existing
+                                                                         systems.
+                                                                                                                  CLAMPING | Hydro Chuck UNIQ                                 5
+
+
+
+
+CONFIGURATION
+Configurator for clamping technology – quick, simple and productive
+
+
+
+
+How does the configuration work?
+
+   n   Individual configurability: All series can be flexibly adapted to your requirements – e.g. through the use of configurable
+        features such as coolant tubes, blind screws, pull studs, coding systems and code carriers.
+   n	UNIQ series with DirectCool: For hydraulic chucks of the UNIQ series UNIQ Mill Chuck, HA and UNIQ DReaM Chuck, 4.5°,
+      you have the option of configuring decentralised cooling via the DirectCool system.
+   n	Rapid availability: Our configurable products can also be delivered in next to no time. This is because we always keep a
+      large number of products from our preferred series in stock.
+
+
+
+Configurable features*
+
+
+
+
+                  Code carrier
+
+
+
+
+ Coolant tube     Blind screw       Pull stud
+                                                                                                                                                                DirectCool
+
+
+
+
+                  Coding system
+
+
+                                                                 * The configurable features, including their different facets, vary depending on the chosen product family
+
+
+
+
+Configuration for UNIQ series
+ Technology             Design                                                                                Features
+
+
+
+
+                                                  Code carrier              Pull stud          Coolant tube        Coding system    Blind screw             DirectCool
+
+ Hydraulic
+ clamping
+                        UNIQ Mill Chuck, HA       HSK, SK            SK, BT, BT-FC, CAT           HSK                    HSK          HSK          HSK, SK, BT, BT-FC, CAT
+ technology
+                UNIQ
+
+                        UNIQ DReaM Chuck, 4.5°    HSK, SK                SK, BT, CAT              HSK                    HSK          HSK              HSK, SK, BT, CAT
+6                    CLAMPING | Hydro Chuck UNIQ
+
+
+
+
+UNIQ® Mill Chuck, HA
+With axial tool length adjustment
+Shank hollow shank taper A according to DIN 69893-1
+
+
+
+                                 l1
+
+                                        l4
+                                                     d1
+
+                                                          d2
+
+                                                                 d3
+
+
+
+
+                            l3
+
+                                         l2
+
+
+
+                                                      Dimensions                                          G        Torque *                 Specification                   Order No.
+    HSK-A                                                                                                           [Nm]
+                    d1            d2           d3          l1          l2        l3           l4
+     63             6,0          26,0         50,0        65,0        37,0     10,0          35,2        M5           22         MHC-HSK-A063-06-065-1-0-A                  31270591
+     63             8,0          28,0         50,0        65,0        37,0     10,0          35,2        M6           47         MHC-HSK-A063-08-065-1-0-A                  31270593
+     63           10,0           30,0         50,0        75,0        41,0     10,0          45,2      M8x1           85         MHC-HSK-A063-10-075-1-0-A                  31270595
+     63           12,0           32,0         52,5        75,0        46,0     10,0          45,2      M8x1          130         MHC-HSK-A063-12-075-1-0-A                  31229418
+     63           14,0           34,0         52,5        75,0        46,0     10,0          45,2      M8x1          240         MHC-HSK-A063-14-075-1-0-A                  31374670
+     63           16,0           38,0         52,5        79,0        49,0     10,0          49,2      M8x1          350         MHC-HSK-A063-16-079-1-0-A                  31270598
+     63           18,0           38,0         52,5        79,0        49,0     10,0          49,2      M8x1          430         MHC-HSK-A063-18-079-1-0-A                  31374671
+     63           20,0           38,0         52,5        79,0        51,0     10,0          49,2      M8x1          520         MHC-HSK-A063-20-079-1-0-A                  31229438
+     63           25,0           48,0         57,0        95,0        57,0     10,0          45,0      M10x1         700         MHC-HSK-A063-25-095-1-0-A                  31396170
+     63           32,0           58,5         62,5        110,0       61,0     10,0          56,6      M10x1         900         MHC-HSK-A063-32-110-1-0-A                  31396171
+     100           6,0           26,0         50,0        73,0        37,0     10,0          40,2        M5           22         MHC-HSK-A100-06-073-1-0-A                  31345192
+     100           8,0           28,0         50,0        73,0        37,0     10,0          40,2        M6           47         MHC-HSK-A100-08-073-1-0-A                  31345193
+     100          10,0           30,0         50,0        83,0        41,0     10,0          50,2      M8x1           85         MHC-HSK-A100-10-083-1-0-A                  31345194
+     100          12,0           32,0         52,5        83,0        46,0     10,0          50,2      M8x1          130         MHC-HSK-A100-12-083-1-0-A                  31345195
+     100          14,0           34,0         52,5        83,0        46,0     10,0          50,2      M8x1          240         MHC-HSK-A100-14-083-1-0-A                  31345196
+     100          16,0           38,0         52,5        87,0        49,0     10,0          54,2      M8x1          350         MHC-HSK-A100-16-087-1-0-A                  31345197
+     100          18,0           38,0         52,5        87,0        49,0     10,0          54,2      M8x1          430         MHC-HSK-A100-18-087-1-0-A                  31345198
+     100          20,0           38,0         52,5        87,0        51,0     10,0          54,2      M8x1          520         MHC-HSK-A100-20-087-1-0-A                  31345199
+     100          25,0           56,0         70,0        95,0        57,0     10,0          62,2      M10x1         700         MHC-HSK-A100-25-095-1-0-A                  31345200
+     100          32,0           60,0         75,0        100,0       61,0     10,0          67,2      M10x1         900         MHC-HSK-A100-32-100-1-0-A                  31345201
+* Permissible transmittable torque.
+
+
+
+
+Dimensions in mm.
+
+Application: For clamping tools with smooth cylindrical shanks to DIN 1835 Form A, DIN         With a length of 2.5xD (max. 50 mm) concentricity 3 μm. When using cylindrical shanks
+6535 Form HA as well as with recesses to DIN 1835 Form B, E and DIN 6535 Form HB, HE           with inclined clamping surface (form E and form HE), the accuracy may be impaired.
+directly and with reducing sleeve in the clamping diameter. The clamping diameter is desi-     Torque transmission perfectly tailored to your application.
+gned for a shank tolerance h6.                                                                 Note: Coolant supply via central through hole. Coolant tubes, code carriers, reducing slee-
+Scope of delivery: With length adjustment screw, without coolant tube.                         ves for reducing the clamping diameter (when using the reducing sleeve, an impairment of
+Design: Highest tool life and production quality when using smooth shanks according to         the accuracy is possible) see category accessories, spare parts and measuring equipment.
+DIN 1835 form A and DIN 6535 form HA.                                                          Length adjustment screws available on request.
+                                                                                               Balance quality: G 2.5 at 25,000 min-1 as delivered.
+                                                                                                                          CLAMPING | Hydro Chuck UNIQ                                 7
+
+
+
+UNIQ® Mill Chuck, HA
+With axial tool length adjustment
+Shank hollow shank taper A according to ISO 7388-1 form AD/AF
+
+
+                                      l1
+
+                                            l4
+
+
+
+
+                                                                d3
+                                                           d2
+                                                  d1
+
+
+
+
+                              l3
+
+                                      l2
+
+
+
+                                                     Dimensions                                            G         Torque *              Specification                 Order No.
+     SK                                                                                                               [Nm]
+                   d1         d2           d3       d4               l1    l2          l3       l4
+     40           6,0        26,0          42,0        –         50,0     37,0       10,0     27,1        M5            22         MHC-SK040-06-050-3-0-A                31345212
+     40           8,0        28,0          42,0        –         50,0     37,0       10,0     27,1        M6            47         MHC-SK040-08-050-3-0-A                31345213
+     40           10,0       30,0          42,0        –         50,0     41,0       10,0     27,1       M8x1           85         MHC-SK040-10-050-3-0-A                31345214
+     40           12,0       32,0          49,0        –         50,0     46,0       10,0     27,1      M10x1          130         MHC-SK040-12-050-3-0-A                31345215
+     40           14,0       34,0          49,0        –         50,0     46,0       10,0     27,1      M10x1          240         MHC-SK040-14-050-3-0-A                31374686
+     40           16,0       38,0          49,0        –         64,5     49,0       10,0      41,6     M12x1          350         MHC-SK040-16-065-3-0-A                31345216
+     40           18,0       38,0          49,0        –         64,5     49,0       10,0      41,6     M12x1          430         MHC-SK040-18-065-3-0-A                31374687
+     40           20,0       38,0          49,0        –         64,5     51,0       10,0      41,6     M16x1          520         MHC-SK040-20-065-3-0-A                31345217
+     40           25,0       48,0          57,0    49,5         110,0     57,0       10,0     65,3      M10x1          700         MHC-SK040-25-110-3-0-A                31396178
+     40           32,0       58,5          62,5    49,5         115,0     61,0       10,0     65,5      M12x1          900         MHC-SK040-32-115-3-0-A                31396179
+* Permissible transmittable torque.
+
+
+
+
+Dimensions in mm.
+
+Application: For clamping tools with smooth cylindrical shanks to DIN 1835 Form A, DIN       With a length of 2.5xD (max. 50 mm) concentricity 3 μm. When using cylindrical shanks
+6535 Form HA as well as with recesses to DIN 1835 Form B, E and DIN 6535 Form HB, HE         with inclined clamping surface (form E and form HE), the accuracy may be impaired.
+directly and with reducing sleeve in the clamping diameter. The clamping diameter is desi-   Torque transmission perfectly tailored to your application.
+gned for a shank tolerance h6.                                                               Note: Coolant supply via central through hole. Coolant tubes, code carriers, reducing slee-
+Scope of delivery: With length adjustment screw, without coolant tube.                       ves for reducing the clamping diameter (when using the reducing sleeve, an impairment of
+Design: Highest tool life and production quality when using smooth shanks according to       the accuracy is possible) see category accessories, spare parts and measuring equipment.
+DIN 1835 form A and DIN 6535 form HA.                                                        Length adjustment screws available on request.
+                                                                                             Balance quality: G 2.5 at 25,000 min-1 as delivered.
+8                    CLAMPING | Hydro Chuck UNIQ
+
+
+
+
+UNIQ® Mill Chuck, HA
+With axial tool length adjustment
+Shank BT according to ISO 7388-2 form JD/JF (JIS B 6339)
+
+
+
+                                                                                                            l1
+                                      l1
+                                                                                                                        l4
+                                                l4
+
+
+
+
+                                                                                                   d4
+
+
+
+
+                                                                                                                                                d3
+                                                                                                                                     d1
+
+                                                                                                                                          d2
+                                                               d2
+                                                          d1
+
+
+
+
+                                                                    d3
+
+
+
+
+                                 l3
+                                                                                                       l3
+                                           l2
+                                                                                                                   l2
+
+
+
+
+                                                               Dimensions                                         G          Torque *                Specification           Order No.
+     BT                                                                                                                       [Nm]
+                   d1          d2                    d3        d4         l1      l2     l3       l4
+    30**           6,0       26,0               46,0           –         54,0    37,0   10,0      29             M5            22              MHC-BT030-06-054-1-0-A       31280342
+    30**           8,0       28,0               46,0           –         54,0    37,0   10,0      29             M6            47              MHC-BT030-08-054-1-0-A       31280343
+    30**          10,0        30,0              50,0       46,0          54,0    41,0   10,0     23,5            M8x1          85              MHC-BT030-10-054-1-0-A       31280344
+    30**          12,0        32,0              50,0       46,0          54,0    46,0   10,0     23,5        M10x1             130             MHC-BT030-12-054-1-0-A       31280345
+    30**          14,0        38,0              52,0       46,0          54,0    46,0   10,0     21,0        M10x1             240             MHC-BT030-14-054-1-0-A       31374678
+    30**          16,0        38,0              55,0       46,0          69,0    49,0   10,0     38,5       M12x1              350             MHC-BT030-16-069-1-0-A       31280346
+    30**          18,0        38,0              55,0       46,0          69,0    49,0   10,0     36,0       M12x1              430             MHC-BT030-18-069-1-0-A       31374679
+    30**          20,0        38,0              58,0       46,0          69,0    51,0   10,0     38,5       M12x1              520             MHC-BT030-20-069-1-0-A       31280347
+     40            6,0        26,0              42,0           –         58,0    37,0   10,0     27,2            M5            22              MHC-BT040-06-058-3-0-A       31345236
+     40            8,0        28,0              42,0           –         58,0    37,0   10,0     27,2            M6            47              MHC-BT040-08-058-3-0-A       31345237
+     40           10,0        30,0              42,0           –         58,0    41,0   10,0     27,2            M8x1          85              MHC-BT040-10-058-3-0-A       31345238
+     40           12,0        32,0              49,0           –         58,0    46,0   10,0     27,2        M10x1             130             MHC-BT040-12-058-3-0-A       31345239
+     40           14,0        34,0              49,0           –         58,0    46,0   10,0     27,2        M10x1             240             MHC-BT040-14-058-3-0-A       31396154
+     40           16,0        38,0              49,0           –         72,5    49,0   10,0     41,7        M12x1             350             MHC-BT040-16-073-3-0-A       31345240
+     40           18,0        38,0              49,0           –         72,5    49,0   10,0     41,7        M12x1             430             MHC-BT040-18-073-3-0-A       31396155
+     40           20,0        38,0              49,0           –         72,5    51,0   10,0     41,7        M16x1             520             MHC-BT040-20-073-3-0-A       31345241
+     40           25,0        48,0              57,0           -         100,0   57,0   10,0     44,6        M16x1             700             MHC-BT040-25-100-3-0-A       31396156
+     40           32,0        58,5              62,0           -         105,0   61,0   10,0     50,0        M16x1             900             MHC-BT040-32-105-3-0-A       31396157
+* Permissible transmittable torque.
+** Design: Steep taper size is not available in combined JD/JF version.
+
+
+
+
+Dimensions in mm.
+Application: For clamping tools with smooth cylindrical shanks to DIN 1835 Form A, DIN         concentricity accuracy 3 μm. When using cylindrical shanks with inclined clamping surface
+6535 Form HA as well as with recesses to DIN 1835 Form B, E and DIN 6535 Form HB, HE           (form E and form HE), the accuracy may be impaired. Torque transmission perfectly tailored
+directly and with reducing sleeve in the clamping diameter. The clamping diameter is de-       to your application.
+signed for a shank tolerance h6.                                                               Note: Coolant supply via central through hole. Tightening bolts, reducing sleeves for redu-
+Scope of delivery: With length adjustment screw, without tightening bolt.                      cing the clamping diameter. (When using the reducing sleeve, accuracy may be impaired)
+Design: Highest tool life and manufacturing quality when using smooth shanks according         see category accessories and spare parts. Length adjustment screws available on request.
+to DIN 1835 form A and DIN 6535 form HA. With an overhang length of 2.5xD (max. 50 mm)         Balance quality: G 2.5 at 25,000 min-1 as delivered.
+                                                                                                                               CLAMPING | Hydro Chuck UNIQ                           9
+
+
+
+UNIQ® Mill Chuck, HA
+With axial tool length adjustment
+Shank BT according to ISO 7388-2 form JD/JF (JIS B 6339)
+
+
+
+
+                                      l1                                                                 l1
+
+                                                l4                                                                     l4
+
+
+
+
+                                                                                                    d4
+                                                           d2
+                                                     d1
+
+
+
+
+                                                                d3
+
+
+
+
+                                                                                                                                       d2
+                                                                                                                                d1
+
+
+
+
+                                                                                                                                            d3
+                             l3
+                                                                                              l3
+                                           l2
+                                                                                                                  l2
+
+
+
+
+                                                      Dimensions                                              G             Torque *              Specification          Order No.
+   BT-FC                                                                                                                     [Nm]
+                   d1         d2                d3    d4             l1    l2       l3        l4
+     30           6,0        26,0          46,0       –          53,0     37,0     10,0      29,0             M5              22            MHC-JD-FC030-06-53-1-0-A    31571493
+     30           8,0        28,0          46,0       –          53,0     37,0     10,0      29,0             M6              47            MHC-JD-FC030-08-53-1-0-A    31571494
+     30           10,0       30,0          50,0      46,0        53,0     41,0     10,0      23,5        M8x1                 85            MHC-JD-FC030-10-53-1-0-A    31571495
+     30           12,0       32,0          50,0      46,0        53,0     46,0     10,0      23,5        M10x1                130           MHC-JD-FC030-12-53-1-0-A    31571496
+     30           14,0       38,0          52,0      46,0        53,0     46,0     10,0      23,5        M10x1                240           MHC-JD-FC030-14-53-1-0-A    31571497
+     30           16,0       38,0          55,0      46,0        68,0     49,0     10,0      38,5        M12x1                350           MHC-JD-FC030-16-68-1-0-A    31571498
+     30           18,0       38,0          55,0      46,0        68,0     49,0     10,0      38,5        M12x1                430           MHC-JD-FC030-18-68-1-0-A    31571499
+     30           20,0       38,0          58,0      46,0        68,0     51,0     10,0      38,5        M12x1                520           MHC-JD-FC030-20-68-1-0-A    31571540
+* Permissible transmittable torque.
+
+
+
+
+Dimensions in mm.
+Application: For clamping tools with smooth cylindrical shanks to DIN 1835 Form A, DIN     concentricity accuracy 3 μm. When using cylindrical shanks with inclined clamping surface
+6535 Form HA as well as with recesses to DIN 1835 Form B, E and DIN 6535 Form HB, HE       (form E and form HE), the accuracy may be impaired. Torque transmission perfectly tailored
+directly and with reducing sleeve in the clamping diameter. The clamping diameter is de-   to your application.
+signed for a shank tolerance h6.                                                           Note: Coolant supply via central through hole. Tightening bolts, reducing sleeves for redu-
+Scope of delivery: With length adjustment screw, without tightening bolt.                  cing the clamping diameter. (When using the reducing sleeve, accuracy may be impaired)
+Design: Highest tool life and manufacturing quality when using smooth shanks according     see category accessories and spare parts. Length adjustment screws available on request.
+to DIN 1835 form A and DIN 6535 form HA. With an overhang length of 2.5xD (max. 50 mm)     Balance quality: G 2.5 at 25,000 min-1 as delivered.
+10                   CLAMPING | Hydro Chuck UNIQ
+
+
+
+
+UNIQ® Mill Chuck, HA
+With axial tool length adjustment
+Shank "CAT" according to ASME B5.50-1994
+
+
+
+                                   l1
+
+                                           l4
+
+
+
+
+                                                             d3
+                                                       d2
+                                                  d1
+
+
+
+
+                            l3
+
+                                      l2
+
+
+
+                                                       Dimensions                                         G         Torque *                 Specification                  Order No.
+     CAT                                                                                                             [Nm]
+                    d1           d2             d3           l1      l2          l3           l4
+     40             6,0          26,0           42,0        50,0    37,0       10,0          27,1        M5            22           MHC-CAT040-06-050-3-0-A                 31345224
+     40             8,0          28,0           42,0        50,0    37,0       10,0          27,1        M6            47           MHC-CAT040-08-050-3-0-A                 31345225
+     40           10,0           30,0           42,0        50,0    41,0       10,0          27,1      M8x1            85           MHC-CAT040-10-050-3-0-A                 31345226
+     40           12,0           32,0           49,0        50,0    46,0       10,0          27,1      M10x1           130          MHC-CAT040-12-050-3-0-A                 31345227
+     40           14,0           32,0           49,0        50,0    46,0       10,0          27,1      M10x1           240          MHC-CAT040-14-050-3-0-A                 31374694
+     40           16,0           38,0           49,0        64,5    49,0       10,0          41,6      M12x1           350          MHC-CAT040-16-065-3-0-A                 31345228
+     40           18,0           38,0           49,0        64,5    49,0       10,0          41,6      M12x1           430          MHC-CAT040-18-065-3-0-A                 31374695
+     40           20,0           38,0           49,0        64,5    51,0       10,0          41,6      M16x1           520          MHC-CAT040-20-065-3-0-A                 31345229
+* Permissible transmittable torque.
+
+
+
+
+Dimensions in mm.
+
+Application: For clamping tools with smooth cylindrical shanks to DIN 1835 Form A, DIN         With a length of 2.5xD (max. 50 mm) concentricity 3 μm. When using cylindrical shanks
+6535 Form HA as well as with recesses to DIN 1835 Form B, E and DIN 6535 Form HB, HE           with inclined clamping surface (form E and form HE), the accuracy may be impaired.
+directly and with reducing sleeve in the clamping diameter. The clamping diameter is desi-     Torque transmission perfectly tailored to your application.
+gned for a shank tolerance h6.                                                                 Note: Coolant supply via central through hole. Coolant tubes, code carriers, reducing slee-
+Scope of delivery: With length adjustment screw, without coolant tube.                         ves for reducing the clamping diameter (when using the reducing sleeve, an impairment of
+Design: Highest tool life and production quality when using smooth shanks according to         the accuracy is possible) see category accessories, spare parts and measuring equipment.
+DIN 1835 form A and DIN 6535 form HA.                                                          Length adjustment screws available on request.
+                                                                                               Balance quality: G 2.5 at 25,000 min-1 as delivered.
+                                                                                                      CLAMPING | Hydro Chuck UNIQ                   11
+
+
+
+UNIQ® DReaM Chuck, 4.5°
+With axial tool length adjustment, clamping insertion in the collar
+Shank HSK-A according to DIN 69893-1
+
+
+
+
+                              l1
+
+                                   l4
+                                         4,5°
+
+
+
+
+                                                                 d3
+                                                            d2
+                                                     d1
+
+
+
+
+                          l3
+
+                                        l2
+
+
+
+                                                  Dimensions                            G     Torque *           Specification             Order No.
+  HSK-A                                                                                        [Nm]
+               d1        d2                  d3       l1          l2     l3     l4
+    63        6,0       21,0            27,0         80,0        37,0   10,0   48,9    M5       18        MHC-HSK-A063-06-080-1-0-A        31270515
+    63        6,0       21,0            27,0        120,0        37,0   10,0   48,9    M5       18        MHC-HSK-A063-06-120-1-0-A        31441122
+    63        6,0       21,0            27,0        160,0        37,0   10,0   48,9    M5       18        MHC-HSK-A063-06-160-1-0-A       31499983
+    63        8,0       21,0            27,0         80,0        37,0   10,0   48,9    M6       35        MHC-HSK-A063-08-080-1-0-A       31270525
+    63        8,0       21,0            27,0        120,0        37,0   10,0   48,9    M6       35        MHC-HSK-A063-08-120-1-0-A        31441123
+    63        8,0       21,0            27,0        160,0        37,0   10,0   48,9   M8x1      35        MHC-HSK-A063-08-160-1-0-A       31499984
+    63        10,0      24,0            32,0         85,0        41,0   10,0   53,7   M8x1      60        MHC-HSK-A063-10-085-1-0-A       31270550
+    63        10,0      24,0            32,0        120,0        41,0   10,0   61,6   M8x1      60        MHC-HSK-A063-10-120-1-0-A        31441124
+    63        10,0      24,0            32,0        160,0        41,0   10,0   61,6   M8x1      60        MHC-HSK-A063-10-160-1-0-A       31499985
+    63        12,0      24,0            32,0         90,0        46,0   10,0   58,6   M10x1     90        MHC-HSK-A063-12-090-1-0-A       31229439
+    63        12,0      24,0            32,0        120,0        46,0   10,0   61,6   M10x1     90        MHC-HSK-A063-12-120-1-0-A        31441125
+    63        12,0      24,0            32,0        160,0        46,0   10,0   61,6   M10x1     90        MHC-HSK-A063-12-160-1-0-A       31499986
+    63        14,0      27,0            34,0         90,0        46,0   10,0   57,2   M10x1     130       MHC-HSK-A063-14-090-1-0-A        31375071
+    63        14,0      27,0            34,0        120,0        46,0   10,0   56,2   M10x1     130       MHC-HSK-A063-14-120-1-0-A        31441126
+    63        14,0      27,0            34,0        160,0        46,0   10,0   56,2   M10x1     130       MHC-HSK-A063-14-160-1-0-A       31499987
+    63        16,0      27,0            34,0         95,0        49,0   10,0   63,1   M12x1     200       MHC-HSK-A063-16-095-1-0-A       31270555
+    63        16,0      27,0            34,0        120,0        49,0   10,0   56,2   M12x1     200       MHC-HSK-A063-16-120-1-0-A        31441127
+    63        16,0      27,0            34,0        160,0        49,0   10,0   56,2   M12x1     200       MHC-HSK-A063-16-160-1-0-A       31499988
+    63        18,0      33,0            42,0         95,0        49,0   10,0   63,0   M12x1     250       MHC-HSK-A063-18-095-1-0-A       31375072
+    63        18,0      33,0            42,0        120,0        49,0   10,0   68,9   M12x1     250       MHC-HSK-A063-18-120-1-0-A        31441128
+    63        18,0      33,0            42,0        160,0        49,0   10,0   68,9   M12x1     250       MHC-HSK-A063-18-160-1-0-A       31499989
+    63        20,0      33,0            42,0        100,0        51,0   10,0   68,9   M16x1     330       MHC-HSK-A063-20-100-1-0-A       31229440
+    63        20,0      33,0            42,0        120,0        51,0   10,0   68,9   M16x1     330       MHC-HSK-A063-20-120-1-0-A        31441129
+    63        20,0      33,0            42,0        160,0        51,0   10,0   68,9   M16x1     330       MHC-HSK-A063-20-160-1-0-A       31500040
+    63        25,0      44,0            52,5        115,0        57,0   10,0   85,4   M16x1     500       MHC-HSK-A063-25-115-1-0-A       31396186
+    63        25,0      44,0            52,5        160,0        57,0   10,0   85,4   M16x1     500       MHC-HSK-A063-25-160-1-0-A       31504685
+    63        32,0      44,0            52,5        120,0        61,0   10,0   90,1   M16x1     650       MHC-HSK-A063-32-120-1-0-A       31396187
+    63        32,0      44,0            52,5        160,0        61,0   10,0   90,1   M16x1     650       MHC-HSK-A063-32-160-1-0-A       31504687
+                                                                                                                                 Continued on next page.
+12                   CLAMPING | Hydro Chuck UNIQ
+
+
+
+UNIQ DReaM Chuck, 4.5° | With axial tool length adjustment, clamping insertion in the collar, shank HSK-A according to DIN 69893-1
+                                                  Dimensions                                             G         Torque *                 Specification                  Order No.
+   HSK-A                                                                                                            [Nm]
+                    d1          d2         d3           l1          l2          l3           l4
+     100            6,0        21,0       27,0         85,0        37,0        10,0         38,7        M5            18          MHC-HSK-A100-06-085-1-0-A                31344789
+     100            6,0        21,0       27,0        120,0        37,0        10,0         48,9        M5            18          MHC-HSK-A100-06-120-1-0-A                31496256
+     100           6,0         21,0       27,0        160,0        37,0        10,0         48,9        M5            18          MHC-HSK-A100-06-160-1-0-A                31500057
+     100           8,0         21,0       27,0        85,0         37,0        10,0         38,7        M6            35          MHC-HSK-A100-08-085-1-0-A                31344860
+     100           8,0         21,0       27,0        120,0        37,0        10,0         48,9        M6            35         MHC-HSK-A100-08-120-1-0-A                 31496257
+     100           8,0         21,0       27,0        160,0        37,0        10,0         48,9        M6            35         MHC-HSK-A100-08-160-1-0-A                 31500058
+     100          10,0         24,0       32,0        90,0         41,0        10,0         53,7      M8x1            60          MHC-HSK-A100-10-090-1-0-A                31344862
+     100          10,0         24,0       32,0        120,0        41,0        10,0         61,6      M8x1            60          MHC-HSK-A100-10-120-1-0-A                31496258
+     100          10,0         24,0       32,0        160,0        41,0        10,0         61,6      M8x1            60          MHC-HSK-A100-10-160-1-0-A                31500059
+     100          12,0         24,0       32,0        95,0         46,0        10,0         58,6      M10x1           90         MHC-HSK-A100-12-095-1-0-A                 31344863
+     100          12,0         24,0       32,0        120,0        46,0        10,0         61,6      M10x1           90         MHC-HSK-A100-12-120-1-0-A                 31496259
+     100          12,0         24,0       32,0        160,0        46,0        10,0         61,6      M10x1           90         MHC-HSK-A100-12-160-1-0-A                 31500060
+     100          14,0         27,0       34,0        95,0         46,0        10,0         57,2      M10x1          130         MHC-HSK-A100-14-095-1-0-A                 31344864
+     100          14,0         27,0       34,0        120,0        46,0        10,0         56,2      M10x1          130         MHC-HSK-A100-14-120-1-0-A                 31496300
+     100          14,0         27,0       34,0        160,0        46,0        10,0         56,2      M10x1          130         MHC-HSK-A100-14-160-1-0-A                 31500061
+     100          16,0         27,0       34,0        100,0        49,0        10,0         63,1      M12x1          200         MHC-HSK-A100-16-100-1-0-A                 31344865
+     100          16,0         27,0       34,0        120,0        49,0        10,0         56,2     M12X1           200         MHC-HSK-A100-16-120-1-0-A                 31496301
+     100          16,0         27,0       34,0       160,0        49,0         10,0         56,2      M12x1          200         MHC-HSK-A100-16-160-1-0-A                 31500062
+     100          18,0         33,0       42,0        100,0       49,0         10,0         63,0      M12x1          250         MHC-HSK-A100-18-100-1-0-A                 31344866
+     100          18,0         33,0       42,0       120,0        49,0         10,0         68,9     M12X1           250         MHC-HSK-A100-18-120-1-0-A                 31496302
+     100          18,0         33,0       42,0       160,0        49,0         10,0         68,9      M12x1          250         MHC-HSK-A100-18-160-1-0-A                 31500063
+     100          20,0         33,0       42,0        105,0        51,0        10,0         68,9      M16x1          330         MHC-HSK-A100-20-105-1-0-A                 31344867
+     100          20,0         33,0       42,0       120,0         51,0        10,0         68,9     M16X1           330         MHC-HSK-A100-20-120-1-0-A                 31496303
+     100          20,0         33,0       42,0       160,0         51,0        10,0         68,9      M16x1          330         MHC-HSK-A100-20-160-1-0-A                 31500064
+     100          25,0         44,0       53,0        115,0       57,0         10,0         80,7      M16x1          500          MHC-HSK-A100-25-115-1-0-A                31344868
+     100          25,0         44,0       53,0       160,0        57,0         10,0         88,6      M16x1          500         MHC-HSK-A100-25-160-1-0-A                 31505294
+     100          32,0         44,0       53,0       120,0        61,0         10,0         84,6      M16x1          650         MHC-HSK-A100-32-120-1-0-A                 31344869
+     100          32,0         44,0       53,0       160,0        61,0         10,0         93,3      M16x1          650         MHC-HSK-A100-32-160-1-0-A                 31505295
+
+* Permissible transmittable torque.
+
+
+
+
+Dimensions in mm.
+
+Application: For clamping tools with smooth cylindrical shanks to DIN 1835 Form A, DIN        and form HE), the accuracy may be impaired. Torque transmission perfectly tailored to
+6535 Form HA as well as with recesses to DIN 1835 Form B, E and DIN 6535 Form HB, HE          your application.
+directly and with reducing sleeve in the clamping diameter. The clamping diameter is          Note: Coolant supply via central through hole. Coolant tubes, code carriers, reducing slee-
+designed for a shank tolerance h6.                                                            ves for reducing the clamping diameter (when using the reducing sleeve, an impairment of
+Scope of delivery: With length adjustment screw, without coolant tube.                        the accuracy is possible) see category accessories, spare parts and measuring equipment.
+Design: Highest tool life and production quality when using plain shanks according to DIN     Length adjustment screws available on request.
+1835 form A and DIN 6535 form HA. With a cantilever length of 2.5xD (max. 50 mm)              Balance quality: G 2.5 at 25,000 min-1 as delivered.
+concentricity 3 μm. When using cylindrical shanks with inclined clamping surface (form E
+                                                                                                                            CLAMPING | Hydro Chuck UNIQ                               13
+
+
+
+UNIQ® DReaM Chuck, 4.5°
+With axial tool length adjustment, clamping insertion in the collar
+Shank hollow shank taper A according to ISO 7388-1 form AD/AF
+
+
+
+
+                                         l1
+
+                                               l4
+                                                     4,5°
+
+
+
+
+                                                                            d3
+                                                                       d2
+                                                                 d1
+
+
+
+
+                                         l3
+
+                                                    l2
+
+
+
+                                                            Dimensions                                       G         Torque *                Specification                 Order No.
+     SK                                                                                                                 [Nm]
+                   d1         d2         d3                 d4        l1          l2     l3       l4
+     40           6,0        21,0       27,0                -      80,0          37,0   10,0    55,7        M5            18          MHC-SK040-06-080-3-0-A                31344880
+     40           6,0        21,0       27,0                -     120,0          37,0   10,0    48,9        M5            18          MHC-SK040-06-120-3-0-A                31441418
+     40           6,0        21,0       27,0                -     160,0          37,0   10,0    48,9        M5            18          MHC-SK040-06-160-3-0-A                31561428
+     40           8,0        21,0       27,0                -      80,0          37,0   10,0    55,7        M6            35          MHC-SK040-08-080-3-0-A                31344881
+     40           8,0        21,0       27,0                -     120,0          37,0   10,0    48,9        M6            35          MHC-SK040-08-120-3-0-A                31441419
+     40           8,0        21,0       27,0                -     160,0          37,0   10,0    48,9        M6            35          MHC-SK040-08-160-3-0-A                31561429
+     40           10,0       24,0       32,0                -      80,0          41,0   10,0    55,7       M8x1           60          MHC-SK040-10-080-3-0-A                31344882
+     40           10,0       24,0       32,0                -     120,0          41,0   10,0    61,6       M8x1           60          MHC-SK040-10-120-3-0-A                31441490
+     40           10,0       24,0       32,0                -     160,0          41,0   10,0    61,6       M8x1           60          MHC-SK040-10-160-3-0-A                31561500
+     40           12,0       24,0       32,0                -      80,0          46,0   10,0    55,7      M10x1           90          MHC-SK040-12-080-3-0-A                31344883
+     40           12,0       24,0       32,0                -     120,0          46,0   10,0    61,6      M10x1           90          MHC-SK040-12-120-3-0-A                31441491
+     40           12,0       24,0       32,0                -     160,0          46,0   10,0    61,6      M10x1           90          MHC-SK040-12-160-3-0-A                31561501
+     40           14,0       27,0       34,0                -      80,0          46,0   10,0    55,8      M10x1          130          MHC-SK040-14-080-3-0-A                31375087
+     40           14,0       27,0       34,0                -     120,0          46,0   10,0    56,2      M10x1          130          MHC-SK040-14-120-3-0-A                31441492
+     40           14,0       27,0       34,0                -     160,0          46,0   10,0    56,2      M10x1          130          MHC-SK040-14-160-3-0-A                31561502
+     40           16,0       27,0       34,0                -      80,0          49,0   10,0    55,8      M12x1          200          MHC-SK040-16-080-3-0-A                31344884
+     40           16,0       27,0       34,0                -     120,0          49,0   10,0    56,2      M12x1          200          MHC-SK040-16-120-3-0-A                31441493
+     40           16,0       27,0       34,0                -     160,0          49,0   10,0    56,2      M12x1          200          MHC-SK040-16-160-3-0-A                31561503
+     40           18,0       33,0       42,0                -      80,0          49,0   10,0    57,2      M12x1          250          MHC-SK040-18-080-3-0-A                31375088
+     40           18,0       33,0       42,0                -     120,0          49,0   10,0    68,9      M12x1          250          MHC-SK040-18-120-3-0-A                31441494
+     40           18,0       33,0       42,0                -     160,0          49,0   10,0    68,9      M12x1          250          MHC-SK040-18-160-3-0-A                31561504
+     40           20,0       33,0       42,0                -      80,0          51,0   10,0    57,2      M16x1          330          MHC-SK040-20-080-3-0-A                31344885
+     40           20,0       33,0       42,0                -     120,0          51,0   10,0    68,9      M16x1          330          MHC-SK040-20-120-3-0-A                31441495
+     40           20,0       33,0       42,0                -     160,0          51,0   10,0    68,9      M16x1          330          MHC-SK040-20-160-3-0-A                31561505
+     40           25,0       44,0       53,0             49,0     100,0          57,0   10,0    58,7      M10x1          500          MHC-SK040-25-100-3-0-A                31396194
+     40           25,0       44,0       53,0             49,0     160,0          57,0   10,0    60,0      M10x1          500          MHC-SK040-25-160-3-0-A                31561506
+     40           32,0       44,0       53,0                -     100,0          61,0   10,0    58,3      M10x1          650          MHC-SK040-32-100-3-0-A                31396195
+     40           32,0       44,0       53,0             49,0     160,0          61,0   10,0    60,0      M10x1          650          MHC-SK040-32-160-3-0-A                31561507
+* Permissible transmittable torque.
+
+
+
+
+Dimensions in mm.
+
+Application: For clamping tools with smooth cylindrical shanks to DIN 1835 Form A, DIN         With a length of 2.5xD (max. 50 mm) concentricity 3 μm. When using cylindrical shanks
+6535 Form HA as well as with recesses to DIN 1835 Form B, E and DIN 6535 Form HB, HE           with inclined clamping surface (form E and form HE), the accuracy may be impaired.
+directly and with reducing sleeve in the clamping diameter. The clamping diameter is desi-     Torque transmission perfectly tailored to your application.
+gned for a shank tolerance h6.                                                                 Note: Coolant supply via central through hole. Coolant tubes, code carriers, reducing slee-
+Scope of delivery: With length adjustment screw, without coolant tube.                         ves for reducing the clamping diameter (when using the reducing sleeve, an impairment of
+Design: Highest tool life and production quality when using smooth shanks according to         the accuracy is possible) see category accessories, spare parts and measuring equipment.
+DIN 1835 form A and DIN 6535 form HA.                                                          Length adjustment screws available on request.
+                                                                                               Balance quality: G 2.5 at 25,000 min-1 as delivered.
+14                     CLAMPING | Hydro Chuck UNIQ
+
+
+
+
+UNIQ® DReaM Chuck, 4.5°
+With axial tool length adjustment, clamping insertion in the collar
+Shank BT according to ISO 7388-2 form JD/JF (JIS B 6339)
+
+
+
+
+                                                    l1
+
+                                                           l4
+
+
+
+                                                                     4,5°
+
+
+
+
+                                                                                   d1
+
+
+
+
+                                                                                              d3
+                                                   l3                                    d2
+
+                                                                l2
+
+
+
+                                                  Dimensions                                                      G          Torque *                  Specification                  Order No.
+     BT                                                                                                                       [Nm]
+                 d1           d2           d3             l1                 l2         l3          l4
+   30**          6,0         21,0        27,0            85,0               37,0    10,0           57,7          M5             18            MHC-BT030-06-085-1-0-A                  31280360
+   30**          8,0         21,0        27,0            85,0               37,0    10,0           57,7          M6             35            MHC-BT030-08-085-1-0-A                  31280361
+   30**         10,0         24,0        32,0            85,0               41,0    10,0           57,7         M8x1            60            MHC-BT030-10-085-1-0-A                  31280362
+   30**         12,0         24,0        32,0            85,0               46,0    10,0           57,7        M10x1            90            MHC-BT030-12-085-1-0-A                  31280365
+   30**         14,0         27,0        34,0            85,0               46,0    10,0           57,2        M10x1           130            MHC-BT030-14-085-1-0-A                  31375079
+   30**         16,0         27,0        34,0            85,0               49,0    10,0           57,2        M10x1           200            MHC-BT030-16-085-1-0-A                  31280366
+   30**         18,0         33,0        42,0            85,0               49,0    10,0           57,5        M12x1           250            MHC-BT030-18-085-1-0-A                  31375080
+   30**         20,0         33,0        42,0            85,0               51,0    10,0           57,5        M10x1           330            MHC-BT030-20-085-1-0-A                  31280367
+     40          6,0         21,0        27,0            90,0               37,0    10,0           57,7          M5             18            MHC-BT040-06-090-3-0-A                  31344904
+     40          6,0         21,0        27,0           120,0               37,0    10,0           48,9          M5             18            MHC-BT040-06-120-3-0-A                  31496324
+     40          8,0         21,0        27,0            90,0               37,0    10,0           57,7          M6             35            MHC-BT040-08-090-3-0-A                  31344905
+     40          8,0         21,0        27,0           120,0               37,0    10,0           48,9          M6             35            MHC-BT040-08-120-3-0-A                  31496325
+     40         10,0         24,0        32,0            90,0               41,0    10,0           57,7         M8x1            60            MHC-BT040-10-090-3-0-A                  31344906
+     40         10,0         24,0        32,0           120,0               41,0    10,0           61,6         M8x1            60            MHC-BT040-10-120-3-0-A                  31496326
+     40         12,0         24,0        32,0            90,0               46,0    10,0           57,7        M10x1            90            MHC-BT040-12-090-3-0-A                  31344907
+     40         12,0         24,0        32,0           120,0               46,0    10,0           61,6        M10x1            90            MHC-BT040-12-120-3-0-A                  31496327
+     40         14,0         27,0        34,0            90,0               46,0    10,0           57,2        M10x1           130            MHC-BT040-14-090-3-0-A                  31396128
+     40         14,0         27,0        34,0           120,0               46,0    10,0           56,2        M10x1           130            MHC-BT040-14-120-3-0-A                  31496328
+     40         16,0         27,0        34,0            90,0               49,0    10,0           57,2        M12x1           200            MHC-BT040-16-090-3-0-A                  31344908
+     40         16,0         27,0        34,0           120,0               49,0    10,0           56,2        M12x1           200            MHC-BT040-16-120-3-0-A                  31496329
+     40         18,0         33,0        42,0            90,0               49,0    10,0           57,5        M12x1           250            MHC-BT040-18-090-3-0-A                  31396129
+     40         18,0         33,0        42,0           120,0               49,0    10,0           68,9        M12x1           250            MHC-BT040-18-120-3-0-A                  31496330
+     40         20,0         33,0        42,0            90,0               51,0    10,0           57,5        M16x1           330            MHC-BT040-20-090-3-0-A                  31344909
+     40         20,0         33,0        42,0           120,0               51,0    10,0           68,9        M16x1           330            MHC-BT040-20-120-3-0-A                  31496331
+     40         25,0         44,0        53,0           100,0               57,0    10,0           67,9        M16x1           500            MHC-BT040-25-100-3-0-A                  31396140
+     40         32,0         44,0        53,0           100,0               61,0    10,0           67,9        M16x1           650            MHC-BT040-32-100-3-0-A                  31396141
+* Permissible transmittable torque.
+** Design: Steep taper size is not available in combination design JD/JF
+
+
+
+
+Dimensions in mm.
+Application: For clamping tools with smooth cylindrical shanks to DIN 1835 Form A, DIN                   concentricity accuracy 3 μm. When using cylindrical shanks with inclined clamping surface
+6535 Form HA as well as with recesses to DIN 1835 Form B, E and DIN 6535 Form HB, HE                     (form E and form HE), the accuracy may be impaired. Torque transmission perfectly tailored
+directly and with reducing sleeve in the clamping diameter. The clamping diameter is desi-               to your application.
+gned for a shank tolerance h6.                                                                           Note: Coolant supply via central through hole. Tightening bolts, reducing sleeves for redu-
+Scope of delivery: With length adjustment screw, without tightening bolt.                                cing the clamping diameter. (When using the reducing sleeve, accuracy may be impaired)
+Design: Highest tool life and manufacturing quality when using smooth shanks according                   see category accessories and spare parts. Length adjustment screws available on request.
+to DIN 1835 form A and DIN 6535 form HA. With an overhang length of 2.5xD (max. 50 mm)                   Balance quality: G 2.5 at 25,000 min-1 as delivered.
+                                                                                                                             CLAMPING | Hydro Chuck UNIQ                              15
+
+
+
+UNIQ® DReaM Chuck, 4.5°
+With axial tool length adjustment, clamping insertion in the collar
+Shank "CAT" according to ASME B5.50-1994
+
+
+
+
+                                        l1
+
+                                               l4
+                                                     4,5°
+
+
+
+
+                                                                             d3
+                                                                       d2
+                                                                  d1
+
+
+
+
+                                        l3
+
+                                                    l2
+
+
+
+                                                         Dimensions                                       G         Torque *                 Specification                  Order No.
+    CAT                                                                                                              [Nm]
+                    d1          d2           d3              l1             l2     l3         l4
+     40             6,0        21,0          27,0           80,0        37,0      10,0       55,7        M5            18           MHC-CAT040-06-080-3-0-A                 31344892
+     40             8,0        21,0          27,0           80,0        37,0      10,0       55,7        M6            35           MHC-CAT040-08-080-3-0-A                 31344893
+     40           10,0         24,0          32,0           80,0        41,0      10,0       55,7      M8x1            60           MHC-CAT040-10-080-3-0-A                 31344894
+     40           12,0         24,0          32,0           80,0        46,0      10,0       55,7      M10x1           90           MHC-CAT040-12-080-3-0-A                 31344895
+     40           14,0         27,0          34,0           80,0        46,0      10,0       55,8      M10x1           130          MHC-CAT040-14-080-3-0-A                 31375095
+     40           16,0         27,0          34,0           80,0        49,0      10,0       55,8      M12x1           200          MHC-CAT040-16-080-3-0-A                 31344896
+     40           18,0         33,0          42,0           80,0        49,0      10,0       57,2      M12x1           250          MHC-CAT040-18-080-3-0-A                 31375096
+     40           20,0         33,0          42,0           80,0        51,0      10,0       57,2      M16x1           330          MHC-CAT040-20-080-3-0-A                 31344897
+* Permissible transmittable torque.
+
+
+
+
+Dimensions in mm.
+
+Application: For clamping tools with smooth cylindrical shanks to DIN 1835 Form A, DIN         With a length of 2.5xD (max. 50 mm) concentricity 3 μm. When using cylindrical shanks
+6535 Form HA as well as with recesses to DIN 1835 Form B, E and DIN 6535 Form HB, HE           with inclined clamping surface (form E and form HE), the accuracy may be impaired.
+directly and with reducing sleeve in the clamping diameter. The clamping diameter is desi-     Torque transmission perfectly tailored to your application.
+gned for a shank tolerance h6.                                                                 Note: Coolant supply via central through hole. Coolant tubes, code carriers, reducing slee-
+Scope of delivery: With length adjustment screw, without coolant tube.                         ves for reducing the clamping diameter (when using the reducing sleeve, an impairment of
+Design: Highest tool life and production quality when using smooth shanks according to         the accuracy is possible) see category accessories, spare parts and measuring equipment.
+DIN 1835 form A and DIN 6535 form HA.                                                          Length adjustment screws available on request.
+                                                                                               Balance quality: G 2.5 at 25,000 min-1 as delivered.
+Discover tool and service solutions now that will move you forward:
+
+
+BORE MACHINING
+    REAMING | FINE BORING
+    DRILLING FROM SOLID | BORING | COUNTERSINKING
+
+MILLING
+CLAMPING
+TURNING
+
+
+
+
+                                                                        UNIQ-EN-PC-01-005-0725-WMD Printed in Germany. Technical data subject to change without notice.
+                                                                        © MAPAL Dr. Kress SE & Co. KG | Reprinting, in whole or in part, only with the approval of the publisher.
+ACTUATING
+SETTING | MEASURING | DISPENSING
+SERVICES
+
+
+
+
+                                                                        Mat. no. 10177226 | V2.0.0
+
+
+
+
+                                                            FOLLOW US
+

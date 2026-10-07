@@ -1,0 +1,552 @@
+<title>HSK-A63 Holder Catalogue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a tool-crib register — tally strip on top, then a dense holder list read like a presetter
+   readout (profile · identity · clamp · gauge-length ruler · stock). Tabs for tally, issues and sources. */
+:root{
+  --paper:#F2F4F6; --panel:#FFFFFF; --ink:#15202A; --ink-2:#4B5966; --ink-3:#7A8794;
+  --rule:#D6DDE4; --rule-2:#E7ECF0;
+  --accent:#1E4E9E; --accent-ink:#FFFFFF; --accent-soft:#E2EAF6;
+  --high:#B42318; --high-soft:#FBE7E5; --med:#A86200; --med-soft:#FBEFD9; --low:#56677A; --low-soft:#E8EDF2;
+  --ok:#1C7448; --ok-soft:#E1F2E8;
+  --img-filter:none; --img-bg:#FFFFFF;
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Barlow","Segoe UI",system-ui,sans-serif;
+  --f-data:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0E141A; --panel:#151D25; --ink:#E4EAF0; --ink-2:#A3B0BD; --ink-3:#7C8996;
+  --rule:#2A3641; --rule-2:#202A34;
+  --accent:#86A9E6; --accent-ink:#0E141A; --accent-soft:#1C2A3E;
+  --high:#F0857A; --high-soft:#3A1F1C; --med:#E7AA45; --med-soft:#382B15; --low:#9DADBD; --low-soft:#232E39;
+  --ok:#62C58F; --ok-soft:#173226;
+  --img-filter:invert(.9) hue-rotate(180deg); --img-bg:#151D25; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0E141A; --panel:#151D25; --ink:#E4EAF0; --ink-2:#A3B0BD; --ink-3:#7C8996;
+  --rule:#2A3641; --rule-2:#202A34;
+  --accent:#86A9E6; --accent-ink:#0E141A; --accent-soft:#1C2A3E;
+  --high:#F0857A; --high-soft:#3A1F1C; --med:#E7AA45; --med-soft:#382B15; --low:#9DADBD; --low-soft:#232E39;
+  --ok:#62C58F; --ok-soft:#173226;
+  --img-filter:invert(.9) hue-rotate(180deg); --img-bg:#151D25; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;letter-spacing:.01em;margin:0;text-wrap:balance}
+h1{font-size:clamp(28px,4.4vw,40px);line-height:1}
+h2{font-size:22px}
+h3{font-size:17px}
+.mono{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-2)}
+.eyebrow{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.09em;font-size:13px;color:var(--ink-3);font-weight:600}
+a{color:var(--accent)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
+.head .id{display:flex;flex-direction:column;gap:6px;min-width:0}
+.iface{display:inline-flex;align-items:center;gap:8px;font-family:var(--f-data);font-size:12.5px;color:var(--ink-2)}
+.iface{flex-wrap:wrap}
+.iface b{background:var(--ink);color:var(--paper);font-weight:500;padding:2px 7px;border-radius:3px;white-space:nowrap}
+.save{font-size:13px;color:var(--ink-3);min-height:1.2em}
+
+/* tally strip */
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:var(--r);overflow:hidden}
+.stat{background:var(--panel);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat .v{font-family:var(--f-display);font-size:34px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.stat .k{font-size:13px;color:var(--ink-2)}
+.meter{height:6px;background:var(--rule-2);border-radius:3px;overflow:hidden;margin-top:6px}
+.meter i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
+.note{font-size:13px;color:var(--ink-2);max-width:75ch}
+
+/* tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--rule);overflow-x:auto}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px 7px;font-family:var(--f-display);font-size:17px;font-weight:600;letter-spacing:.02em;color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .n{font-family:var(--f-data);font-size:12px;font-weight:400;color:var(--ink-3);margin-left:4px}
+
+/* filters */
+.filters{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:var(--r);overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:none;padding:6px 11px;cursor:pointer;font-size:14px;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.field{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2)}
+.field input,.field select{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:6px 8px;font-size:14px;min-width:0}
+#q{width:min(240px,100%)}
+#fit{width:5.5em}
+.count-line{font-size:13px;color:var(--ink-3);margin-left:auto}
+
+/* list */
+.list{display:flex;flex-direction:column;border:1px solid var(--rule);border-radius:var(--r);background:var(--panel);overflow:hidden}
+.grp{padding:8px 14px;background:var(--paper);border-bottom:1px solid var(--rule);display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px;align-items:baseline}
+.grp h3{font-size:16px}
+.row{display:grid;grid-template-columns:92px minmax(0,1.6fr) minmax(0,1fr) 150px 64px 132px;gap:6px 14px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--rule-2)}
+.row:last-child{border-bottom:0}
+.prof{width:92px;height:61px;background:var(--img-bg);border:1px solid var(--rule-2);border-radius:4px;overflow:hidden;cursor:pointer;padding:0}
+.prof img{display:block;width:100%;height:100%;object-fit:contain;filter:var(--img-filter)}
+.prof.none{display:grid;place-items:center;font-size:11px;color:var(--ink-3);cursor:default}
+.ident{min-width:0;display:flex;flex-direction:column;gap:1px}
+.ident .top{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.mk{font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.06em;color:var(--ink-2)}
+.ord{font-family:var(--f-data);font-size:14.5px;font-weight:500;background:none;border:0;padding:0;cursor:pointer;color:var(--ink);text-align:left}
+.ord:hover{color:var(--accent)}
+.series{font-size:14px;color:var(--ink-2)}
+.clamp{display:flex;flex-direction:column;gap:1px;min-width:0}
+.clamp .big{font-family:var(--f-data);font-size:15px;font-weight:500}
+.clamp .sm{font-size:12.5px;color:var(--ink-3)}
+.cell-label{display:none}
+
+/* gauge-length ruler: 0 = HSK gauge line, scale 0–170 mm */
+.gl{display:flex;flex-direction:column;gap:3px}
+.gl .num{font-family:var(--f-data);font-size:14px}
+.gl .num small{color:var(--ink-3);font-size:11.5px}
+.ruler{position:relative;height:9px;background:repeating-linear-gradient(90deg,var(--rule) 0 1px,transparent 1px calc(100%/17)),var(--rule-2);border-left:2px solid var(--ink);border-radius:0 2px 2px 0}
+.ruler i{position:absolute;left:0;top:2px;bottom:2px;background:var(--accent);border-radius:0 2px 2px 0}
+.ruler s{position:absolute;top:2px;bottom:2px;border:1px dashed var(--med);border-left:0;text-decoration:none}
+.nose{font-family:var(--f-data);font-size:14px}
+.nose small{display:block;font-family:var(--f-body);font-size:11.5px;color:var(--ink-3)}
+
+/* stock */
+.stock{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.step{display:inline-flex;align-items:center;border:1px solid var(--rule);border-radius:var(--r);overflow:hidden;background:var(--panel)}
+.step button{width:32px;height:32px;border:0;background:none;cursor:pointer;font-size:18px;line-height:1;color:var(--ink-2)}
+.step button:hover{background:var(--accent-soft);color:var(--ink)}
+.step button:disabled{opacity:.35;cursor:default;background:none}
+.step output{min-width:30px;text-align:center;font-family:var(--f-data);font-size:15px;font-weight:500}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:1px 7px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+.chip.counted{background:var(--ok-soft);color:var(--ok)}
+.chip.unver{background:var(--med-soft);color:var(--med)}
+.chip.none{background:var(--low-soft);color:var(--low)}
+.chip.HIGH{background:var(--high-soft);color:var(--high)}
+.chip.MEDIUM{background:var(--med-soft);color:var(--med)}
+.chip.LOW,.chip.INFO{background:var(--low-soft);color:var(--low)}
+.chip.src{background:none;border-color:var(--rule);color:var(--ink-3)}
+.flagbtn{border:0;cursor:pointer}
+.want{background:none;border:1px solid var(--rule);border-radius:999px;font-size:12px;padding:1px 8px;cursor:pointer;color:var(--ink-3)}
+.want[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+/* detail */
+.detail{grid-column:1/-1;border-top:1px dashed var(--rule);margin-top:4px;padding-top:10px;display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:16px}
+.detail .bigprof{background:var(--img-bg);border:1px solid var(--rule-2);border-radius:4px}
+.detail .bigprof img{display:block;width:100%;filter:var(--img-filter)}
+.kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:3px 14px;font-size:14px;margin:0}
+.kv dt{color:var(--ink-3)}
+.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.links{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px}
+.fl{display:flex;flex-direction:column;gap:6px}
+.fl .f{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;font-size:14px;align-items:start}
+.fl .f p{margin:0}
+.fl .f .act{color:var(--ink-2);font-size:13px}
+.dims{font-family:var(--f-data);font-size:12.5px;color:var(--ink-2);overflow-wrap:anywhere}
+.empty{padding:28px 16px;text-align:center;color:var(--ink-3)}
+
+/* tally tab */
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:18px}
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) 120px 34px;gap:10px;align-items:center;font-size:14px}
+.bar .t{height:10px;background:var(--rule-2);border-radius:3px;overflow:hidden}
+.bar .t i{display:block;height:100%;background:var(--accent)}
+.bar .c{font-family:var(--f-data);text-align:right}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--rule-2);vertical-align:top}
+th{font-family:var(--f-display);font-weight:600;letter-spacing:.04em;color:var(--ink-2);font-size:14px}
+td.n,th.n{text-align:right;font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:var(--r);padding:7px 13px;cursor:pointer;font-weight:500}
+.btn.ghost{background:none;color:var(--accent)}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+textarea#csvout{width:100%;min-height:140px;font-family:var(--f-data);font-size:12px;background:var(--paper);color:var(--ink);border:1px solid var(--rule);border-radius:var(--r);padding:8px}
+
+/* issues / sources */
+.issue{display:grid;grid-template-columns:76px minmax(0,1fr);gap:4px 12px;padding:10px 0;border-bottom:1px solid var(--rule-2)}
+.issue:last-child{border-bottom:0}
+.issue .what{display:flex;flex-direction:column;gap:3px;min-width:0}
+.issue .who{font-family:var(--f-data);font-size:13px}
+.issue .act{font-size:13.5px;color:var(--ink-2)}
+.src-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:14px}
+.src-grid .card p{margin:0;font-size:14px}
+.method{font-family:var(--f-data);font-size:12.5px;background:var(--accent-soft);color:var(--ink);padding:2px 7px;border-radius:3px;align-self:flex-start}
+
+@media (max-width:880px){
+  .row{grid-template-columns:92px minmax(0,1fr) auto;grid-template-areas:"p i s" "p c s" "g g n"}
+  .row .prof{grid-area:p}.row .ident{grid-area:i}.row .clamp{grid-area:c}.row .gl{grid-area:g}.row .nose{grid-area:n;justify-self:end}.row .stock{grid-area:s;align-self:start}
+  .detail{grid-template-columns:1fr}
+  .count-line{margin-left:0;width:100%}
+}
+@media (max-width:480px){
+  .row{grid-template-columns:72px minmax(0,1fr);grid-template-areas:"p i" "c c" "g n" "s s"}
+  .prof{width:72px;height:48px}
+  .row .stock{flex-direction:row;justify-content:space-between;align-items:center;width:100%}
+  .bar{grid-template-columns:minmax(0,1fr) 80px 30px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <div class="id">
+      <span class="iface"><b>HSK-A63</b> DIN 69893-1 / ISO 12164-1 form A · gauge line = flange face</span>
+      <h1>HSK-A63 Holder Catalogue</h1>
+      <span class="muted" id="sub"></span>
+    </div>
+    <div class="save" id="save" role="status" aria-live="polite"></div>
+  </header>
+
+  <section class="strip" aria-label="Stock tally">
+    <div class="stat"><span class="v" id="tTotal">–</span><span class="k">holders on site</span></div>
+    <div class="stat"><span class="v" id="tArticles">–</span><span class="k">different articles on site</span></div>
+    <div class="stat"><span class="v" id="tCounted">–</span><span class="k" id="tCountedK">articles physically counted</span><div class="meter"><i id="tMeter"></i></div></div>
+    <div class="stat"><span class="v" id="tFlags">–</span><span class="k">open issues · <span id="tHigh"></span></span></div>
+  </section>
+  <p class="note" id="basis">Until a holder is counted, its quantity is the opening balance: 1 for every holder listed in the hyperMILL tool database (report of 07/10/2026). Use − and + to book what is physically on site; counts save for everyone with edit access.</p>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" id="tab-catalogue" aria-selected="true" data-tab="catalogue">Catalogue<span class="n" id="nCat"></span></button>
+    <button class="tab" role="tab" id="tab-tally" aria-selected="false" data-tab="tally">Tally</button>
+    <button class="tab" role="tab" id="tab-issues" aria-selected="false" data-tab="issues">Issues<span class="n" id="nIss"></span></button>
+    <button class="tab" role="tab" id="tab-sources" aria-selected="false" data-tab="sources">Sources</button>
+  </nav>
+
+  <section id="v-catalogue" role="tabpanel" aria-labelledby="tab-catalogue" style="display:flex;flex-direction:column;gap:12px">
+    <div class="filters">
+      <div class="seg" role="group" aria-label="Scope">
+        <button data-scope="site" aria-pressed="true">On site</button>
+        <button data-scope="cat" aria-pressed="false">Can buy</button>
+        <button data-scope="all" aria-pressed="false">All</button>
+      </div>
+      <label class="field">Search <input id="q" type="search" placeholder="Order no., series, Ø…"></label>
+      <label class="field">Type <select id="ftype"><option value="">All types</option></select></label>
+      <label class="field">Maker <select id="fmk"><option value="">All</option></select></label>
+      <label class="field">Fits shank Ø <input id="fit" type="number" min="0.5" max="40" step="0.5" inputmode="decimal" placeholder="mm"></label>
+      <label class="field"><input id="fflag" type="checkbox"> With issues</label>
+      <span class="count-line" id="countLine"></span>
+    </div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <section id="v-tally" role="tabpanel" aria-labelledby="tab-tally" hidden>
+    <div class="cols">
+      <div class="card"><h2>By holder type</h2><div class="bars" id="byType"></div></div>
+      <div class="card"><h2>By maker</h2><div class="bars" id="byMk"></div></div>
+      <div class="card"><h2>Fixed-bore holders by clamp Ø</h2><div class="tablewrap"><table id="byDia"></table></div></div>
+      <div class="card"><h2>Want to buy</h2><div id="wantList" class="muted"></div></div>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <h2>Export the count</h2>
+      <p class="note" style="margin:0">One row per article with the quantity on site and whether it was counted or is still the opening balance. Import it into the holder database (stock_transactions, type COUNT_ADJUST).</p>
+      <div class="btnrow"><button class="btn" id="exportBtn" type="button">Download count CSV</button><button class="btn ghost" id="copyBtn" type="button">Copy as CSV</button><span class="save" id="expMsg"></span></div>
+      <textarea id="csvout" readonly hidden aria-label="Count CSV"></textarea>
+    </div>
+  </section>
+
+  <section id="v-issues" role="tabpanel" aria-labelledby="tab-issues" hidden>
+    <div class="card" id="issues"></div>
+  </section>
+
+  <section id="v-sources" role="tabpanel" aria-labelledby="tab-sources" hidden>
+    <p class="note">How each maker's HSK-A63 data was obtained for this catalogue, and the method the Windows app should use to pull the full range.</p>
+    <div class="src-grid" id="sources"></div>
+  </section>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const IMG = /*__IMG__*/null;
+
+const H = DATA.holders, FLAGS = DATA.flags, TYPES = DATA.types;
+const byId = new Map(H.map(h => [h.id, h]));
+const flagsBy = new Map();
+FLAGS.forEach(f => { if (f.hid) { if (!flagsBy.has(f.hid)) flagsBy.set(f.hid, []); flagsBy.get(f.hid).push(f); } });
+const SEV = ["HIGH", "MEDIUM", "LOW", "INFO"];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = n => n == null ? "–" : (Math.round(n * 10) / 10).toString();
+const GLMAX = 170;
+
+// ---------- stock state ----------
+const counts = new Map();   // hid -> {qty, at}
+const wants = new Set();
+let db = null, uid = null, canWrite = true;
+const pending = new Map(), inflight = new Set(), dirty = new Set();
+
+function qtyOf(h) { const c = counts.get(h.id); return c ? c.qty : (h.on ? 1 : 0); }
+function statusOf(h) { return counts.has(h.id) ? "counted" : (h.on ? "unver" : "none"); }
+function setSave(t) { document.getElementById("save").textContent = t; }
+
+// ---------- filters ----------
+const st = { scope: "site", q: "", type: "", mk: "", fit: null, flag: false };
+const expanded = new Set();
+
+function matches(h) {
+  if (st.scope === "site" && qtyOf(h) <= 0 && !h.on) return false;
+  if (st.scope === "cat" && h.on) return false;
+  if (st.type && h.type !== st.type) return false;
+  if (st.mk && h.mk !== st.mk) return false;
+  if (st.flag && !flagsBy.has(h.id)) return false;
+  if (st.fit != null) { if (h.cmin == null || h.cmax == null || st.fit < h.cmin || st.fit > h.cmax) return false; }
+  if (st.q) {
+    const hay = [h.mk, h.ord, h.spec, h.name, h.series, h.cspec, h.camName, h.camCmt, "gl" + h.gl, "d" + h.cd].join(" ").toLowerCase();
+    if (!st.q.toLowerCase().split(/\s+/).every(t => hay.includes(t))) return false;
+  }
+  return true;
+}
+
+function rulerHTML(h) {
+  const w = v => Math.min(100, (v / GLMAX) * 100).toFixed(1) + "%";
+  let s = `<div class="ruler" aria-hidden="true"><i style="width:${w(h.gl || 0)}"></i>`;
+  if (h.cgl && h.gl && h.cgl !== h.gl) s += `<s style="left:${w(h.gl)};width:${((h.cgl - h.gl) / GLMAX * 100).toFixed(1)}%"></s>`;
+  return s + "</div>";
+}
+
+function rowHTML(h) {
+  const fl = flagsBy.get(h.id) || [];
+  const worst = SEV.find(s => fl.some(f => f.sev === s && s !== "INFO"));
+  const q = qtyOf(h), stt = statusOf(h);
+  const chip = stt === "counted" ? `<span class="chip counted">Counted</span>` : stt === "unver" ? `<span class="chip unver">Unverified</span>` : `<span class="chip none">Not on site</span>`;
+  const glNote = h.cgl && h.cgl !== h.gl ? `<small> · CAM ${fmt(h.cgl)}</small>` : "";
+  const prof = IMG[h.id] ? `<button class="prof" data-act="open" data-id="${h.id}" aria-label="Show details for ${esc(h.ord)}"><img src="${IMG[h.id]}" alt="hyperMILL profile of ${esc(h.ord)}" loading="lazy"></button>`
+                         : `<div class="prof none">no CAM model</div>`;
+  let html = `<div class="row" id="r-${h.id}">
+    ${prof}
+    <div class="ident"><div class="top"><span class="mk">${esc(h.mk)}</span><button class="ord" data-act="open" data-id="${h.id}" aria-expanded="${expanded.has(h.id)}">${esc(h.ord)}</button>
+      ${worst ? `<button class="chip ${worst} flagbtn" data-act="open" data-id="${h.id}">${fl.filter(f=>f.sev!=="INFO").length} issue${fl.filter(f=>f.sev!=="INFO").length>1?"s":""}</button>` : ""}</div>
+      <span class="series">${esc(h.series)}</span></div>
+    <div class="clamp"><span class="big">${esc(h.cspec)}</span><span class="sm">${esc(TYPES[h.type])}</span></div>
+    <div class="gl"><span class="num">GL ${fmt(h.gl)} mm${glNote}</span>${rulerHTML(h)}</div>
+    <div class="nose">${h.nose != null ? "Ø" + fmt(h.nose) : "–"}<small>nose Ø</small></div>
+    <div class="stock">
+      <span class="step" role="group" aria-label="Quantity on site for ${esc(h.ord)}">
+        <button data-act="dec" data-id="${h.id}" aria-label="One less" ${q <= 0 || !canWrite ? "disabled" : ""}>−</button>
+        <output id="q-${h.id}">${q}</output>
+        <button data-act="inc" data-id="${h.id}" aria-label="One more" ${!canWrite ? "disabled" : ""}>+</button>
+      </span>
+      <span id="c-${h.id}">${chip}</span>
+      ${!h.on ? `<button class="want" data-act="want" data-id="${h.id}" aria-pressed="${wants.has(h.id)}">${wants.has(h.id) ? "On want list" : "Want"}</button>` : ""}
+    </div>`;
+  if (expanded.has(h.id)) html += detailHTML(h);
+  return html + `</div>`;
+}
+
+function detailHTML(h) {
+  const fl = (flagsBy.get(h.id) || []).slice().sort((a, b) => SEV.indexOf(a.sev) - SEV.indexOf(b.sev));
+  const dims = Object.entries(h.dims || {}).map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(" · ");
+  const link = (u, t) => u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${t} ↗</a>` : "";
+  const kv = [
+    ["Product", h.name], ["Spec code", h.spec], ["Clamping", h.cspec],
+    ["Gauge length", h.gl != null ? `${fmt(h.gl)} mm (maker '${h.glref || "A"}')` + (h.cgl ? ` · hyperMILL ${fmt(h.cgl)} mm` : "") : null],
+    ["Nose Ø", h.nose != null ? fmt(h.nose) + " mm" : null],
+    ["Coolant", h.cool], ["Balance", h.bal], ["Max rpm", h.rpm], ["Mass", h.kg != null ? h.kg + " kg" : null],
+    ["hyperMILL name", h.camName], ["hyperMILL comment", h.camCmt],
+    ["Data", `${({verified:"Verified on maker site",partial:"Partly verified",distributor_only:"From distributor (maker site blocked)",catalogue_pdf:"Maker PDF catalogue"})[h.st] || h.st}${h.src ? " — " + h.src : ""}`],
+  ].filter(r => r[1] != null && r[1] !== "");
+  return `<div class="detail">
+    <div style="display:flex;flex-direction:column;gap:8px">${IMG[h.id] ? `<div class="bigprof"><img src="${IMG[h.id]}" alt="hyperMILL holder profile"></div><span class="eyebrow">hyperMILL holder profile</span>` : ""}
+      <div class="links">${link(h.url, "Maker page")}${link(h.img, "Maker photo")}${link(h.drw, "Drawing")}</div></div>
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <dl class="kv">${kv.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+      ${dims ? `<div><span class="eyebrow">All maker dimensions</span><div class="dims">${dims}</div></div>` : ""}
+      ${fl.length ? `<div class="fl"><span class="eyebrow">Issues</span>${fl.map(f => `<div class="f"><span class="chip ${f.sev}">${f.sev}</span><div><p>${esc(f.msg)}</p><p class="act">→ ${esc(f.act)}</p></div></div>`).join("")}</div>` : ""}
+    </div></div>`;
+}
+
+function renderList() {
+  const rows = H.filter(matches);
+  const order = Object.keys(TYPES);
+  rows.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type) || (a.cmin ?? 99) - (b.cmin ?? 99) || (a.gl || 0) - (b.gl || 0) || a.ord.localeCompare(b.ord));
+  const el = document.getElementById("list");
+  if (!rows.length) { el.innerHTML = `<div class="empty">No holders match these filters. Clear the search or the shank Ø to see more.</div>`; }
+  else {
+    let html = "", cur = null;
+    for (const h of rows) {
+      if (h.type !== cur) {
+        cur = h.type;
+        const grp = rows.filter(r => r.type === cur);
+        const qty = grp.reduce((s, r) => s + qtyOf(r), 0);
+        html += `<div class="grp"><h3>${esc(TYPES[cur])}</h3><span class="eyebrow">${grp.length} article${grp.length > 1 ? "s" : ""} · <span class="mono" id="gq-${cur}">${qty}</span> on site</span></div>`;
+      }
+      html += rowHTML(h);
+    }
+    el.innerHTML = html;
+  }
+  document.getElementById("countLine").textContent = `${rows.length} of ${H.length} articles shown`;
+}
+
+function updateRow(id) {
+  const h = byId.get(id); const o = document.getElementById("q-" + id);
+  if (!o) return;
+  o.textContent = qtyOf(h);
+  const dec = o.previousElementSibling; dec.disabled = qtyOf(h) <= 0 || !canWrite;
+  const s = statusOf(h);
+  document.getElementById("c-" + id).innerHTML = s === "counted" ? `<span class="chip counted">Counted</span>` : s === "unver" ? `<span class="chip unver">Unverified</span>` : `<span class="chip none">Not on site</span>`;
+}
+
+// ---------- tally ----------
+function renderTally() {
+  const site = H.filter(h => qtyOf(h) > 0);
+  const total = site.reduce((s, h) => s + qtyOf(h), 0);
+  const onList = H.filter(h => h.on);
+  const counted = H.filter(h => counts.has(h.id)).length;
+  document.getElementById("tTotal").textContent = total;
+  document.getElementById("tArticles").textContent = site.length;
+  document.getElementById("tCounted").textContent = `${counted}/${onList.length}`;
+  document.getElementById("tMeter").style.width = (onList.length ? Math.min(100, counted / onList.length * 100) : 0) + "%";
+  const open = FLAGS.filter(f => f.sev !== "INFO");
+  document.getElementById("tFlags").textContent = open.length;
+  document.getElementById("tHigh").textContent = `${FLAGS.filter(f => f.sev === "HIGH").length} high`;
+  document.getElementById("nCat").textContent = H.length;
+  document.getElementById("nIss").textContent = open.length;
+
+  const bars = (el, groups) => {
+    const max = Math.max(1, ...groups.map(g => g[1]));
+    document.getElementById(el).innerHTML = groups.map(([k, v]) => `<div class="bar"><span>${esc(k)}</span><span class="t"><i style="width:${(v / max * 100).toFixed(1)}%"></i></span><span class="c">${v}</span></div>`).join("");
+  };
+  bars("byType", Object.entries(TYPES).map(([k, n]) => [n, H.filter(h => h.type === k).reduce((s, h) => s + qtyOf(h), 0)]));
+  const mks = [...new Set(H.map(h => h.mk))];
+  bars("byMk", mks.map(m => [m, H.filter(h => h.mk === m).reduce((s, h) => s + qtyOf(h), 0)]).sort((a, b) => b[1] - a[1]));
+
+  const fixed = site.filter(h => h.cmin != null && h.cmin === h.cmax && ["SHRINK", "HYDRAULIC"].includes(h.type));
+  const dias = [...new Set(fixed.map(h => h.cmin))].sort((a, b) => a - b);
+  document.getElementById("byDia").innerHTML = `<thead><tr><th>Ø mm</th><th class="n">Shrink</th><th class="n">Hydraulic</th><th>Gauge lengths</th></tr></thead><tbody>` +
+    dias.map(d => { const g = fixed.filter(h => h.cmin === d); const n = t => g.filter(h => h.type === t).reduce((s, h) => s + qtyOf(h), 0) || "";
+      return `<tr><td class="mono">${fmt(d)}</td><td class="n">${n("SHRINK")}</td><td class="n">${n("HYDRAULIC")}</td><td class="mono">${[...new Set(g.map(h => fmt(h.gl)))].sort((a, b) => a - b).join(" · ")}</td></tr>`; }).join("") + `</tbody>`;
+  const wl = H.filter(h => wants.has(h.id));
+  document.getElementById("wantList").innerHTML = wl.length ? `<table><tbody>${wl.map(h => `<tr><td class="mono">${esc(h.mk)} ${esc(h.ord)}</td><td>${esc(h.cspec)} · GL ${fmt(h.gl)}</td></tr>`).join("")}</tbody></table>`
+    : "Nothing yet. In the Catalogue, switch to “Can buy” and press Want on a holder you'd like to order.";
+}
+
+// ---------- issues & sources ----------
+function renderIssues() {
+  const sorted = FLAGS.slice().sort((a, b) => SEV.indexOf(a.sev) - SEV.indexOf(b.sev));
+  document.getElementById("issues").innerHTML = `<h2>Data issues to fix</h2><p class="note" style="margin:0">Raised while checking the hyperMILL holders against the makers' own data. HIGH and MEDIUM affect what the CAM system or an operator would do.</p>` +
+    sorted.map(f => { const h = byId.get(f.hid); return `<div class="issue"><span><span class="chip ${f.sev}">${f.sev}</span></span><div class="what">
+      <span class="who">${h ? esc(h.mk + " " + h.ord) : "General"} <span class="muted" style="font-family:var(--f-body)">· ${esc(f.cat)}</span></span><span>${esc(f.msg)}</span><span class="act">→ ${esc(f.act)}</span></div></div>`; }).join("");
+}
+function renderSources() {
+  document.getElementById("sources").innerHTML = DATA.sources.map(s => `<div class="card"><h3>${esc(s.vendor)}</h3><span class="method">${esc(s.method)}</span>
+    <p>${esc(s.why)}</p>${s.issue ? `<p class="muted"><b>Your link:</b> ${esc(s.issue)}</p>` : ""}${s.url ? `<p><a href="${esc(s.url)}" target="_blank" rel="noopener">Best entry point ↗</a></p>` : ""}</div>`).join("");
+}
+
+// ---------- csv ----------
+function csv() {
+  const head = ["holder_id", "manufacturer", "order_no", "series", "clamp", "gauge_length_mm", "qty_on_site", "count_status", "counted_at"];
+  const q = v => { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const rows = H.filter(h => h.on || counts.has(h.id)).map(h => [h.id, h.mk, h.ord, h.series, h.cspec, h.gl, qtyOf(h), counts.has(h.id) ? "COUNTED" : "OPENING_BALANCE", counts.get(h.id)?.at || ""]);
+  return [head, ...rows].map(r => r.map(q).join(",")).join("\r\n");
+}
+
+// ---------- writes ----------
+function bump(id, d) {
+  const h = byId.get(id); const nq = Math.max(0, qtyOf(h) + d);
+  counts.set(id, { qty: nq, at: new Date().toISOString() });
+  updateRow(id); renderTally(); refreshGroupHeads();
+  if (!db) { setSave("Not saved in this view — open the catalogue on claude.ai to keep counts."); return; }
+  setSave("Saving…");
+  clearTimeout(pending.get(id));
+  pending.set(id, setTimeout(() => { pending.delete(id); flush(id); }, 600));
+}
+async function flush(id) {
+  if (inflight.has(id)) { dirty.add(id); return; }
+  inflight.add(id);
+  const c = counts.get(id);
+  try { await db.doc("counts/" + id).set({ qty: c.qty, at: c.at, by: uid }); setSave("Count saved"); }
+  catch (e) {
+    if (e && e.code === "invalid_argument") { canWrite = false; renderList(); setSave("You can view this catalogue but not change counts. Ask the owner for edit access."); }
+    else if (e && e.code === "unavailable") { setTimeout(() => flush(id), 800 + Math.random() * 800); }
+    else setSave("Count not saved: " + (e?.message || "unknown error"));
+  } finally { inflight.delete(id); if (dirty.delete(id)) flush(id); }
+}
+async function toggleWant(id) {
+  const on = !wants.has(id);
+  on ? wants.add(id) : wants.delete(id);
+  renderList(); renderTally();
+  if (!db) return;
+  try { on ? await db.doc("wishlist/" + id).set({ qty: 1, at: new Date().toISOString(), by: uid }) : await db.doc("wishlist/" + id).delete(); setSave(on ? "Added to want list" : "Removed from want list"); }
+  catch (e) { setSave("Want list not saved: " + (e?.message || "unknown error")); }
+}
+function refreshGroupHeads() {
+  Object.keys(TYPES).forEach(t => {
+    const el = document.getElementById("gq-" + t);
+    if (el) el.textContent = H.filter(h => h.type === t && matches(h)).reduce((s, h) => s + qtyOf(h), 0);
+  });
+}
+
+// ---------- events ----------
+document.getElementById("list").addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const id = b.dataset.id, act = b.dataset.act;
+  if (act === "inc") bump(id, 1);
+  else if (act === "dec") bump(id, -1);
+  else if (act === "want") toggleWant(id);
+  else if (act === "open") { expanded.has(id) ? expanded.delete(id) : expanded.add(id); const r = document.getElementById("r-" + id); r.outerHTML = rowHTML(byId.get(id)); }
+});
+document.querySelectorAll("[data-scope]").forEach(b => b.addEventListener("click", () => {
+  st.scope = b.dataset.scope; document.querySelectorAll("[data-scope]").forEach(x => x.setAttribute("aria-pressed", x === b)); renderList();
+}));
+document.getElementById("q").addEventListener("input", e => { st.q = e.target.value.trim(); renderList(); });
+document.getElementById("ftype").addEventListener("change", e => { st.type = e.target.value; renderList(); });
+document.getElementById("fmk").addEventListener("change", e => { st.mk = e.target.value; renderList(); });
+document.getElementById("fit").addEventListener("input", e => { const v = parseFloat(e.target.value); st.fit = isFinite(v) ? v : null; renderList(); });
+document.getElementById("fflag").addEventListener("change", e => { st.flag = e.target.checked; renderList(); });
+
+function showTab(t) {
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t));
+  ["catalogue", "tally", "issues", "sources"].forEach(k => { document.getElementById("v-" + k).hidden = k !== t; });
+  if (t === "catalogue") renderList();
+}
+document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  const t = csv(), ta = document.getElementById("csvout"), m = document.getElementById("expMsg");
+  try { await navigator.clipboard.writeText(t); m.textContent = "Copied — paste into Excel or the app import."; }
+  catch { ta.hidden = false; ta.value = t; ta.focus(); ta.select(); m.textContent = "Select-all is ready — press Ctrl+C."; }
+});
+let downloads = null;
+document.getElementById("exportBtn").addEventListener("click", async () => {
+  const m = document.getElementById("expMsg");
+  if (!downloads) { m.textContent = "Downloads aren't available here — use Copy as CSV."; return; }
+  try { await downloads.save({ filename: `HSK-A63_holder_count_${new Date().toISOString().slice(0, 10)}.csv`, data: csv() }); m.textContent = "Saved."; }
+  catch (e) { m.textContent = e?.code === "declined" ? "Download cancelled." : "Couldn't save the file — use Copy as CSV."; }
+});
+
+// ---------- init ----------
+(function init() {
+  const ft = document.getElementById("ftype");
+  Object.entries(TYPES).forEach(([k, n]) => ft.insertAdjacentHTML("beforeend", `<option value="${k}">${esc(n)}</option>`));
+  const fm = document.getElementById("fmk");
+  [...new Set(H.map(h => h.mk))].forEach(m => fm.insertAdjacentHTML("beforeend", `<option>${esc(m)}</option>`));
+  document.getElementById("sub").textContent = `${H.filter(h => h.on).length} holders from the hyperMILL tool database, checked against maker data on ${DATA.generated} · ${H.filter(h => !h.on).length} more MAPAL UNIQ chucks available to buy`;
+  const hash = (location.hash || "").slice(1);
+  renderList(); renderTally(); renderIssues(); renderSources();
+  if (["tally", "issues", "sources"].includes(hash)) showTab(hash);
+})();
+
+(async function connect() {
+  const C = window.claude;
+  if (!C || !C.use) { setSave(""); return; }
+  const [d, u, dl] = await Promise.all([C.use("db"), C.use("user"), C.use("downloads")]);
+  downloads = dl;
+  if (!dl) document.getElementById("exportBtn").hidden = true;
+  if (!d) { setSave("Counts can't be saved in this view — they reset on reload."); return; }
+  db = d;
+  if (u) { try { uid = await u.id(); const w = await u.can("data.write"); if (w === false) { canWrite = false; setSave("View only — ask the owner for edit access to book counts."); } } catch {} }
+  db.collection("counts").onSnapshot(snap => {
+    for (const ch of snap.docChanges()) {
+      const id = ch.doc.id; if (!byId.has(id) || pending.has(id) || inflight.has(id)) continue;
+      if (ch.type === "removed") counts.delete(id);
+      else { const v = ch.doc.data(); counts.set(id, { qty: Math.max(0, Number(v.qty) || 0), at: v.at || "" }); }
+      updateRow(id);
+    }
+    renderTally(); refreshGroupHeads();
+  }, e => setSave("Live counts stopped updating (" + e.code + "). Reload to reconnect."));
+  db.collection("wishlist").onSnapshot(snap => {
+    wants.clear(); snap.docs.forEach(d => { if (byId.has(d.id)) wants.add(d.id); });
+    renderTally();
+    document.querySelectorAll('[data-act="want"]').forEach(b => { const on = wants.has(b.dataset.id); b.setAttribute("aria-pressed", on); b.textContent = on ? "On want list" : "Want"; });
+  }, () => {});
+  if (canWrite) renderList();
+})();
+</script>

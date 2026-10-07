@@ -1,0 +1,32 @@
+﻿flag_id,holder_id,severity,category,message,action,status,raised_on
+1,H0010,HIGH,CAM model,hyperMILL coupling on this HSK-A63 holder is 'adaptor / top / SPINDLE 40TAPER' — wrong interface class (all other holders are 'unknown').,Correct the top coupling in the hyperMILL holder so it can't be assembled to a 40-taper spindle definition.,OPEN,2026-10-07
+2,H0048,MEDIUM,Gauge length,hyperMILL comment says 90GL; Haimer and the hyperMILL holder name both say 80 mm.,"Fix the comment, and confirm the holder geometry in hyperMILL is the 80 mm one.",OPEN,2026-10-07
+3,H0047,MEDIUM,Gauge length,hyperMILL comment says 90GL; Haimer and the hyperMILL holder name both say 85 mm.,"Fix the comment, and confirm the holder geometry in hyperMILL is the 85 mm one.",OPEN,2026-10-07
+4,H0001,MEDIUM,Gauge length,Convention difference: Haimer A = 50 mm to the cutter seating face; hyperMILL GL = 67 mm = A + spigot length.,Confirm which face hyperMILL references the shell mill from; a mismatch puts holder clearance checks out by the spigot length (17–21 mm).,OPEN,2026-10-07
+5,H0002,MEDIUM,Gauge length,Convention difference: Haimer A = 50 mm to the cutter seating face; hyperMILL GL = 69 mm = A + spigot length.,Confirm which face hyperMILL references the shell mill from; a mismatch puts holder clearance checks out by the spigot length (17–21 mm).,OPEN,2026-10-07
+6,H0003,MEDIUM,Gauge length,Convention difference: Haimer A = 100 mm to the cutter seating face; hyperMILL GL = 119 mm = A + spigot length.,Confirm which face hyperMILL references the shell mill from; a mismatch puts holder clearance checks out by the spigot length (17–21 mm).,OPEN,2026-10-07
+7,H0004,MEDIUM,Gauge length,Convention difference: Haimer A = 100 mm to the cutter seating face; hyperMILL GL = 121 mm = A + spigot length.,Confirm which face hyperMILL references the shell mill from; a mismatch puts holder clearance checks out by the spigot length (17–21 mm).,OPEN,2026-10-07
+8,H0016,MEDIUM,Naming,"Both HG chucks share the description 'HIGH-PRECISION COLLET CHUCK 120GL'. They take HAIMER HG collets (not ER): A63.120.01 = HG01 2–8 mm, A63.120.02 = HG02 10–14 mm.",Rename in hyperMILL to include HG01 / HG02 and the clamping range.,OPEN,2026-10-07
+9,H0017,MEDIUM,Naming,"Both HG chucks share the description 'HIGH-PRECISION COLLET CHUCK 120GL'. They take HAIMER HG collets (not ER): A63.120.01 = HG01 2–8 mm, A63.120.02 = HG02 10–14 mm.",Rename in hyperMILL to include HG01 / HG02 and the clamping range.,OPEN,2026-10-07
+10,H0052,MEDIUM,Naming,hyperMILL calls this 'QC TAP CHUCK CLUTCHED'; Ceratizit lists it as a Synchro quick-change tapping chuck with minimum length compensation — no torque clutch listed.,Rename; don't rely on it for tap overload protection. Rigid/synchronised tap cycle required.,OPEN,2026-10-07
+11,H0040,LOW,Naming,"hyperMILL 'SHORT SHRINK' is HAIMER's Power Shrink Chuck, ultra-short, with Cool Jet.",Rename to POWER SHRINK ULTRA SHORT.,OPEN,2026-10-07
+12,H0041,LOW,Naming,"hyperMILL 'SHORT SHRINK' is HAIMER's Power Shrink Chuck, ultra-short, with Cool Jet.",Rename to POWER SHRINK ULTRA SHORT.,OPEN,2026-10-07
+13,H0042,LOW,Naming,"hyperMILL 'SHORT SHRINK' is HAIMER's Power Shrink Chuck, ultra-short, with Cool Jet.",Rename to POWER SHRINK ULTRA SHORT.,OPEN,2026-10-07
+14,H0043,LOW,Naming,"hyperMILL 'SHORT SHRINK' is HAIMER's Power Shrink Chuck, ultra-short, with Cool Jet.",Rename to POWER SHRINK ULTRA SHORT.,OPEN,2026-10-07
+15,H0053,LOW,Naming,hyperMILL comment says 0.5–12 mm; MAPAL lists 0.5–13 mm (MPC-HSK-A063-13-110).,Update comment.,OPEN,2026-10-07
+16,H0013,LOW,Data source,Distributor lists LSCX 68 mm — identical to the 100 mm version 84719607; looks copied.,Check against Ceratizit catalogue / drawing.,OPEN,2026-10-07
+17,H0011,LOW,Data source,Spec code contains '.22.' but listed nose Ø is 16 mm.,Measure nose Ø; it matters for collision checking.,OPEN,2026-10-07
+18,H0044,LOW,Naming,hyperMILL comment omits 'SLIT' (Haimer: with slits).,Update comment.,OPEN,2026-10-07
+19,H0002,LOW,Naming,hyperMILL comment has a typo: 'A63-050-22-KKB.KKB'.,Update comment.,OPEN,2026-10-07
+20,H0045,INFO,Data source,"Haimer variant page 404 — D2, L, mass not captured (A 80 mm confirmed from variant table).",App scraper / manual check.,OPEN,2026-10-07
+21,H0010,INFO,Data source,"Ceratizit site blocks automated access (403); data taken from distributor Zedaro, which quotes the Ceratizit article no.",Confirm against Ceratizit catalogue or ISO 13399 data from rep.,OPEN,2026-10-07
+22,H0011,INFO,Data source,"Ceratizit site blocks automated access (403); data taken from distributor Zedaro, which quotes the Ceratizit article no.",Confirm against Ceratizit catalogue or ISO 13399 data from rep.,OPEN,2026-10-07
+23,H0012,INFO,Data source,"Ceratizit site blocks automated access (403); data taken from distributor Zedaro, which quotes the Ceratizit article no.",Confirm against Ceratizit catalogue or ISO 13399 data from rep.,OPEN,2026-10-07
+24,H0013,INFO,Data source,"Ceratizit site blocks automated access (403); data taken from distributor Zedaro, which quotes the Ceratizit article no.",Confirm against Ceratizit catalogue or ISO 13399 data from rep.,OPEN,2026-10-07
+25,H0014,INFO,Data source,"Ceratizit site blocks automated access (403); data taken from distributor Zedaro, which quotes the Ceratizit article no.",Confirm against Ceratizit catalogue or ISO 13399 data from rep.,OPEN,2026-10-07
+26,H0015,INFO,Data source,"Ceratizit site blocks automated access (403); data taken from distributor Zedaro, which quotes the Ceratizit article no.",Confirm against Ceratizit catalogue or ISO 13399 data from rep.,OPEN,2026-10-07
+27,H0052,INFO,Data source,"Ceratizit site blocks automated access (403); data taken from distributor Zedaro, which quotes the Ceratizit article no.",Confirm against Ceratizit catalogue or ISO 13399 data from rep.,OPEN,2026-10-07
+28,H0018,INFO,Purchasing,MAPAL shop also lists 30655666 with the same spec code HTC-HSK-A063-12-080 (different drawing no.).,Confirm current order no. with MAPAL before reordering.,OPEN,2026-10-07
+29,H0019,INFO,Purchasing,MAPAL shop also lists 30655668 with the same spec code HTC-HSK-A063-20-080 (different drawing no.).,Confirm current order no. with MAPAL before reordering.,OPEN,2026-10-07
+30,H0024,INFO,CAM model,No comment in hyperMILL holder.,Add spec code HTC-HSK-A063-32-105-1-0-A.,OPEN,2026-10-07
+31,H0005,INFO,Data source,"Kemmler table doesn't print LPR 126 / M12; taken from distributor Camcut, consistent with Kemmler's product title.",None — consistent.,OPEN,2026-10-07
