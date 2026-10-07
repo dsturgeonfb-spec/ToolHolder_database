@@ -1,0 +1,10 @@
+# Test fixture for shop.mapal.com (the real file was not checked — see data/raw/source_register.json).
+# No crawl-delay, so the app's own 2 s minimum applies.
+User-agent: *
+Disallow: /cart
+Disallow: /checkout
+Disallow: /my-account
+Disallow: /login
+Disallow: /search/autocomplete
+
+Sitemap: https://shop.mapal.com/sitemap.xml

@@ -1,0 +1,37 @@
+{
+  "//": "Offline answers for vendor requests (see src/server/vendors/fixtures.ts). Anything not listed answers 404.",
+
+  "https://shop.haimer.com/robots.txt": { "file": "haimer/robots.txt", "type": "text/plain; charset=utf-8" },
+  "https://shop.haimer.com/sitemap.xml": { "file": "haimer/sitemap.xml", "type": "application/xml; charset=utf-8" },
+  "https://shop.haimer.com/sitemap/salesChannel-018a3f2b6c0d7e8f9a1b2c3d4e5f6a7b-2fbb5fe2e29a4d70aa5854ce7ce3e20b/018a3f2b6c0d7e8f9a1b2c3d4e5f6a7b-sitemap-shop-haimer-com-en-1.xml.gz": { "file": "haimer/sitemap-en-1.xml", "gzip": true, "type": "application/x-gzip" },
+  "https://shop.haimer.com/sitemap/salesChannel-018a3f2b6c0d7e8f9a1b2c3d4e5f6a7b-6a1d1bb1c7a64c1db0d0e1b8b3c11e1d/018a3f2b6c0d7e8f9a1b2c3d4e5f6a7b-sitemap-shop-haimer-com-de-1.xml.gz": { "file": "haimer/sitemap-de-1.xml", "gzip": true, "type": "application/x-gzip" },
+  "https://shop.haimer.com/en/Power-Mini-Shrink-Chuck-DIN-69893-1-HSK-A63/A63.182.03.8": { "file": "haimer/A63.182.03.8.html" },
+  "https://shop.haimer.com/en/Power-Mini-Shrink-Chuck-DIN-69893-1-HSK-A63/A63.182.04.8": { "file": "haimer/A63.182.04.8.html" },
+  "https://shop.haimer.com/en/Shrink-Fit-Chuck-Standard-Version-DIN-69893-1-HSK-A63/A63.140.03": { "file": "haimer/A63.140.03.html" },
+  "https://shop.haimer.com/en/Shrink-Fit-Chuck-Standard-Version-DIN-69893-1-HSK-A63/A63.147.05.1": { "file": "haimer/A63.147.05.1.html" },
+  "https://shop.haimer.com/en/Standard-Hydraulic-Chuck-DIN-69893-1-HSK-A63/A63.1H10.10": { "file": "haimer/A63.1H10.10.html" },
+  "https://shop.haimer.com/en/Face-Mill-Arbor-DIN-69893-1-HSK-A63/A63.050.16.KKB": { "file": "haimer/A63.050.16.KKB.html" },
+  "https://shop.haimer.com/media/18/aa/a4/1690202453/asset-113155-654.jpg": { "file": "images/haimer-face-mill-arbor.jpg", "type": "image/jpeg" },
+  "https://shop.haimer.com/media/5e/0c/8a/1690201622/asset-113402-659.jpg": { "file": "images/haimer-mini-shrink.jpg", "type": "image/jpeg" },
+  "https://shop.haimer.com/media/20/21/bd/1696844530/asset-113377-659.jpg": { "file": "images/haimer-face-mill-arbor.jpg", "type": "image/jpeg" },
+
+  "https://shop.mapal.com/robots.txt": { "file": "mapal/robots.txt", "type": "text/plain" },
+  "https://shop.mapal.com/en/p/000000000030524702": { "status": 301, "redirect": "https://shop.mapal.com/en/Clamping/Chucks/HighTorque-Chuck-HTC%2C-short-heavy-design/p/000000000030524702" },
+  "https://shop.mapal.com/en/Clamping/Chucks/HighTorque-Chuck-HTC%2C-short-heavy-design/p/000000000030524702": { "file": "mapal/30524702.html" },
+  "https://shop.mapal.com/en/p/000000000030655666": { "status": 301, "redirect": "https://shop.mapal.com/en/Clamping/Chucks/HighTorque-Chuck-HTC%2C-short-heavy-design/p/000000000030655666" },
+  "https://shop.mapal.com/en/Clamping/Chucks/HighTorque-Chuck-HTC%2C-short-heavy-design/p/000000000030655666": { "file": "mapal/30655666.html" },
+  "https://shop.mapal.com/en/p/000000000031270591": { "status": 301, "redirect": "https://shop.mapal.com/en/Clamping/Chucks/Hydraulic-Chucks/UNIQ-Mill-Chuck%2C-HA/p/000000000031270591" },
+  "https://shop.mapal.com/en/Clamping/Chucks/Hydraulic-Chucks/UNIQ-Mill-Chuck%2C-HA/p/000000000031270591": { "file": "mapal/31270591.html" },
+  "https://shop.mapal.com/en/p/000000000030259875": { "status": 301, "redirect": "https://shop.mapal.com/en/Clamping/Chucks/Precision-DrillChuck/p/000000000030259875" },
+  "https://shop.mapal.com/en/Clamping/Chucks/Precision-DrillChuck/p/000000000030259875": { "file": "mapal/30259875.html" },
+
+  "https://www.kemmler-shop.de/en/Milling-arbors-for-screw-in-cutters-HSK-63-M12-126-LB100/A63.06.12.3": { "file": "kemmler/A63.06.12.3.html" },
+  "https://www.kemmler-shop.de/search?search=A63.06.12.3": { "status": 302, "redirect": "https://www.kemmler-shop.de/en/Milling-arbors-for-screw-in-cutters-HSK-63-M12-126-LB100/A63.06.12.3" },
+  "https://www.kemmler-shop.de/search?search=A63.02.20.0": { "file": "kemmler/search-A63.02.20.0.html" },
+  "https://www.kemmler-shop.de/en/ER-Collet-chuck-HSK-63-2-20-75-ER-32/A63.02.20.0": { "file": "kemmler/A63.02.20.0.html" },
+  "https://www.kemmler-shop.de/media/33/84/13/1748299871/A63.06.12.3_1.jpg": { "file": "images/kemmler-screw-in.png", "type": "image/png" },
+  "https://www.kemmler-shop.de/media/29/73/e7/1744329896/A63.02.20.0_1.jpg": { "file": "images/kemmler-er-collet.jpg", "type": "image/jpeg" },
+
+  "https://cuttingtools.ceratizit.com/robots.txt": { "status": 403, "body": "Access Denied", "type": "text/html" },
+  "https://cdn.shopify.com/s/files/1/0698/1889/files/pic_mat_hol_84719507_all_pim_bc3f3b10-f549-4e09-9344-cf5f5603dcc2.jpg?v=1788736344": { "body": "<!DOCTYPE html><html><head><title>Just a moment...</title></head><body>Checking your browser before accessing the site.</body></html>", "type": "text/html; charset=utf-8" }
+}
