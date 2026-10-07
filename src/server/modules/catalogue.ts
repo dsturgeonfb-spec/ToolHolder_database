@@ -1,5 +1,34 @@
-import type { Router } from '../http.js'
+/**
+ * Catalogue module: holder list/detail, manual entry and edits from maker catalogues, the tally,
+ * and catalogue/tally exports. Routes and shapes: docs/API.md "Catalogue".
+ * The work lives in ../catalogue/*; this file only maps routes to it.
+ */
+import type { Router, Req } from '../http.js'
 import type { AppContext } from '../context.js'
+import { countAllHolders, holderDetail, listHolders, parseFilters } from '../catalogue/holders.js'
+import { createHolder, updateHolder } from '../catalogue/write.js'
+import { buildTally } from '../catalogue/tally.js'
+import { catalogueCsv, catalogueXlsx, tallyCsv, tallyXlsx } from '../catalogue/exports.js'
 
-/** STUB — see docs/API.md for the routes this module owns. */
-export function register(_r: Router, _ctx: AppContext): void {}
+export function register(r: Router, ctx: AppContext): void {
+  r.get('/api/holders', (req) => {
+    const f = parseFilters(req.query)
+    return { holders: listHolders(ctx, f), total: countAllHolders(ctx) }
+  })
+  r.get('/api/holders/:id', (req) => holderDetail(ctx, req.params.id!))
+  r.post('/api/holders', (req) => createHolder(ctx, req))
+  r.patch('/api/holders/:id', (req) => updateHolder(ctx, req))
+
+  // The tally's summary must be exactly the header strip's numbers, so reuse the core /api/summary handler
+  // rather than a second copy of its SQL.
+  const summary = async (req: Req) => {
+    const m = r.match('GET', '/api/summary')
+    return m && 'route' in m ? m.route.handler(req) : null
+  }
+  r.get('/api/tally', async (req) => buildTally(ctx, await summary(req)))
+
+  r.get('/api/export/catalogue.csv', (req) => catalogueCsv(ctx, req.query))
+  r.get('/api/export/catalogue.xlsx', (req) => catalogueXlsx(ctx, req.query))
+  r.get('/api/export/tally.csv', () => tallyCsv(ctx))
+  r.get('/api/export/tally.xlsx', () => tallyXlsx(ctx))
+}
