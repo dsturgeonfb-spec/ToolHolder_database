@@ -1,0 +1,59 @@
+# electron-builder config for the Holder Catalogue Windows installer.
+#
+# No native modules: the database is Node's built-in node:sqlite, so there is no ABI rebuild
+# step (npmRebuild: false) and asar can stay on. The seeded database and the hyperMILL profile
+# images ship unpacked under resources/seed and are copied into the data folder on first run —
+# the installer never touches an existing database.
+#
+# directories.output is "release", not the default "dist" (that is tsc's output).
+
+appId: com.holdercatalogue.desktop
+productName: Holder Catalogue
+copyright: Copyright © Holder Catalogue
+
+directories:
+  output: release
+  buildResources: buildResources
+
+asar: true
+npmRebuild: false
+
+files:
+  - package.json
+  - dist/src/**/*
+  - "!dist/src/**/*.map"
+  - ui/**/*
+  - db/schema.sql
+  - buildResources/icon.png
+
+extraResources:
+  - from: db/holder_catalogue.sqlite
+    to: seed/db/holder_catalogue.sqlite
+  - from: images/cam
+    to: seed/images/cam
+
+win:
+  icon: buildResources/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  # Per-user install: no admin rights, no UAC prompt — shop PCs are locked down.
+  perMachine: false
+  allowElevation: false
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Holder Catalogue
+  artifactName: Holder-Catalogue-Setup-${version}.${ext}
+  # Uninstalling removes the program only. The data folder (C:\Holder Catalogue) is the shop's record.
+  deleteAppDataOnUninstall: false
+
+linux:
+  # Only used to smoke-test packaging on CI/Linux; the product is the Windows installer.
+  target:
+    - dir
+  category: Utility

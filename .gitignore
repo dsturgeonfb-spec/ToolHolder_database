@@ -8,3 +8,5 @@ Thumbs.db
 # SQLite side files from a running app (the seeded DB itself is tracked)
 db/*.sqlite-wal
 db/*.sqlite-shm
+# Parallel-build worktrees created by Claude Code workflows
+.claude/worktrees/

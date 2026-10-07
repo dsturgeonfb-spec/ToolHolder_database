@@ -4,16 +4,21 @@
   "version": "0.1.0",
   "private": true,
   "description": "Tool-holder catalogue and stock tally for a CNC shop (HSK-A63 first; any taper form later)",
+  "author": "Holder Catalogue",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dsturgeonfb-spec/ToolHolder_database.git"
+  },
   "type": "module",
   "main": "dist/src/main/main.js",
   "engines": {
     "node": ">=22.13"
   },
-  "//electron": "Pinned to the same Electron that RFQ Agent ships (42.11.8, Node 24). The database uses Node's built-in node:sqlite, so there is no native module to rebuild for Electron's ABI — the installer build is a plain electron-builder run.",
+  "//electron": "Pinned to the same Electron that RFQ Agent ships (42.11.8, Node 24). The database uses Node's built-in node:sqlite, so there is no native module to rebuild for Electron's ABI \u2014 the installer build is a plain electron-builder run.",
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/copy-preload.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test --test-concurrency=4 \"dist/test/**/*.test.js\"",
+    "test": "npm run build && node --test --test-concurrency=2 \"dist/test/unit/**/*.test.js\" \"dist/test/api/**/*.test.js\" && node --test --test-concurrency=1 \"dist/test/e2e/**/*.test.js\"",
     "test:unit": "npm run build && node --test \"dist/test/unit/**/*.test.js\" \"dist/test/api/**/*.test.js\"",
     "test:e2e": "npm run build && node --test --test-concurrency=1 \"dist/test/e2e/**/*.test.js\"",
     "test:electron": "npm run build && node --test dist/test/electron/smoke.test.js",

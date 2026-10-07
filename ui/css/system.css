@@ -1,1 +1,4 @@
-/* Styles owned by the system module. Base tokens and components are in app.css. */
+/* Styles owned by the system module (Settings). Base tokens and components are in app.css. */
+#sShare .row2{display:flex;flex-wrap:wrap}
+#sData .kv dd.mono{font-size:13px}
+details summary{cursor:pointer;color:var(--ink-2);margin-top:4px}
