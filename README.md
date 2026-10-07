@@ -27,7 +27,7 @@ Uninstalling removes the program only; the data folder is the shop's record and 
 |---|---|
 | **Catalogue** | Find a holder: on site / can buy / all, maker, type, *fits shank Ø*, issues, search. Profile, clamp, gauge length (to scale), nose Ø, qty. |
 | **Holder** | Everything about one article: maker dimensions, links, stock by location with receipt / move / scrap / return, history, issues, serialised units, change log. |
-| **Count** | Tool-crib counting: pick a location, step through holders, confirm each count. Every count is a dated transaction with your name; the first count replaces the hyperMILL opening balance. |
+| **Count** | Tool-crib counting: pick a location, step through holders, confirm each count (optional **blind count**). Every count is a dated transaction with your name. Finding a holder replaces its hyperMILL opening balance; a 0 at one location leaves it *unverified* (it may be in another magazine) — count 0 at "Unassigned" to write off one that can't be found anywhere. |
 | **Tally** | Totals by type, maker, clamp Ø, location; counted vs. unverified; GL check (maker vs hyperMILL); CSV / Excel export. |
 | **Issues** | Data flags (HIGH → INFO), close with what was done; hyperMILL write-back list for the CAM engineer. |
 | **Want list** | Holders to buy → RFQ per maker (CSV, Excel, printable). |
@@ -46,11 +46,19 @@ shown (e.g. `http://192.168.1.20:8763`) in a browser and sign in with the PIN an
 host PC writes the database, so it can't be corrupted by two writers — never put the data folder on a
 network share and open it from two PCs.
 
+Only one PC may open a data folder at a time (a lock file enforces it) — never point two PCs at the same folder on a
+network drive, and don't keep the data in OneDrive.
+
 ### Backups
 
 A backup is written to `<data folder>\backups` the first time the app runs each day (newest 30 kept), and
 on demand from **File → Back up now** or Settings. Make sure that folder is included in the shop's server
 backup. Restore steps are in Settings → Data & backups.
+
+## Decisions taken during the build
+
+The open decisions in BUILD_SPEC §8 and a few others were settled with sensible defaults so the app could ship;
+each is listed, with how to change it, in [`docs/API.md` → "Decisions taken on the owner's behalf"](docs/API.md).
 
 ## Development
 

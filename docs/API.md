@@ -127,6 +127,7 @@ All `holders` columns, plus:
   before) also posts a `COUNT_ADJUST` that zeroes its balance at the Unassigned location (note "opening balance
   superseded by physical count") — unless the count itself is AT the Unassigned location. If the same holder +
   location + reference already has a count today and the new delta is 0, nothing is posted (retry-safe).
+  **Superseded by the review — see "Count rule" below.**
   Default reference: `COUNT <YYYY-MM-DD> <location name>`. Returns `{ holder: Holder, posted: txn[] }`.
 - `GET /api/count/list?location_id=&scope=site|all|location&type=&mk=` — the step-through list for count mode:
   holders (Holder fields) + `qty_at_location`, `counted_here_today` (bool).
@@ -277,3 +278,54 @@ only proposed when empty; type and interface only on insert. Proposals and file-
 **Want list / units** — want-list rows carry `purchasing_notes` (open Purchasing issues); POST returns 201 new /
 200 merged. `GET /api/units/:id`; units keep a dated, append-only log in `note` as well as `audit_events`.
 "Book receipt now" from the want list pre-fills the quantity (`openStockAction(kind, holder, {qty, reference})`).
+
+## Count rule (after the review)
+
+- `POST /api/counts` posts one `COUNT_ADJUST` at the counted location (delta = counted − booked there; a 0 delta is
+  a recorded confirmation).
+- The hyperMILL opening balance is cleared — a second `COUNT_ADJUST` bringing the holder's quantity at
+  "Unassigned – count required" to 0, note "opening balance superseded by physical count" — **only when a count at a
+  real location finds the holder (counted_qty > 0) while quantity still waits at Unassigned**, whatever earlier
+  counts there were.
+- A count of 0 at a real location does not touch Unassigned: the holder stays **unverified (not yet located)** and
+  stays on every location's "Expected on site" list and count sheet. It may be in another magazine.
+- Counting at Unassigned answers "how many are still not located?": 0 there writes the opening balance off — how a
+  holder that can't be found anywhere is settled.
+- `v_count_status`: `unverified` while any opening balance waits at Unassigned; `counted` once counted with nothing
+  waiting; `booked` on site by receipt etc. without a count; `none` = not on site.
+- Count sheets: `GET /api/export/count-sheet?location_id=&scope=&type=&mk=&reference=&blind=` — `blind=1` leaves out
+  the "Booked here" column and the "not located" hint.
+
+## Other review outcomes recorded in the contract
+
+- **Retry-safe writes:** an `Idempotency-Key` header on a write makes a resend return the first answer
+  (`request_keys`, a week). Stock dialogs and the want-list add create one key per dialog (`api.newRequestKey()`).
+- **Dates:** business dates (`txn_date`, `since`, `until`) must exist on the calendar (2026-02-31 → 400).
+- **Catalogue identity:** maker + order no. is unique ignoring letter case and outer spaces (409 with
+  `details.holder_id`); a unique index `ux_holders_identity_nocase` enforces it on databases without old clashes.
+  `max_rpm` accepts thousands separators in exact 3-digit groups ("25,000", "25.000", "25 000"); "25,5" is a 400.
+- **hyperMILL pictures** are only followed inside the report's own folder (and its `_files` / `-Dateien` folders);
+  network paths (`\\server\share`, `//server/share`, `file://server/…`) and paths leading out of the folder are
+  never opened — they are looked up by file name next to the report, with a warning in the preview.
+- **Vendor fetcher:** only the origins of the adapter in use (photos: the adapter's image origins); every redirect
+  hop and robots.txt re-checked; the host must resolve to public addresses only (no loopback, link-local,
+  RFC 1918/4193, CGNAT, reserved). Photos are only downloaded for makers with an automated adapter.
+  `GET /api/vendors` `images` is `{with_url, downloadable, cached}`; image-job `skipped` entries carry
+  `kind: cached|not_allowed|blocked`. Proposals may carry `type_warnings` (insert only) and `dims_refresh`.
+- **Issues search** uses the first 20 words; `q` over 200 characters is a 400.
+- **Serialised units** can be edited (location, serial no., remark) from the Serialised view and the holder page.
+- **Settings** changes are audited (`audit_events` entity `setting`, old → new); a bad field changes nothing.
+- **Network sharing:** 50 wrong PINs in an hour (from any address) lock sign-in until a new PIN is made.
+- **Loopback listener** refuses requests whose Host is not `127.0.0.1:<port>` / `localhost:<port>` (421).
+- **Data folder lock** (`holder_catalogue.lock`): one process on one PC may open a data folder.
+
+## Decisions taken on the owner's behalf
+
+| Decision | Choice | Why / how to change it |
+|---|---|---|
+| GL convention for face-mill arbors (BUILD_SPEC §8.1) | Maker "A" in `gauge_length_mm`, hyperMILL's value in `cam_gl_mm`; the 4 differences stay as open MEDIUM issues | Matches the data rule in §3. Closing the issues once hyperMILL is corrected records who decided. |
+| Locations (§8.2) | Seeded three kept; quick-add suggestions (crib, presetter, machine magazines, out for repair); "At vendor / repair" does not count as on site | Add/rename in Settings → Locations; every change is audited. |
+| Single PC vs multi-user (§8.3) | One PC owns the data; others/tablets use **Share on network** with a PIN; a lock file stops a second PC opening the same folder | No network-share database (SQLite corrupts with two writers). |
+| MAPAL MQL holders (§8.4) | Not loaded | Load later through Vendors → file import if MQL is run. |
+| CUTWEL and SANDVIK COROMANT adapters (§5) | Manual file-import route, no automated scraping | The sites only render with JavaScript, no browser engine is bundled, and they couldn't be tested from the build environment. Sandvik: ISO 13399/GTC data via CoroPlus or the rep; Cutwel: their product list. |
+| Count prefill | Expected quantity pre-filled; **blind count** available per device | Blind count is the audit-friendly choice; tick it in Count setup. |

@@ -7,7 +7,7 @@ import { api, newRequestKey } from '../api.js'
 import { state } from '../state.js'
 import { openStockAction } from '../components/stock-actions.js'
 import { raiseFlagDialog, closeFlagDialog } from '../components/flag-actions.js'
-import { addUnitDialog } from '../components/unit-actions.js'
+import { addUnitDialog, editUnitDialog } from '../components/unit-actions.js'
 import { addToWantListDialog } from '../components/want-actions.js'
 
 // ---------------------------------------------------------------- shared helpers
@@ -514,6 +514,10 @@ export async function render(root, ctx) {
       if (flag) write(() => closeFlagDialog({ ...flag, manufacturer: h.manufacturer, order_no: h.order_no }))
     } else if (act === 'want') write(() => addToWantListDialog(h))
     else if (act === 'add-unit') write(() => addUnitDialog(h))
+    else if (act === 'edit-unit') {
+      const u = (h.units || []).find((x) => x.unit_id === b.dataset.unit)
+      if (u) write(() => editUnitDialog({ ...u, manufacturer: h.manufacturer, order_no: h.order_no }))
+    }
     else if (act === 'stock') {
       const opts = b.dataset.loc ? { locationId: Number(b.dataset.loc) } : {}
       write(() => openStockAction(b.dataset.kind, h, opts))
@@ -723,13 +727,14 @@ function flagsHTML(flags) {
 
 function unitsHTML(units) {
   if (!units.length) return '<p class="muted small" style="margin:0">No serialised units. Add one for a holder with its own balance/runout record or etched number.</p>'
-  return `<div class="tablewrap"><table class="data"><thead><tr><th>Unit</th><th>Serial</th><th>Location</th><th class="n">Runout µm</th><th>Inspected</th><th>Status</th></tr></thead><tbody>
+  return `<div class="tablewrap"><table class="data"><thead><tr><th>Unit</th><th>Serial</th><th>Location</th><th class="n">Runout µm</th><th>Inspected</th><th>Status</th><th></th></tr></thead><tbody>
     ${units
       .map((u) => {
         const [cls, text] = UNIT_CHIP[u.status] || ['none', u.status || '–']
         return `<tr><td class="mono">${esc(u.unit_id)}</td><td class="mono">${esc(u.serial_no || '')}</td><td>${esc(u.location || '')}</td>
           <td class="n">${esc(isNum(u.runout_check_um) ? mm(u.runout_check_um) : '')}</td><td>${esc(fmtDate(u.last_inspected))}${u.inspected_by ? ` <span class="muted small">${esc(u.inspected_by)}</span>` : ''}</td>
-          <td><span class="chip ${cls}">${esc(text)}</span></td></tr>`
+          <td><span class="chip ${cls}">${esc(text)}</span></td>
+          <td class="actions"><button class="btn sm ghost" type="button" data-act="edit-unit" data-unit="${esc(u.unit_id)}">Edit…</button></td></tr>`
       })
       .join('')}</tbody></table></div>`
 }

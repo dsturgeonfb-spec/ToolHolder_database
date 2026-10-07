@@ -175,3 +175,11 @@ test('network PIN: a LAN-wide guessing run locks sign-in until a new PIN is made
   assert.equal((await login(fresh.pin)).status, 200)
   await t.api('PUT', '/api/system/share', { enabled: false })
 })
+
+test('maker + order no. is unique ignoring letter case, at database level too', () => {
+  assert.ok(t.app.ctx.db.value(`SELECT 1 FROM sqlite_master WHERE type='index' AND name='ux_holders_identity_nocase'`))
+  assert.throws(
+    () => t.app.ctx.db.run(`INSERT INTO holders(holder_id, manufacturer_id, order_no, type_code, interface_code) SELECT 'HX999', manufacturer_id, lower(order_no), type_code, interface_code FROM holders WHERE holder_id = 'H0001'`),
+    /UNIQUE/,
+  )
+})

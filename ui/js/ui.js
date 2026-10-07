@@ -154,11 +154,11 @@ function fieldHTML(f) {
     const opts = (f.options || []).map((o) => (typeof o === 'object' ? o : { value: o, label: o }))
     input = `<select ${common}>${f.blank ? `<option value="">${esc(f.blank)}</option>` : ''}${opts.map((o) => `<option value="${esc(o.value)}" ${String(o.value) === String(v) ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`
   } else if (f.type === 'textarea') {
-    input = `<textarea ${common}>${esc(v)}</textarea>`
+    input = `<textarea ${common} ${f.maxlength != null ? `maxlength="${Number(f.maxlength)}"` : ''}>${esc(v)}</textarea>`
   } else if (f.type === 'checkbox') {
     return `<label class="chk"><input type="checkbox" ${common} ${v ? 'checked' : ''}> ${esc(f.label)}</label>${f.help ? `<span class="help tiny muted">${esc(f.help)}</span>` : ''}`
   } else {
-    const extra = [f.step != null ? `step="${f.step}"` : '', f.min != null ? `min="${f.min}"` : '', f.max != null ? `max="${f.max}"` : '', f.list ? `list="${esc(f.list)}"` : ''].join(' ')
+    const extra = [f.step != null ? `step="${f.step}"` : '', f.min != null ? `min="${f.min}"` : '', f.max != null ? `max="${f.max}"` : '', f.list ? `list="${esc(f.list)}"` : '', f.maxlength != null ? `maxlength="${Number(f.maxlength)}"` : ''].join(' ')
     input = `<input type="${f.type || 'text'}" ${common} value="${esc(v)}" ${extra} ${f.type === 'number' ? 'inputmode="decimal"' : ''}>`
   }
   return `<label class="fld ${f.required ? 'req' : ''}" for="${id}"><span>${esc(f.label)}</span>${input}${f.help ? `<span class="help">${esc(f.help)}</span>` : ''}</label>`

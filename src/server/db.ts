@@ -139,6 +139,13 @@ export function migrate(db: Db, schemaSql: string): void {
       db.exec(`DROP VIEW IF EXISTS ${m[1]}`)
       db.exec(m[0])
     }
+    // Maker + order no. is one article whatever the letter case ("a63.140.06" = "A63.140.06"). The unique index
+    // is only created on data that already satisfies it — an older database holding a case-variant pair must
+    // still open; the app's own checks stop new pairs either way.
+    const clash = db.value(
+      `SELECT 1 FROM holders GROUP BY manufacturer_id, order_no COLLATE NOCASE HAVING COUNT(*) > 1 LIMIT 1`,
+    )
+    if (!clash) db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_holders_identity_nocase ON holders(manufacturer_id, order_no COLLATE NOCASE)`)
     // Reference data the app relies on that the v1 seed did not have.
     db.run(
       `INSERT OR IGNORE INTO holder_types(type_code, type_name, clamping_principle, sort_order)
