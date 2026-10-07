@@ -26,7 +26,11 @@ test('desktop app starts, seeds its data folder, shows the catalogue and backs u
   try {
     const win = await app.firstWindow()
     await win.waitForFunction(() => document.getElementById('tTotal')?.textContent === '54', null, { timeout: 30_000 })
+    // A HOLDER_CATALOGUE_DATA copy says so in its title, and keeps its own Electron profile inside the data folder.
     assert.equal(await win.title(), 'Holder Catalogue')
+    const winTitle = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.getTitle())
+    assert.match(String(winTitle), /^Holder Catalogue — .*separate data folder/)
+    assert.ok(existsSync(join(dataDir, '.electron')), 'own profile for a separate data folder')
     const bridge = await win.evaluate(() => ({ isDesktop: (window as any).desktop?.isDesktop, version: (window as any).desktop?.version }))
     assert.equal(bridge.isDesktop, true)
     assert.match(String(bridge.version), /^\d+\.\d+\.\d+/)

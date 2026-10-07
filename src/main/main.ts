@@ -7,18 +7,23 @@
  */
 import { app, BrowserWindow, dialog, ipcMain, Menu, session, shell, type MenuItemConstructorOptions, type OpenDialogOptions } from 'electron'
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { basename, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { AppServer } from '../server/app.js'
-import { backupIfDue, makeBackup } from '../server/modules/system.js'
+import { makeBackup } from '../server/modules/system.js'
 import { startFileLog } from './log.js'
 import {
+  DB_FILE,
   DataFolderUnavailableError,
   copyDataFolder,
   isEmptyDir,
+  isNetworkDrive,
+  isOneDrivePath,
   isUncPath,
+  movedTo,
   readPointer,
   resolveDataDir,
+  retireOldCopy,
   writePointer,
   type Pointer,
 } from './data-folder.js'
@@ -35,6 +40,11 @@ let origin = ''
 
 const pointerFile = () => join(app.getPath('userData'), 'location.json')
 
+// A training/test copy (HOLDER_CATALOGUE_DATA) gets its own Electron profile and single-instance lock, so it can
+// run beside the real catalogue instead of silently focusing it.
+const envData = process.env.HOLDER_CATALOGUE_DATA ? resolve(process.env.HOLDER_CATALOGUE_DATA) : null
+if (envData) app.setPath('userData', join(envData, '.electron'))
+
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
@@ -44,7 +54,10 @@ if (!app.requestSingleInstanceLock()) {
       mainWindow.focus()
     }
   })
-  app.whenReady().then(start, (err: unknown) => fatal('Holder Catalogue could not start', err))
+  app
+    .whenReady()
+    .then(start)
+    .catch((err: unknown) => fatal('Holder Catalogue could not start', err))
   app.on('window-all-closed', () => app.quit())
   app.on('before-quit', (event) => {
     if (quitting || !server) return
@@ -68,14 +81,22 @@ async function start(): Promise<void> {
       localAppData: process.env.LOCALAPPDATA ?? app.getPath('appData'),
     })
   } catch (err) {
-    fatal('Holder Catalogue cannot find its data', err)
-    return
+    if (err instanceof DataFolderUnavailableError) return recoverDataFolder(err.dir, 'unreachable')
+    throw err
   }
   const dataDir = resolution.dataDir
+  // The app has run on this folder before but the database is gone: never quietly seed a fresh one.
+  if (!existsSync(join(dataDir, DB_FILE)) && resolution.source !== 'env') {
+    const moved = movedTo(dataDir)
+    if (moved) return followMove(dataDir, moved)
+    if (pointer.lastVersion && resolution.source === 'pointer') return recoverDataFolder(dataDir, 'missing-db')
+  }
   const logFile = startFileLog(join(dataDir, 'logs'))
   console.log(`[main] ${APP_NAME} ${app.getVersion()} on Electron ${process.versions.electron} (Node ${process.versions.node}); log ${logFile}`)
   console.log(`[main] data folder ${dataDir} (${resolution.source})`)
   if (resolution.notice) console.warn(`[main] ${resolution.notice}`)
+  if (isUncPath(dataDir) || isOneDrivePath(dataDir, process.env) || (await isNetworkDrive(dataDir)))
+    console.warn(`[main] the data folder is on a network drive or OneDrive — only this PC may open it (the data lock enforces that)`)
 
   // An upgrade migrates the database: copy it first, while nothing has it open.
   const dbPath = join(dataDir, 'holder_catalogue.sqlite')
@@ -102,14 +123,21 @@ async function start(): Promise<void> {
       openPath: (p) => shell.openPath(p),
       showItemInFolder: (p) => shell.showItemInFolder(p),
     }
-    const port = await server.listen(0)
+    // Same port as last time when free: the window's origin (and its remembered choices) stays the same.
+    let port: number
+    try {
+      port = await server.listen(pointer.port && !envData ? pointer.port : 0)
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'EADDRINUSE') throw err
+      port = await server.listen(0)
+    }
     origin = `http://127.0.0.1:${port}`
     console.log(`[main] app server ${origin}`)
   } catch (err) {
     fatal('The catalogue database could not be opened', err)
     return
   }
-  if (resolution.source !== 'env') writePointer(pointerFile(), { ...pointer, dataDir, lastVersion: app.getVersion() })
+  if (resolution.source !== 'env') writePointer(pointerFile(), { ...pointer, dataDir, lastVersion: app.getVersion(), port: server.port })
 
   installIpc()
   installMenu()
@@ -120,7 +148,7 @@ async function start(): Promise<void> {
     height: 900,
     minWidth: 760,
     minHeight: 560,
-    title: APP_NAME,
+    title: envData ? `${APP_NAME} — ${basename(envData)} (separate data folder)` : APP_NAME,
     icon: join(appRoot, 'buildResources', 'icon.png'),
     backgroundColor: '#F2F4F6',
     webPreferences: {
@@ -131,16 +159,74 @@ async function start(): Promise<void> {
     },
   })
   mainWindow.on('closed', () => (mainWindow = null))
+  // Keep the separate-data-folder title (the page's <title> would replace it).
+  if (envData) mainWindow.on('page-title-updated', (e) => e.preventDefault())
   await mainWindow.loadURL(`${origin}/`)
+  // The daily backup runs inside the app server (3 s after start, then hourly).
+}
 
-  // The daily backup, after the window is up so a slow disk doesn't delay the start.
-  setTimeout(() => {
-    try {
-      if (server) backupIfDue(server.ctx)
-    } catch (err) {
-      console.error('[main] daily backup failed', err)
-    }
-  }, 3000)
+/**
+ * The data folder the app used before can't be opened (drive disconnected, folder moved or deleted, database
+ * file missing). Ask — never start an empty catalogue behind the person's back.
+ */
+async function recoverDataFolder(dir: string, why: 'unreachable' | 'missing-db'): Promise<void> {
+  const { response } = await dialog.showMessageBox({
+    type: 'warning',
+    title: 'Holder Catalogue — data not found',
+    message: why === 'unreachable' ? `The data folder ${dir} can't be reached.` : `The catalogue database is missing from ${dir}.`,
+    detail:
+      (why === 'unreachable'
+        ? 'If it is on a network drive or USB disk, reconnect it and press Try again.'
+        : `The file ${DB_FILE} is not in that folder. If it was moved, choose its new folder. To restore a backup, copy one from the backups folder there and rename it ${DB_FILE}, then press Try again.`) +
+      '\n\nStart a new catalogue only if you really mean to begin again from the seeded holder list.',
+    buttons: ['Try again', 'Choose the folder…', 'Start a new catalogue…', 'Quit'],
+    defaultId: 0,
+    cancelId: 3,
+  })
+  if (response === 0) return relaunch()
+  if (response === 3) return exitApp(0)
+  const pick = await dialog.showOpenDialog({
+    title: response === 1 ? 'Choose the folder that holds holder_catalogue.sqlite' : 'Choose an EMPTY folder for a new catalogue',
+    properties: ['openDirectory', 'createDirectory'],
+  })
+  const target = pick.canceled ? null : (pick.filePaths[0] ?? null)
+  if (!target) return recoverDataFolder(dir, why)
+  if (response === 1 && !existsSync(join(target, DB_FILE))) {
+    await dialog.showMessageBox({ type: 'error', title: 'No catalogue there', message: `${target} does not contain ${DB_FILE}.` })
+    return recoverDataFolder(dir, why)
+  }
+  if (response === 2 && !isEmptyDir(target)) {
+    await dialog.showMessageBox({ type: 'error', title: 'Folder not empty', message: 'Choose an empty folder for a new catalogue.' })
+    return recoverDataFolder(dir, why)
+  }
+  writePointer(pointerFile(), { ...readPointer(pointerFile()), dataDir: target })
+  relaunch()
+}
+
+/** The folder holds a MOVED-TO note: offer to switch to where the data went. */
+async function followMove(dir: string, target: string): Promise<void> {
+  const { response } = await dialog.showMessageBox({
+    type: 'info',
+    title: 'Holder Catalogue was moved',
+    message: `The catalogue in ${dir} was moved to ${target}.`,
+    detail: 'Use the catalogue in its new folder?',
+    buttons: ['Use the new folder', 'Quit'],
+    defaultId: 0,
+    cancelId: 1,
+  })
+  if (response !== 0) return exitApp(0)
+  writePointer(pointerFile(), { ...readPointer(pointerFile()), dataDir: target })
+  relaunch()
+}
+
+function relaunch(): void {
+  app.relaunch()
+  exitApp(0)
+}
+
+function exitApp(code: number): void {
+  quitting = true
+  app.exit(code)
 }
 
 function installIpc(): void {
@@ -254,7 +340,16 @@ async function moveDataFolder(): Promise<void> {
     await dialog.showMessageBox(mainWindow, { type: 'warning', title: 'Folder not empty', message: 'Choose an empty folder, or a folder that already holds a Holder Catalogue database.' })
     return
   }
-  const unc = isUncPath(target)
+  if (isOneDrivePath(target, process.env)) {
+    await dialog.showMessageBox(mainWindow, {
+      type: 'error',
+      title: 'Not a OneDrive folder',
+      message: 'Choose a folder outside OneDrive.',
+      detail: 'OneDrive copies files while the app has them open, which corrupts the database. Use a local folder (e.g. C:\\Holder Catalogue) and let the daily backups go to the server instead.',
+    })
+    return
+  }
+  const unc = isUncPath(target) || (await isNetworkDrive(target))
   const { response } = await dialog.showMessageBox(mainWindow, {
     type: unc ? 'warning' : 'question',
     buttons: [existing ? 'Switch to that catalogue' : 'Copy and switch', 'Cancel'],
@@ -272,7 +367,11 @@ async function moveDataFolder(): Promise<void> {
   server = null
   await s.close()
   try {
-    if (!existing) copyDataFolder(current, target)
+    if (!existing) {
+      copyDataFolder(current, target)
+      // The old copy must not be opened again by mistake (another Windows account, a lost location.json).
+      retireOldCopy(current, target)
+    }
     const pointer: Pointer = { ...readPointer(pointerFile()), dataDir: target, lastVersion: app.getVersion() }
     writePointer(pointerFile(), pointer)
   } catch (err) {
