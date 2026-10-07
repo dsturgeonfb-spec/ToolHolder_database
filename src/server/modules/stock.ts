@@ -40,6 +40,14 @@ function qty(v: unknown, name = 'Quantity'): number {
   return n
 }
 
+/** A yes/no query flag: 1/true or 0/false (absent = no). */
+function flag(v: string | null, name: string): boolean {
+  const s = (v ?? '').trim().toLowerCase()
+  if (s === '' || s === '0' || s === 'false') return false
+  if (s === '1' || s === 'true') return true
+  throw new HttpError(400, `${name} must be 1 or 0`)
+}
+
 function holderIdOf(v: unknown): string {
   return str(v, 'holder_id', 40)
 }
@@ -93,13 +101,13 @@ function txnFilter(q: URLSearchParams, defLimit: number, maxLimit: number): TxnF
   const until = isoDate(q.get('until'), 'until')
   if (since && until && since > until) throw new HttpError(400, 'The "from" date is after the "to" date')
   return {
-    holder_id: optStr(q.get('holder_id'), 40),
+    holder_id: optStr(q.get('holder_id'), 40, 'Holder'),
     location_id: optInt(q.get('location_id'), 'location_id'),
     types: parseTypes(q.get('type')),
     since,
     until,
-    user: optStr(q.get('user'), 80),
-    q: optStr(q.get('q'), 200),
+    user: optStr(q.get('user'), 80, 'Person'),
+    q: optStr(q.get('q'), 200, 'Search text'),
     limit,
   }
 }
@@ -199,7 +207,7 @@ export function register(r: Router, ctx: AppContext): void {
   // ------------------------------------------------------------ stock on hand
   r.get('/api/stock', (req) => {
     const locId = optInt(req.query.get('location_id'), 'location_id')
-    const holderId = optStr(req.query.get('holder_id'), 40)
+    const holderId = optStr(req.query.get('holder_id'), 40, 'Holder')
     if (locId != null) getLocation(db, locId)
     const where: string[] = []
     const params: Array<string | number> = []
@@ -281,8 +289,8 @@ export function register(r: Router, ctx: AppContext): void {
       location_id: int(b.location_id, 'location_id'),
       txn_type: type as BookingType,
       qty: qty(b.qty),
-      reference: optStr(b.reference, 120),
-      note: optStr(b.note, 1000),
+      reference: optStr(b.reference, 120, 'Reference'),
+      note: optStr(b.note, 1000, 'Note'),
       txn_date: txnDate,
       user,
     })
@@ -298,8 +306,8 @@ export function register(r: Router, ctx: AppContext): void {
       from_location_id: int(b.from_location_id, 'from_location_id'),
       to_location_id: int(b.to_location_id, 'to_location_id'),
       qty: qty(b.qty),
-      reference: optStr(b.reference, 120),
-      note: optStr(b.note, 1000),
+      reference: optStr(b.reference, 120, 'Reference'),
+      note: optStr(b.note, 1000, 'Note'),
       user,
     })
     return writeResult(ctx, holderId, res.posted, { reference: res.reference, warnings: [] })
@@ -319,8 +327,8 @@ export function register(r: Router, ctx: AppContext): void {
       holder_id: holderId,
       location_id: int(b.location_id, 'location_id'),
       counted_qty: counted,
-      reference: optStr(b.reference, 120),
-      note: optStr(b.note, 1000),
+      reference: optStr(b.reference, 120, 'Count sheet reference'),
+      note: optStr(b.note, 1000, 'Note'),
       user,
     })
     return writeResult(ctx, holderId, res.posted, {
@@ -337,8 +345,8 @@ export function register(r: Router, ctx: AppContext): void {
     const { location, holders } = countList(ctx, {
       location_id: locId,
       scope: parseScope(req.query.get('scope')),
-      type: optStr(req.query.get('type'), 40),
-      mk: optStr(req.query.get('mk'), 80),
+      type: optStr(req.query.get('type'), 40, 'Type'),
+      mk: optStr(req.query.get('mk'), 80, 'Maker'),
     })
     return {
       location: { ...location, counts_as_on_site: Number(location.counts_as_on_site), is_unassigned: isUnassigned(location) },
@@ -354,10 +362,11 @@ export function register(r: Router, ctx: AppContext): void {
     const html = countSheetHtml(ctx, {
       location_id: locId,
       scope: req.query.get('scope') ? parseScope(req.query.get('scope')) : null,
-      type: optStr(req.query.get('type'), 40),
-      mk: optStr(req.query.get('mk'), 80),
-      reference: optStr(req.query.get('reference'), 120),
+      type: optStr(req.query.get('type'), 40, 'Type'),
+      mk: optStr(req.query.get('mk'), 80, 'Maker'),
+      reference: optStr(req.query.get('reference'), 120, 'Count sheet reference'),
       user: req.user,
+      blind: flag(req.query.get('blind'), 'blind'),
     })
     return new Download(`count-sheet-${locId}-${today()}.html`, 'text/html; charset=utf-8', html, 'inline')
   })

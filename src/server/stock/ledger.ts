@@ -66,11 +66,21 @@ export interface TxnFilter {
   limit: number
 }
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/
+/**
+ * A business date, YYYY-MM-DD, that exists on the calendar. The date is rebuilt from its parts and
+ * must come back unchanged — Date.parse alone rolls 2026-02-31 over into March instead of refusing it.
+ */
 export function isoDate(v: unknown, name: string): string | null {
   const s = String(v ?? '').trim()
   if (!s) return null
-  if (!ISO_DATE.test(s) || Number.isNaN(Date.parse(s + 'T00:00:00'))) throw new HttpError(400, `${name} must be a date written YYYY-MM-DD`)
+  const m = ISO_DATE.exec(s)
+  if (!m) throw new HttpError(400, `${name} must be a date written YYYY-MM-DD`)
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const dt = new Date(0)
+  dt.setUTCFullYear(y, mo - 1, d) // (Date.UTC would read years below 100 as 19xx)
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d)
+    throw new HttpError(400, `${name} ${s} is not a real date — check the day and month (YYYY-MM-DD).`)
   return s
 }
 
@@ -148,8 +158,18 @@ export interface CountResult {
 
 /**
  * Books a physical count: the counted quantity is absolute, the ledger gets the difference.
- * See docs/API.md POST /api/counts for the rules (first count supersedes the opening balance,
- * zero delta is a recorded confirmation, retry-safe for the same reference on the same day).
+ *
+ * The count rule (docs/API.md POST /api/counts):
+ *  - ONE COUNT_ADJUST at the counted location, delta = counted − booked there. A zero delta is a
+ *    recorded confirmation; resending the same count (same holder, location, reference, today) posts nothing.
+ *  - The opening balance ("it exists in hyperMILL", booked at Unassigned) is superseded — a second
+ *    COUNT_ADJUST brings the holder's Unassigned quantity to 0 — when, and only when, a count at a real
+ *    location FINDS the holder (counted > 0) while quantity still waits at Unassigned. Earlier counts
+ *    don't matter: what matters is that it has now been found somewhere.
+ *  - A 0 at a real location only says "not here": the holder stays unverified (not yet located) and stays
+ *    on every location's list and count sheet until it is found, or written off.
+ *  - Counting AT Unassigned answers "how many are still not located": 0 there writes the opening balance
+ *    off (the delta), which is how a holder that can't be found anywhere is settled.
  */
 export function postCount(db: Db, c: CountInput): CountResult {
   requireHolder(db, c.holder_id)
@@ -160,7 +180,10 @@ export function postCount(db: Db, c: CountInput): CountResult {
     const previous = qtyAt(db, c.holder_id, loc.location_id)
     const delta = c.counted_qty - previous
     const result: CountResult = { posted: [], previous_qty: previous, counted_qty: c.counted_qty, reference, duplicate: false }
-    if (delta === 0) {
+    const unassigned = isUnassigned(loc) ? null : unassignedLocationId(db)
+    const waiting = unassigned != null ? qtyAt(db, c.holder_id, unassigned) : 0
+    const supersede = c.counted_qty > 0 && waiting > 0
+    if (delta === 0 && !supersede) {
       const already = db.value(
         `SELECT 1 FROM stock_transactions WHERE holder_id = ? AND location_id = ? AND txn_type = 'COUNT_ADJUST'
            AND reference = ? AND txn_date = ? AND COALESCE(note,'') <> ?`,
@@ -169,7 +192,6 @@ export function postCount(db: Db, c: CountInput): CountResult {
       // A retried request (double-tap, network resend) must not book the confirmation twice.
       if (already) return { ...result, duplicate: true }
     }
-    const firstCount = !db.value(`SELECT 1 FROM stock_transactions WHERE holder_id = ? AND txn_type = 'COUNT_ADJUST'`, [c.holder_id])
     const note = delta === 0 ? (c.note ? `${CONFIRM_NOTE} — ${c.note}` : CONFIRM_NOTE) : (c.note ?? null)
     result.posted.push(
       postTransaction(db, {
@@ -183,25 +205,21 @@ export function postCount(db: Db, c: CountInput): CountResult {
         note,
       }),
     )
-    if (firstCount && !isUnassigned(loc)) {
-      // The opening balance was only "it exists in hyperMILL"; once someone has physically
-      // counted the holder, that unverified quantity must not be added on top.
-      const unassigned = unassignedLocationId(db)
-      const open = unassigned != null ? qtyAt(db, c.holder_id, unassigned) : 0
-      if (unassigned != null && open !== 0) {
-        result.posted.push(
-          postTransaction(db, {
-            holder_id: c.holder_id,
-            location_id: unassigned,
-            qty_delta: -open,
-            txn_type: 'COUNT_ADJUST',
-            reference,
-            txn_date: date,
-            by_user: c.user,
-            note: SUPERSEDE_NOTE,
-          }),
-        )
-      }
+    if (supersede && unassigned != null) {
+      // The opening balance was only "it exists in hyperMILL"; now that someone has physically found
+      // the holder, that unverified quantity must not be added on top of what was counted.
+      result.posted.push(
+        postTransaction(db, {
+          holder_id: c.holder_id,
+          location_id: unassigned,
+          qty_delta: -waiting,
+          txn_type: 'COUNT_ADJUST',
+          reference,
+          txn_date: date,
+          by_user: c.user,
+          note: SUPERSEDE_NOTE,
+        }),
+      )
     }
     return result
   })

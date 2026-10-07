@@ -83,7 +83,7 @@ export async function render(root, ctx) {
         .map((l) => {
           const id = esc(l.location_id)
           return `<tr data-id="${id}">
-            <td><b>${esc(l.name)}</b>${l.is_unassigned ? ' <span class="tag warn" title="Holds opening balances until each holder is counted">built in</span>' : ''}</td>
+            <td><b>${esc(l.name)}</b>${l.is_unassigned ? ' <span class="tag warn" title="Holds opening balances until each holder is found by a count (or written off by counting 0 here)">built in</span>' : ''}</td>
             <td>${esc(kindLabel(l.kind))}</td>
             <td><label class="loc-switch"><input type="checkbox" role="switch" data-onsite="${id}" ${l.counts_as_on_site ? 'checked' : ''} ${
               l.is_unassigned ? 'disabled title="Holders not yet counted are on site somewhere, so this always counts"' : ''

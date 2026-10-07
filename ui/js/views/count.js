@@ -5,11 +5,18 @@
 // "Confirm count & next", and each confirm is one POST /api/counts with the ABSOLUTE quantity —
 // the server books the difference. Confirm is locked while a request is in flight, so a double tap
 // can't post twice (and the server ignores an identical retry anyway).
+//
+// The count rule (docs/API.md POST /api/counts): a count above 0 at a real location FINDS the holder and
+// replaces any opening balance still waiting at Unassigned. A 0 at a real location only means "not here" —
+// the holder stays unverified (not yet located). Counting at Unassigned itself answers "how many are still
+// not located": 0 there writes the opening balance off. The hints below say which of these will happen.
 import { api } from '../api.js'
 import { esc, fmt, fmtDate, todayIso, statusChip, profileHTML, toast } from '../ui.js'
 import { state } from '../state.js'
 
 const UNASSIGNED = 'Unassigned – count required'
+const NOT_HERE = `None here — it stays unverified (not yet located) until it is found at another location, or written off by counting 0 at '${UNASSIGNED}'.`
+const WRITE_OFF = 'the holder is recorded as not found anywhere and leaves the site tally'
 const LS_LOC = 'hc.count.location'
 const LS_BLIND = 'hc.count.blind'
 const KIND = { crib: 'Crib / store', machine: 'Machine', external: 'External', holding: 'Holding' }
@@ -94,10 +101,16 @@ export async function render(root, ctx) {
   }
   const validLoc = (id) => (id && locById(Number(id)) ? Number(id) : null)
 
-  /** The quantity a counter should expect here: what's booked here, plus the opening balance of a holder nobody has located yet. */
+  /** Opening balance still waiting at Unassigned for this holder: it has not been found anywhere yet. */
+  const pendingOf = (h) => Math.max(0, Number(h.qty_unassigned) || 0)
+
+  /**
+   * The quantity a counter should expect here: what's booked here, plus the opening balance of a holder nobody
+   * has located yet. Once counted here today, what was counted (a 0 stays 0, not "1 not located" again).
+   */
   function expected(h) {
-    const pending = !atUnassigned() && h.count_status !== 'counted' ? Math.max(0, h.qty_unassigned) : 0
-    return Math.max(0, h.qty_at_location) + pending
+    if (h.counted_here_today || atUnassigned()) return Math.max(0, h.qty_at_location)
+    return Math.max(0, h.qty_at_location) + pendingOf(h)
   }
 
   async function loadList() {
@@ -136,6 +149,8 @@ export async function render(root, ctx) {
     if (s.type) p.set('type', s.type)
     if (s.mk) p.set('mk', s.mk)
     p.set('reference', s.reference || defaultRef())
+    // A blind count stays blind on paper: the sheet leaves out the booked quantities.
+    if (s.blind) p.set('blind', '1')
     api.openPrintable(`/api/export/count-sheet?${p}`)
   }
 
@@ -147,7 +162,7 @@ export async function render(root, ctx) {
         (l) => `<button type="button" class="cm-loc${l.is_unassigned ? ' unassigned' : ''}" role="radio" aria-checked="${l.location_id === s.locId}" data-loc="${l.location_id}">
         <b>${esc(l.name)}</b>
         <span>${esc(KIND[l.kind] || l.kind || '')} · ${esc(l.holders)} holder${l.holders === 1 ? '' : 's'} booked${l.counts_as_on_site ? '' : ' · not in site tally'}</span>
-        ${l.is_unassigned ? '<span class="cm-loc-help">Holders not yet located. Count here only if you can’t say where a holder is.</span>' : ''}
+        ${l.is_unassigned ? '<span class="cm-loc-help">Holders not yet located. Count here last: how many are still not found anywhere — 0 writes the opening balance off.</span>' : ''}
       </button>`,
       )
       .join('')
@@ -307,6 +322,9 @@ export async function render(root, ctx) {
           <ol class="cm-list" data-list>${s.run.map(itemHTML).join('')}</ol>
         </aside>
       </div>`
+    // A new run starts at the top (the setup page may have been scrolled down to reach Start);
+    // goTo() then scrolls only as far as a short screen needs to show Confirm.
+    window.scrollTo(0, 0)
     goTo(i)
   }
 
@@ -361,6 +379,13 @@ export async function render(root, ctx) {
     // On a phone the card is taller than the screen: bring its top (the holder's identity) back into view.
     const top = card?.getBoundingClientRect().top ?? 0
     if (top < 0) window.scrollBy(0, top - 8)
+    else {
+      // On a short screen (a 768 px laptop, a tablet) bring Confirm up into view — but never scroll the
+      // holder's identity off the top to do it.
+      const actions = card?.querySelector('.cm-actions')?.getBoundingClientRect()
+      const below = actions ? actions.bottom + 12 - window.innerHeight : 0
+      if (below > 0 && top > 8) window.scrollBy(0, Math.min(below, top - 8))
+    }
     // Scroll only the run list, never the page — on narrow screens the list sits below the card.
     const list = el.querySelector('[data-list]')
     const item = list?.querySelector('.cm-item.current')
@@ -409,7 +434,9 @@ export async function render(root, ctx) {
       </div>
       ${
         s.blind
-          ? `<div class="cm-booked"><div class="cm-where-all"><span class="k">Blind count</span><span>Booked quantities are hidden — enter what you can see.</span></div></div>`
+          ? `<div class="cm-booked"><div class="cm-where-all"><span class="k">Blind count</span><span>Booked quantities are hidden — ${
+              atUnassigned() ? 'enter how many are still not located.' : 'enter what you can see.'
+            }</span></div></div>`
           : `<div class="cm-booked">
         <div><span class="k">Booked here</span><span class="v mono">${esc(h.qty_at_location)}</span></div>
         <div><span class="k">Total on site</span><span class="v mono">${esc(h.qty_on_site)}</span></div>
@@ -417,15 +444,21 @@ export async function render(root, ctx) {
       </div>`
       }
       <div class="cm-entry">
-        <label class="cm-q-label" for="cm-qty">How many are physically at ${esc(locName())}?</label>
-        <div class="cm-stepper">
-          <button type="button" class="cm-pm" data-act="dec" aria-label="One less">−</button>
-          <input id="cm-qty" class="cm-qty mono" data-qty type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="${MAX_DIGITS}" aria-describedby="cm-hint">
-          <button type="button" class="cm-pm" data-act="inc" aria-label="One more">+</button>
+        <div class="cm-entry-num">
+          <label class="cm-q-label" for="cm-qty">${
+            atUnassigned() ? 'How many are still not located (not found at any location)?' : `How many are physically at ${esc(locName())}?`
+          }</label>
+          <div class="cm-stepper">
+            <button type="button" class="cm-pm" data-act="dec" aria-label="One less">−</button>
+            <input id="cm-qty" class="cm-qty mono" data-qty type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="${MAX_DIGITS}" aria-describedby="cm-hint">
+            <button type="button" class="cm-pm" data-act="inc" aria-label="One more">+</button>
+          </div>
         </div>
-        <p class="cm-hint" id="cm-hint" data-hint aria-live="polite"></p>
-        <label class="fld cm-note"><span>Note (optional)</span><input data-note maxlength="500" autocomplete="off" placeholder="e.g. found in DMG 2 magazine, nut missing"></label>
-        <div data-err role="alert"></div>
+        <div class="cm-entry-more">
+          <p class="cm-hint" id="cm-hint" data-hint aria-live="polite"></p>
+          <label class="fld cm-note"><span>Note (optional)</span><input data-note maxlength="500" autocomplete="off" placeholder="e.g. found in DMG 2 magazine, nut missing"></label>
+          <div data-err role="alert"></div>
+        </div>
       </div>
       <div class="cm-actions">
         <button type="button" class="btn ghost lg" data-act="back" ${s.idx === 0 ? 'disabled' : ''}>← Back</button>
@@ -465,18 +498,58 @@ export async function render(root, ctx) {
     if (hint && h) hint.textContent = hintText(h)
   }
 
+  /** What confirming the number on screen will do. Blind mode never shows a booked quantity. */
   function hintText(h) {
+    return atUnassigned() ? hintUnassigned(h) : hintHere(h)
+  }
+
+  const signed = (d) => `${d > 0 ? '+' : '−'}${Math.abs(d)}`
+
+  // At a real location: a count above 0 finds the holder (and replaces an opening balance still waiting);
+  // a 0 only says "not here".
+  function hintHere(h) {
+    const where = locName()
+    const pending = pendingOf(h)
     if (s.qty == null) return 'Enter the number you counted — 0 if there are none here.'
-    if (s.blind) return `Confirm records ${s.qty} at ${locName()}.`
+    const replaces = s.qty > 0 && pending > 0
+    if (s.blind) {
+      if (s.qty === 0 && pending > 0) return NOT_HERE
+      return `Confirm records ${s.qty} at ${where}${replaces ? ' and replaces the unverified opening balance' : ''}.`
+    }
     const delta = s.qty - h.qty_at_location
-    const clears = !atUnassigned() && h.count_status !== 'counted' && h.qty_unassigned > 0
-    const parts = []
-    if (delta === 0) parts.push(h.counted_here_today ? 'Same as already counted here today' : 'Matches the books — confirming records the check')
-    else parts.push(`Books ${delta > 0 ? '+' : '−'}${Math.abs(delta)} at ${locName()}`)
-    if (clears) parts.push(`replaces the unverified opening balance (${h.qty_unassigned})`)
-    const onSite = s.loc?.counts_as_on_site ? delta : 0
-    const after = h.qty_on_site + onSite - (clears ? h.qty_unassigned : 0)
-    return `${parts.join(' and ')}. Site total after: ${after}.`
+    const after = h.qty_on_site + (s.loc?.counts_as_on_site ? delta : 0) - (replaces ? pending : 0)
+    if (s.qty === 0 && pending > 0) {
+      const lead = delta !== 0 ? `Books ${signed(delta)} at ${where}. ` : h.counted_here_today ? 'Same as already counted here today. ' : ''
+      return `${lead}${NOT_HERE}${delta !== 0 ? ` Site total after: ${after}.` : ''}`
+    }
+    const first =
+      delta !== 0
+        ? `Books ${signed(delta)} at ${where}`
+        : h.counted_here_today
+          ? 'Same as already counted here today'
+          : s.qty === 0
+            ? 'None here, as booked — confirming records the check'
+            : 'Matches what is booked here — confirming records the check'
+    return `${first}${replaces ? ` and replaces the unverified opening balance (${pending})` : ''}. Site total after: ${after}.`
+  }
+
+  // At Unassigned the question is "how many are still not located"; 0 writes the opening balance off.
+  function hintUnassigned(h) {
+    if (s.qty == null) return 'Enter how many are still not located — 0 writes the opening balance off (not found anywhere).'
+    const waiting = Math.max(0, h.qty_at_location)
+    if (s.blind) {
+      if (s.qty === 0)
+        return pendingOf(h) > 0 ? `Confirming 0 writes the opening balance off: ${WRITE_OFF}.` : 'Confirm records 0 still not located.'
+      return `Confirm records ${s.qty} still not located — it stays unverified.`
+    }
+    const delta = s.qty - h.qty_at_location
+    const after = h.qty_on_site + delta // Unassigned always counts as on site
+    if (s.qty === 0)
+      return waiting > 0
+        ? `Writes off the opening balance (${waiting}): ${WRITE_OFF}. Site total after: ${after}.`
+        : `Nothing is waiting here — confirming records the check. Site total after: ${after}.`
+    const first = delta !== 0 ? `books ${signed(delta)} here` : h.counted_here_today ? 'same as already counted here today' : 'matches the books'
+    return `${s.qty} still not located — ${first}; it stays unverified. Site total after: ${after}.`
   }
 
   function setQty(n, fresh) {
@@ -547,7 +620,17 @@ export async function render(root, ctx) {
       }
       h.stock = h.stock.filter((x) => x.qty !== 0)
       Object.assign(h, res.holder, { qty_at_location: counted, counted_here_today: true, last_count_here: todayIso(), stock: h.stock, qty_unassigned: h.qty_unassigned })
-      toast(res.duplicate ? `Already recorded: ${counted} × ${h.order_no} at ${locName()} today` : `Counted ${counted} × ${h.order_no} at ${locName()}`, 'ok')
+      const wroteOff = atUnassigned() && counted === 0 && res.posted.some((t) => t.qty_delta < 0)
+      toast(
+        res.duplicate
+          ? `Already recorded: ${counted} × ${h.order_no} at ${locName()} today`
+          : wroteOff
+            ? `Written off: ${h.order_no} — not found anywhere, no longer in the site tally`
+            : atUnassigned()
+              ? `Recorded ${counted} × ${h.order_no} still not located`
+              : `Counted ${counted} × ${h.order_no} at ${locName()}${counted === 0 && pendingOf(h) > 0 ? ' — still not located (unverified)' : ''}`,
+        'ok',
+      )
       ctx.refreshSummary()
       // The person may have jumped elsewhere while the request was in flight; only advance if not.
       if (current()?.holder_id === holderId) {

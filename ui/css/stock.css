@@ -28,7 +28,8 @@
 .cm-progress{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--ink-2)}
 .cm-progress .meter{flex:1;margin:0;height:10px;border-radius:5px}
 .cm-run{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
-.cm-card{gap:14px;outline:none}
+/* The card is a size container: its own width (not the window's) decides the compact wide layout below. */
+.cm-card{gap:12px;outline:none;container-type:inline-size}
 .cm-card:focus-visible{box-shadow:0 0 0 2px var(--accent)}
 .cm-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 12px}
 .cm-pos{font-family:var(--f-display);font-size:15px;letter-spacing:.04em;color:var(--ink-3);text-transform:uppercase}
@@ -47,6 +48,8 @@
 .cm-booked .v{font-size:26px;font-weight:600;line-height:1.1}
 .cm-where-all span:last-child{font-size:14px;color:var(--ink-2);overflow-wrap:anywhere}
 .cm-entry{display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:4px}
+.cm-entry-num{display:flex;flex-direction:column;align-items:center;gap:8px}
+.cm-entry-more{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;min-width:0}
 .cm-q-label{font-size:16px;font-weight:600;text-align:center}
 .cm-stepper{display:flex;align-items:center;gap:12px}
 .cm-pm{width:76px;height:76px;border-radius:14px;border:1px solid var(--rule);background:var(--panel);color:var(--ink);font-size:40px;line-height:1;cursor:pointer;
@@ -67,6 +70,21 @@
 .cm-end{display:flex;flex-direction:column;gap:12px;padding:20px 4px;text-align:center;align-items:center}
 .cm-end h3{font-size:22px}
 .cm-alldone{color:var(--ok)}
+
+/* A wide card (desktop window, tablet portrait): the number and its hint side by side, the details in two
+   columns, so "Confirm count & next" is on screen at 1280×900 without scrolling. Narrower cards keep the
+   stacked layout above; goTo() brings Confirm into view on short screens. */
+@container (min-width:700px){
+  .cm-body{grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:16px}
+  .cm-ord{font-size:clamp(26px,3vw,34px)}
+  .cm-kv{grid-template-columns:max-content minmax(0,1fr) max-content minmax(0,1fr);gap:3px 14px;margin-top:4px}
+  .cm-booked{padding:8px 14px}
+  .cm-booked .v{font-size:22px}
+  .cm-entry{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px 24px;padding-top:0}
+  .cm-entry-more{align-items:stretch}
+  .cm-hint{text-align:left;max-width:none;min-height:2.8em}
+  .cm-note{width:100%}
+}
 
 /* the run list */
 .cm-side{position:sticky;top:12px;max-height:calc(100vh - 40px);gap:8px;padding:12px}

@@ -82,15 +82,18 @@ test('count mode: pick a location, count three holders with keyboard and buttons
   assert.equal(await currentOrderNo(), third)
   const thirdId = holderIdOf(third)
   await p.keyboard.press('0')
+  assert.match((await p.textContent('[data-hint]'))!, /^None here — it stays unverified \(not yet located\)/)
   await p.keyboard.press('Enter')
   await waitProgress(3)
   assert.equal(countRows(thirdId, CRIB), 1)
   assert.equal(qtyAt(thirdId, CRIB), 0)
-  assert.equal(Number(db().value('SELECT qty_on_site FROM v_stock_on_hand WHERE holder_id = ?', [thirdId])), 0, 'counted 0 → off site')
+  // The count rule (review fix): a 0 here only means "not here" — the holder stays on site, not yet located.
+  assert.equal(Number(db().value('SELECT qty_on_site FROM v_stock_on_hand WHERE holder_id = ?', [thirdId])), 1, 'counted 0 here → still unverified on site')
+  assert.equal(qtyAt(thirdId, 1), 1, 'opening balance untouched')
 
-  // Header strip refreshed: 3 of the 54 opening-balance holders counted; 54 − 1 + 1 + 2 = 56 on site.
-  await p.waitForFunction(() => document.getElementById('tCounted')!.textContent === '3/54')
-  assert.equal(await p.textContent('#tTotal'), '56')
+  // Header strip refreshed: 2 of the 54 opening-balance holders found and counted; 54 + 1 + 2 = 57 on site.
+  await p.waitForFunction(() => document.getElementById('tCounted')!.textContent === '2/54')
+  assert.equal(await p.textContent('#tTotal'), '57')
 
   // The run list shows the three as counted here today, and clicking one jumps to it.
   assert.equal(await p.locator('.cm-item.done').count(), 3)
