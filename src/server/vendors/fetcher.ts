@@ -7,13 +7,24 @@
  *  - stops at the first 401/403/429 ("blocked — not retried") and remembers the block for an hour,
  *    so the app never hammers or works around a site that said no;
  *  - every wait is cancellable by the job's signal.
- * The network function, clock and sleep are injectable so tests run against fixtures with no network.
+ * And safe: a fetcher only contacts the origins it was created for (the adapter's own sites) — the first
+ * address and every redirect hop, robots.txt included — and only when the host name resolves to public
+ * internet addresses (never this PC, the office network, link-local or other reserved ranges). So a stored
+ * link, a file import or a maker page can never make the host PC read an internal page.
+ * The network function, DNS lookup, clock and sleep are injectable so tests run against fixtures with no network.
  */
+import { lookup as dnsLookup } from 'node:dns/promises'
+import { isIP } from 'node:net'
 import { gunzipSync } from 'node:zlib'
 import { isAllowed, parseRobots, policyFor, type RobotsPolicy } from './robots.js'
 
 export type FetchFn = (url: string, init: RequestInit) => Promise<Response>
 export type SleepFn = (ms: number, signal?: AbortSignal) => Promise<void>
+/** Every address a host name resolves to. */
+export type LookupFn = (hostname: string) => Promise<string[]>
+
+/** The real resolver: node:dns lookup with all: true (the answer the operating system gives fetch too). */
+export const dnsLookupAll: LookupFn = async (hostname) => (await dnsLookup(hostname, { all: true, verbatim: true })).map((a) => a.address)
 
 export const PRODUCT_TOKEN = 'HolderCatalogue'
 export const MIN_DELAY_MS = 2000
@@ -30,7 +41,7 @@ export function userAgent(version: string, contact: string | null | undefined): 
 export class VendorFetchError extends Error {
   constructor(
     message: string,
-    readonly kind: 'blocked' | 'robots' | 'http' | 'network' | 'too_large' | 'bad_url' | 'cancelled',
+    readonly kind: 'blocked' | 'robots' | 'http' | 'network' | 'too_large' | 'bad_url' | 'not_allowed' | 'cancelled',
     readonly status?: number,
   ) {
     super(message)
@@ -46,6 +57,70 @@ export class RobotsDisallowedError extends VendorFetchError {
   constructor(message: string) {
     super(message, 'robots')
   }
+}
+
+function ipv4Public(b: number[]): boolean {
+  const [a, c, d] = [b[0]!, b[1]!, b[2]!]
+  if (a === 0 || a === 10 || a === 127 || a >= 224) return false // "this network", RFC 1918, loopback, multicast/reserved/broadcast
+  if (a === 100 && (c & 0xc0) === 64) return false // 100.64.0.0/10 carrier-grade NAT (RFC 6598)
+  if (a === 169 && c === 254) return false // link-local
+  if (a === 172 && (c & 0xf0) === 16) return false // RFC 1918
+  if (a === 192 && c === 168) return false // RFC 1918
+  if (a === 192 && c === 0 && (d === 0 || d === 2)) return false // IETF protocol assignments, TEST-NET-1
+  if (a === 192 && c === 88 && d === 99) return false // 6to4 relay anycast
+  if (a === 198 && (c === 18 || c === 19)) return false // benchmarking
+  if (a === 198 && c === 51 && d === 100) return false // TEST-NET-2
+  if (a === 203 && c === 0 && d === 113) return false // TEST-NET-3
+  return true
+}
+
+/** The 16 bytes of an IPv6 address (with "::" and a dotted IPv4 tail expanded); null when it is not one. */
+function ipv6Bytes(ip: string): number[] | null {
+  let s = ip.replace(/%.*$/, '').toLowerCase()
+  let tail: number[] = []
+  const v4 = /(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(s)
+  if (v4) {
+    tail = v4.slice(1, 5).map(Number)
+    s = s.slice(0, v4.index) + '0:0'
+  }
+  const halves = s.split('::')
+  if (halves.length > 2) return null
+  const words = (h: string) => (h ? h.split(':') : [])
+  const head = words(halves[0]!)
+  const rest = halves.length === 2 ? words(halves[1]!) : []
+  const fill = 8 - head.length - rest.length
+  if (fill < 0 || (halves.length === 1 && fill !== 0)) return null
+  const out: number[] = []
+  for (const w of [...head, ...Array<string>(halves.length === 2 ? fill : 0).fill('0'), ...rest]) {
+    if (!/^[0-9a-f]{1,4}$/.test(w)) return null
+    const n = parseInt(w, 16)
+    out.push(n >> 8, n & 0xff)
+  }
+  if (tail.length) out.splice(12, 4, ...tail)
+  return out.length === 16 ? out : null
+}
+
+/**
+ * True only for a public internet address. Refused: loopback, "this host", private (RFC 1918, RFC 4193
+ * unique-local), carrier-grade NAT (RFC 6598), link-local, site-local, multicast, documentation and
+ * benchmark ranges and other reserved space. IPv4 carried inside IPv6 (mapped, NAT64, 6to4) is judged by
+ * that IPv4 address.
+ */
+export function isPublicAddress(ip: string): boolean {
+  const bare = ip.replace(/%.*$/, '')
+  const fam = isIP(bare)
+  if (fam === 4) return ipv4Public(bare.split('.').map(Number))
+  if (fam !== 6) return false
+  const b = ipv6Bytes(bare)
+  if (!b) return false
+  const zero = (from: number, to: number) => b.slice(from, to).every((x) => x === 0)
+  if (zero(0, 10) && b[10] === 0xff && b[11] === 0xff) return ipv4Public(b.slice(12)) // ::ffff:a.b.c.d
+  if (zero(0, 12)) return false // ::, ::1 and the old IPv4-compatible form
+  if (b[0] === 0x00 && b[1] === 0x64 && b[2] === 0xff && b[3] === 0x9b) return zero(4, 12) && ipv4Public(b.slice(12)) // NAT64 64:ff9b::/96 (64:ff9b:1::/48 is local use)
+  if (b[0] === 0x20 && b[1] === 0x02) return ipv4Public(b.slice(2, 6)) // 6to4 2002::/16
+  if (b[0] === 0x20 && b[1] === 0x01 && b[2] === 0x0d && b[3] === 0xb8) return false // documentation 2001:db8::/32
+  if (b[0] === 0x20 && b[1] === 0x01 && b[2]! < 0x02) return false // IETF protocol assignments 2001::/23 (Teredo, benchmarking, ORCHID…)
+  return (b[0]! & 0xe0) === 0x20 // global unicast 2000::/3 only (not fc00::/7, fe80::/10, fec0::/10, ff00::/8, 100::/64…)
 }
 
 export interface FetchResult {
@@ -115,7 +190,18 @@ export const defaultSleep: SleepFn = (ms, signal) =>
 
 export interface FetcherOptions {
   userAgent: string
+  /**
+   * The only origins (scheme://host[:port]) this fetcher may contact — the adapter's own sites. Checked for
+   * the first address and every redirect hop (robots.txt included). Required: there is no "any site".
+   */
+  allowedOrigins: readonly string[]
   fetch?: FetchFn
+  /**
+   * Resolves each host name right before the request; every address must be public (isPublicAddress).
+   * Default: node:dns. null switches the check off — only for a test network that never touches DNS
+   * (the fixture / injected fetch set through hooks.ts); the app's real fetcher always checks.
+   */
+  lookup?: LookupFn | null
   sleep?: SleepFn
   now?: () => number
   gates?: HostGates
@@ -135,11 +221,30 @@ export interface GetOptions {
   accept?: string
   /** Refuse bodies larger than this (default 5 MB). */
   maxBytes?: number
+  /** Narrows the fetcher's allowed origins for this one request (e.g. the photo site of one maker). */
+  origins?: readonly string[]
+}
+
+/** Normalises origins ("https://shop.haimer.com/" → "https://shop.haimer.com"); anything else is dropped. */
+export function originsOf(list: readonly string[]): string[] {
+  const out = new Set<string>()
+  for (const o of list) {
+    try {
+      const u = new URL(o)
+      if (u.protocol === 'http:' || u.protocol === 'https:') out.add(u.origin)
+    } catch {
+      // not an address: never allowed
+    }
+  }
+  return [...out]
 }
 
 export class PoliteFetcher {
   readonly userAgent: string
+  /** The origins this fetcher may contact. */
+  readonly allowedOrigins: readonly string[]
   private readonly fetchFn: FetchFn
+  private readonly lookupFn: LookupFn | null
   private readonly sleepFn: SleepFn
   private readonly now: () => number
   readonly gates: HostGates
@@ -154,7 +259,9 @@ export class PoliteFetcher {
 
   constructor(o: FetcherOptions) {
     this.userAgent = o.userAgent
+    this.allowedOrigins = Object.freeze(originsOf(o.allowedOrigins ?? []))
     this.fetchFn = o.fetch ?? ((url, init) => fetch(url, init))
+    this.lookupFn = o.lookup === undefined ? dnsLookupAll : o.lookup
     this.sleepFn = o.sleep ?? defaultSleep
     this.now = o.now ?? Date.now
     this.gates = o.gates ?? SHARED_GATES
@@ -166,9 +273,14 @@ export class PoliteFetcher {
     this.backoff = o.backoffMs ?? 5000
   }
 
-  /** GET a page or file, obeying robots.txt and the crawl delay, following up to 5 redirects. */
+  /**
+   * GET a page or file, obeying robots.txt and the crawl delay, following up to 5 redirects — every hop
+   * only to an allowed origin.
+   */
   async get(url: string, opts: GetOptions = {}): Promise<FetchResult> {
-    let current = this.checkUrl(url)
+    const narrow = opts.origins ? originsOf(opts.origins) : null
+    const allowed = narrow ? this.allowedOrigins.filter((o) => narrow.includes(o)) : this.allowedOrigins
+    let current = this.checkUrl(url, allowed)
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
       const origin = current.origin
       this.throwIfBlocked(origin)
@@ -180,7 +292,7 @@ export class PoliteFetcher {
       if (res.status >= 300 && res.status < 400) {
         const loc = res.headers.get('location')
         if (!loc) throw new VendorFetchError(`${current.host} answered ${res.status} without a target address`, 'http', res.status)
-        current = this.checkUrl(new URL(loc, current).toString())
+        current = this.checkUrl(new URL(loc, current).toString(), allowed, current.host)
         continue
       }
       return res
@@ -224,12 +336,18 @@ export class PoliteFetcher {
       } catch (err) {
         if (err instanceof BlockedError)
           throw new BlockedError(`${host} refused robots.txt (HTTP ${err.status}) — the site blocks automated access, so it is not scanned. Blocked — not retried.`, err.status)
-        if (err instanceof VendorFetchError && err.kind === 'cancelled') throw err
+        if (err instanceof VendorFetchError && (err.kind === 'cancelled' || err.kind === 'not_allowed')) throw err
         // RFC 9309: a site that cannot serve robots.txt must be treated as disallowing everything.
         throw new VendorFetchError(`Could not read ${host}/robots.txt (${(err as Error).message}) — not scanning a site whose rules can't be read.`, 'network')
       }
       if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
-        target = new URL(res.headers.get('location')!, target).toString()
+        const next = new URL(res.headers.get('location')!, target)
+        if (!this.allowedOrigins.includes(next.origin))
+          throw new VendorFetchError(
+            `${host}/robots.txt redirects to ${next.origin}, which is not one of the sites this job may contact — not scanning a site whose rules can't be read.`,
+            'not_allowed',
+          )
+        target = next.toString()
         continue
       }
       break
@@ -263,7 +381,8 @@ export class PoliteFetcher {
     if (b && b.until > this.now()) throw new BlockedError(b.reason, b.status)
   }
 
-  private checkUrl(url: string): URL {
+  /** Scheme, credentials and the origin allow-list; `from` names the site that redirected here. */
+  private checkUrl(url: string, allowed: readonly string[], from?: string): URL {
     let u: URL
     try {
       u = new URL(url)
@@ -272,8 +391,35 @@ export class PoliteFetcher {
     }
     if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new VendorFetchError(`Only http/https addresses are fetched (got ${u.protocol})`, 'bad_url')
     if (u.username || u.password) throw new VendorFetchError('Addresses with a user name/password are not fetched', 'bad_url')
+    if (!allowed.includes(u.origin)) {
+      const sites = allowed.length ? allowed.map((o) => new URL(o).host).join(', ') : 'no site'
+      throw new VendorFetchError(
+        `${from ? `${from} redirected to ${u.origin}` : `${u.origin} is not a maker site this job may read`} — not fetched. This job only contacts ${sites}.`,
+        'not_allowed',
+      )
+    }
     u.hash = ''
     return u
+  }
+
+  /** Refuses a host name that resolves to this PC, the office network or any other non-public address. */
+  private async assertPublicHost(hostname: string): Promise<void> {
+    if (!this.lookupFn) return
+    const host = hostname.replace(/^\[|\]$/g, '')
+    let addrs: string[]
+    try {
+      addrs = isIP(host) ? [host] : await this.lookupFn(host)
+    } catch (err) {
+      const e = err as NodeJS.ErrnoException
+      throw new VendorFetchError(`could not look up ${host} (${e.code ?? e.message})`, 'network')
+    }
+    if (!addrs.length) throw new VendorFetchError(`could not look up ${host} (no address)`, 'network')
+    const bad = addrs.find((a) => !isPublicAddress(a))
+    if (bad)
+      throw new VendorFetchError(
+        `${host} points to ${bad}, which is not a public internet address (this PC, the office network or a reserved range) — not contacted.`,
+        'not_allowed',
+      )
   }
 
   /** One URL with retries on 5xx / network errors; throws BlockedError on 401/403/429. */
@@ -340,6 +486,8 @@ export class PoliteFetcher {
   }
 
   private async once(url: string, opts: GetOptions): Promise<FetchResult> {
+    // Looked up right before each request, inside the retry loop: a failed lookup is a network error.
+    await this.assertPublicHost(new URL(url).hostname)
     const signals: AbortSignal[] = [AbortSignal.timeout(this.timeout)]
     if (this.signal) signals.push(this.signal)
     this.requests++

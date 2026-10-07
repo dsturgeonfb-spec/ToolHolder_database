@@ -32,6 +32,25 @@ test('ISO 13399 headers map to our columns (DCONWS, LPR, DLN beats BD, WT, RPMX,
   assert.equal(tap.clamp_spec, 'Taps M3–M12')
 })
 
+test('codes that went into holder columns are not copied into the maker dimensions (they only refresh an existing labelled entry)', () => {
+  const csv = [
+    'Article,ADINTMS,DCONWS,LPR,DLN,BD,WT,RPMX,LSCX',
+    '84719607,HSK-A63,1-7,100,17,16,"0,9",25000,68',
+    '83724612,HSK-A63,20,64,,43,,,',
+  ].join('\n')
+  const [er, tap] = parseFileImport(csv, opts).rows.map((r) => r.record!)
+  // ER collet chuck: DCONWS → clamp range, DLN → nose, LPR/WT/RPMX → columns. None of them is a dimension too.
+  assert.deepEqual([er!.clamp_min_mm, er!.clamp_max_mm, er!.nose_dia_mm, er!.gauge_length_mm, er!.mass_kg, er!.max_rpm], [1, 7, 17, 100, 0.9, 25000])
+  assert.deepEqual(er!.dims, { BD: 16, LSCX: 68 }, 'BD is not the nose Ø here (DLN is), so it stays a dimension of its own')
+  assert.deepEqual(er!.dims_refresh, { DCONWS: '1-7', LPR: 100, DLN: 17, WT: 0.9, RPMX: 25000 })
+  // Tap chuck: no nominal clamp Ø is stored, so DCONWS stays a dimension (nothing is lost); BD is the nose Ø.
+  assert.equal(tap!.type_code, 'TAP_CHUCK')
+  assert.equal(tap!.clamp_dia_mm, null)
+  assert.deepEqual(tap!.dims, { DCONWS: 20 })
+  assert.equal(tap!.nose_dia_mm, 43)
+  assert.deepEqual(tap!.dims_refresh, { LPR: 64, BD: 43 })
+})
+
 test('ADINTMS for another interface → that row is an error; unreadable numbers too; blank lines skipped', () => {
   const csv = 'Article,ADINTMS,DCONWS,LPR\nA,HSK-A100,12,80\nB,HSK-A63,abc,80\n\nC,ISO 12164 (HSK-A),12,90\n,,,\n'
   const r = parseFileImport(csv, opts)

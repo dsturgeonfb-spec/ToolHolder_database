@@ -12,6 +12,9 @@ const NO_NOMINAL = ['ER_COLLET', 'PRECISION_COLLET', 'DRILL_CHUCK', 'TAP_CHUCK']
 
 type TypeSeries = [type: string, series: string]
 
+export const OTHER_TYPE_WARNING =
+  'Holder type could not be worked out from the maker data — it will be added as "Other"; set the right type on the holder afterwards.'
+
 /** HAIMER: order-no. prefixes, exactly as classify() in build_catalogue.py. */
 export function classifyHaimer(o: string): TypeSeries | null {
   if (o.startsWith('A63.050.') || o.startsWith('A63.051.')) return ['FACE_MILL_ARBOR', 'Face Mill Arbor (KKB = coolant bores)']
@@ -91,8 +94,8 @@ export function settleRecord(rec: HolderRecord, typeSeries: TypeSeries | null): 
     else rec.type_code = classifyByText(`${rec.product_name ?? ''} ${rec.series ?? ''} ${rec.spec_code ?? ''}`)
   }
   if (!rec.series) rec.series = typeSeries?.[1] ?? seriesFromName(rec.product_name)
-  if (rec.type_code === 'OTHER')
-    warnings.push('Holder type could not be worked out from the maker data — it will be added as "Other"; set the right type on the holder afterwards.')
+  // Only true for a new holder (an existing holder keeps its type), so it goes with the insert-only notes.
+  if (rec.type_code === 'OTHER') (rec.type_warnings ??= []).push(OTHER_TYPE_WARNING)
 
   const t = rec.type_code
   if (FIXED_BORE.includes(t)) {

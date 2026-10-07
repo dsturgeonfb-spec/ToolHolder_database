@@ -99,6 +99,8 @@ test('clamp fields settle like the seed: fixed bore min = max = Ø; collets keep
   const unknown: HolderRecord = { manufacturer: 'K', order_no: 'Q', data_status: 'verified', data_source: 's', product_name: 'Coolant tube' }
   settleRecord(unknown, null)
   assert.equal(unknown.type_code, 'OTHER')
-  assert.match(unknown.warnings!.join(' '), /could not be worked out/)
+  // Insert-only note (the diff shows it on new holders only — an existing holder keeps its type).
+  assert.match(unknown.type_warnings!.join(' '), /could not be worked out/)
+  assert.doesNotMatch((unknown.warnings ?? []).join(' '), /could not be worked out/)
   assert.equal(clampSpecText({ manufacturer: 'C', order_no: '83724612', type_code: 'TAP_CHUCK', product_name: 'ISO12164-A63.SGSF.M3-M12.64', data_status: 'verified', data_source: 's' }), 'Taps M3–M12')
 })

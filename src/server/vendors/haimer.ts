@@ -23,6 +23,17 @@ export function haimerUrlTokens(iface: string): string[] {
   return [iface.trim()]
 }
 
+/** True for an address on HAIMER's own shop (https://shop.haimer.com, no user name or other port). */
+export function isHaimerUrl(url: string | null | undefined): boolean {
+  if (!url) return false
+  try {
+    const u = new URL(url)
+    return u.origin === HAIMER_ORIGIN && !u.username && !u.password
+  } catch {
+    return false
+  }
+}
+
 /** Order no. from a HAIMER product URL (last path segment), or null for category/other pages. */
 export function haimerOrderFromUrl(url: string): string | null {
   let u: URL
@@ -70,7 +81,10 @@ export async function haimerSitemapProducts(fetcher: PoliteFetcher, iface: strin
       log(`Could not read ${sm.split('/').pop()}: ${(err as Error).message} — skipped`)
       continue
     }
-    const { index, locs } = sitemapLocs(xml)
+    const { index, locs: all } = sitemapLocs(xml)
+    // Only addresses on HAIMER's own shop are followed or read (a sitemap could list any site).
+    const locs = all.filter(isHaimerUrl)
+    if (locs.length < all.length) log(`${sm.split('/').pop()}: ${all.length - locs.length} address${all.length - locs.length === 1 ? '' : 'es'} on other sites ignored`)
     if (index) {
       log(`Sitemap index lists ${locs.length} sitemap${locs.length === 1 ? '' : 's'}`)
       queue.push(...locs)
@@ -182,8 +196,9 @@ export const haimer: VendorAdapter = {
   async discover(sc: ScanContext, iface: string, o: DiscoverOptions): Promise<ProductRef[]> {
     const refs = new Map<string, ProductRef>()
     const known = new Map(o.known.map((k) => [k.order_no.toUpperCase(), k]))
-    // A stored URL is reused only when it is the product's own page (some seed rows point at a variant selector).
-    const usable = (k: ProductRef) => !!k.url && haimerOrderFromUrl(k.url)?.toUpperCase() === k.order_no.toUpperCase()
+    // A stored URL is reused only when it is the product's own page on HAIMER's shop (some seed rows point at
+    // a variant selector; a link edited to another site is never followed — the sitemap finds the page instead).
+    const usable = (k: ProductRef) => isHaimerUrl(k.url) && haimerOrderFromUrl(k.url!)?.toUpperCase() === k.order_no.toUpperCase()
     const wanted = o.entered.length ? o.entered.map((e) => known.get(e.toUpperCase()) ?? { order_no: e, origin: 'entered' as const }) : o.full ? [] : o.known
     let sitemap: Map<string, string> | null = null
     const needSitemap = o.full || wanted.some((w) => !usable(w))
@@ -216,6 +231,7 @@ export const haimer: VendorAdapter = {
 
   async fetch(sc: ScanContext, ref: ProductRef): Promise<HolderRecord> {
     if (!ref.url) throw new Error(`No HAIMER page address for ${ref.order_no}.`)
+    if (!isHaimerUrl(ref.url)) throw new Error(`${ref.url} is not a shop.haimer.com address — not read.`)
     const page = await sc.fetcher.getText(ref.url)
     // page.url is where any redirect ended: a moved product keeps its new address.
     return parseHaimerPage(page.text, page.url, ref.order_no)

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { FIXTURES, REPO } from '../helpers.js'
 import { HostGates, PoliteFetcher } from '../../src/server/vendors/fetcher.js'
 import { fixtureFetch } from '../../src/server/vendors/fixtures.js'
-import { mapal, mapalProductUrl, normMapalOrder, parseMapalDesignation, parseMapalPage } from '../../src/server/vendors/mapal.js'
+import { mapal, mapalOrderFromUrl, mapalProductUrl, normMapalOrder, parseMapalDesignation, parseMapalPage } from '../../src/server/vendors/mapal.js'
 
 const DIR = join(FIXTURES, 'vendors')
 const page = (order: string) => readFileSync(join(DIR, 'mapal', `${order}.html`), 'utf8')
@@ -71,7 +71,7 @@ test('cross-check: technical data disagreeing with the designation gives a warni
 })
 
 test('discover(): catalogue order nos + entered ones (no full-range listing); malformed order nos are error rows', async () => {
-  const f = new PoliteFetcher({ userAgent: 'HolderCatalogue/test', fetch: fixtureFetch(DIR), sleep: async () => {}, gates: new HostGates() })
+  const f = new PoliteFetcher({ userAgent: 'HolderCatalogue/test', allowedOrigins: mapal.origins!, lookup: null, fetch: fixtureFetch(DIR), sleep: async () => {}, gates: new HostGates() })
   const log: string[] = []
   const sc = { db: null as any, fetcher: f, log: (m: string) => log.push(m) }
   const known = [{ order_no: '30524702', url: mapalProductUrl('30524702'), origin: 'catalogue' as const }]
@@ -82,4 +82,32 @@ test('discover(): catalogue order nos + entered ones (no full-range listing); ma
   const rec = await mapal.fetch!(sc, refs[0]!, 'HSK-A63')
   assert.equal(rec.order_no, '30655666')
   assert.equal(rec.product_url, mapalProductUrl('30655666'))
+})
+
+test('discover(): a stored address is reused only when it really is a shop.mapal.com product page for that order no. (anchored match)', async () => {
+  const sc = { db: null as any, fetcher: null as any, log: () => {} }
+  const page = 'https://shop.mapal.com/en/Clamping/Chucks/Hydraulic-Chucks/UNIQ-Mill-Chuck%2C-HA/p/000000000031270591'
+  const cases: Array<[string | null, string]> = [
+    [page, page],
+    [mapalProductUrl('31270591'), mapalProductUrl('31270591')],
+    // The SSRF report: the shop address hidden in a query string on another host.
+    ['http://127.0.0.1:9999/admin?x=shop.mapal.com/en/p/31270591', mapalProductUrl('31270591')],
+    ['http://127.0.0.1:27499/admin?ref=shop.mapal.com/en/p/31270591', mapalProductUrl('31270591')],
+    ['https://shop.mapal.com.evil.example/en/p/31270591', mapalProductUrl('31270591')],
+    ['https://shop.mapal.com@10.0.0.1/en/p/31270591', mapalProductUrl('31270591')],
+    ['https://evil.example/shop.mapal.com/en/p/31270591', mapalProductUrl('31270591')],
+    ['https://shop.mapal.com/en/search?q=/p/31270591', mapalProductUrl('31270591')],
+    ['https://shop.mapal.com/en/p/000000000030524702', mapalProductUrl('31270591')], // another product's page
+    [null, mapalProductUrl('31270591')],
+  ]
+  for (const [stored, want] of cases) {
+    const [ref] = await mapal.discover!(sc, 'HSK-A63', { known: [{ order_no: '31270591', url: stored, origin: 'catalogue' }], entered: [], full: false })
+    assert.equal(ref!.url, want, String(stored))
+  }
+  assert.equal(mapalOrderFromUrl('https://shop.mapal.com/en/p/000000000031270591?ref=1'), '31270591')
+  assert.equal(mapalOrderFromUrl('http://127.0.0.1/?u=https://shop.mapal.com/en/p/31270591'), null)
+  // The page check reads the order no. from a product address itself, never from a query string: a canonical
+  // link hiding "shop.mapal.com/en/p/30524702" in its query no longer passes another product's page off as 30524702.
+  const html = mini('', 'HTC-HSK-A063-12-080-1-0-A', '').replace('<html><body>', '<html><head><link rel="canonical" href="http://127.0.0.1:27499/?shop.mapal.com/en/p/30524702"></head><body>')
+  assert.throws(() => parseMapalPage(html, 'https://shop.mapal.com/en/x/p/000000000030490553', '30524702'), /shows order no\. 30490553/)
 })

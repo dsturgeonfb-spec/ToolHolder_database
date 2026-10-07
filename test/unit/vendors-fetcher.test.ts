@@ -10,9 +10,11 @@ import {
   PoliteFetcher,
   RobotsDisallowedError,
   VendorFetchError,
+  isPublicAddress,
   maybeGunzip,
   userAgent,
   type FetchFn,
+  type LookupFn,
 } from '../../src/server/vendors/fetcher.js'
 
 /** Virtual clock: sleep() advances time instead of waiting, and records every wait. */
@@ -48,8 +50,13 @@ function fakeNet(routes: Record<string, Route>, clock?: { now: () => number }) {
 const html = (s: string, status = 200) => new Response(s, { status, headers: { 'content-type': 'text/html; charset=utf-8' } })
 const robots = (s: string) => new Response(s, { headers: { 'content-type': 'text/plain' } })
 
+/** Stand-in resolver: every test host is a public address (the real DNS is never asked in tests). */
+const PUBLIC: LookupFn = async () => ['93.184.215.14']
+/** The test sites the fetchers below may contact (a fetcher only ever contacts the origins it was given). */
+const SITES = ['shop', 'k', 'x', 'y', 'z', 'cuttingtools', 'r', 'flaky', 'n', 'b', 'same', 'c', 'slow'].map((h) => `https://${h}.example.com`)
+
 function make(net: ReturnType<typeof fakeNet>, clock: ReturnType<typeof fakeClock>, extra: Partial<ConstructorParameters<typeof PoliteFetcher>[0]> = {}) {
-  return new PoliteFetcher({ userAgent: userAgent('1.2.3', 'eng@example.com'), fetch: net.fn, sleep: clock.sleep, now: clock.now, gates: new HostGates(), ...extra })
+  return new PoliteFetcher({ userAgent: userAgent('1.2.3', 'eng@example.com'), allowedOrigins: SITES, lookup: PUBLIC, fetch: net.fn, sleep: clock.sleep, now: clock.now, gates: new HostGates(), ...extra })
 }
 
 test('honest user agent: product/version + contact, never a browser string', () => {
@@ -150,7 +157,7 @@ test('5xx every time → gives up after 3 tries with a clear message; network er
     if (++n < 2) throw new TypeError('fetch failed')
     return html('back')
   }
-  const g = new PoliteFetcher({ userAgent: 'HolderCatalogue/t', fetch: flaky, sleep: clock.sleep, now: clock.now, gates: new HostGates() })
+  const g = new PoliteFetcher({ userAgent: 'HolderCatalogue/t', allowedOrigins: SITES, lookup: PUBLIC, fetch: flaky, sleep: clock.sleep, now: clock.now, gates: new HostGates() })
   assert.equal((await g.getText('https://flaky.example.com/x')).text, 'back')
 })
 
@@ -198,7 +205,7 @@ test('one request at a time per site, even from two callers at once', async () =
     return url.endsWith('robots.txt') ? new Response('', { status: 404 }) : html('x')
   }
   const gates = new HostGates()
-  const opts = { userAgent: 'HolderCatalogue/t', fetch: slow, sleep: async () => {}, gates }
+  const opts = { userAgent: 'HolderCatalogue/t', allowedOrigins: SITES, lookup: PUBLIC, fetch: slow, sleep: async () => {}, gates }
   const a = new PoliteFetcher(opts)
   const b = new PoliteFetcher(opts)
   await Promise.all([a.getText('https://same.example.com/1'), b.getText('https://same.example.com/2'), a.getText('https://same.example.com/3')])
@@ -208,7 +215,7 @@ test('one request at a time per site, even from two callers at once', async () =
 test('cancelling the job stops a crawl-delay wait', async () => {
   const ctrl = new AbortController()
   const net = fakeNet({ 'https://c.example.com/robots.txt': robots('User-agent: *\nCrawl-delay: 60\n'), 'https://c.example.com/a': html('a') })
-  const f = new PoliteFetcher({ userAgent: 'HolderCatalogue/t', fetch: net.fn, gates: new HostGates(), signal: ctrl.signal })
+  const f = new PoliteFetcher({ userAgent: 'HolderCatalogue/t', allowedOrigins: SITES, lookup: PUBLIC, fetch: net.fn, gates: new HostGates(), signal: ctrl.signal })
   await f.getText('https://c.example.com/a') // robots + a (first request to the site does not wait)
   const t0 = Date.now()
   const p = f.getText('https://c.example.com/b')
@@ -225,7 +232,7 @@ test('gzipped sitemaps are unpacked whatever the headers say; plain bytes pass t
 
 test('a site that never answers times out (and is retried like any network error)', async () => {
   const hang: FetchFn = (_url, init) => new Promise((_, reject) => init.signal!.addEventListener('abort', () => reject(init.signal!.reason)))
-  const f = new PoliteFetcher({ userAgent: 'HolderCatalogue/t', fetch: hang, sleep: async () => {}, gates: new HostGates(), timeoutMs: 30, retries: 1 })
+  const f = new PoliteFetcher({ userAgent: 'HolderCatalogue/t', allowedOrigins: SITES, lookup: PUBLIC, fetch: hang, sleep: async () => {}, gates: new HostGates(), timeoutMs: 30, retries: 1 })
   // AbortSignal.timeout() does not keep Node alive on its own (the app's HTTP server does); hold the loop open here.
   const keepAlive = setInterval(() => {}, 1000)
   try {
@@ -242,7 +249,7 @@ test('test-only hooks: per-app fake network, or HOLDER_CATALOGUE_VENDOR_FIXTURES
   process.env[FIXTURES_ENV] = join(FIXTURES, 'vendors')
   try {
     assert.equal(usingFixtures(fakeCtx), true)
-    const f = makeFetcher(fakeCtx)
+    const f = makeFetcher(fakeCtx, { origins: ['https://shop.haimer.com'] })
     assert.equal(f.userAgent, 'HolderCatalogue/9.9.9 (+qa@example.com)')
     assert.match((await f.getText('https://shop.haimer.com/robots.txt')).text, /Crawl-delay: 10/)
   } finally {
@@ -251,8 +258,112 @@ test('test-only hooks: per-app fake network, or HOLDER_CATALOGUE_VENDOR_FIXTURES
   }
   const calls: string[] = []
   setVendorHooks(fakeCtx, { fetch: async (url) => (calls.push(url), new Response('', { status: 404 })), sleep: async () => {}, gates: new HostGates() })
-  await assert.rejects(makeFetcher(fakeCtx).getText('https://shop.example.com/a'), /Page not found/)
+  await assert.rejects(makeFetcher(fakeCtx, { origins: ['https://shop.example.com'] }).getText('https://shop.example.com/a'), /Page not found/)
   assert.deepEqual(calls, ['https://shop.example.com/robots.txt', 'https://shop.example.com/a'])
   setVendorHooks(fakeCtx, null)
   assert.equal(usingFixtures(fakeCtx), false)
+})
+
+// ------------------------------------------------------------------------------------------- SSRF guard
+
+test('only the allowed origins are contacted: another host, a loopback address or a look-alike URL is refused before any request', async () => {
+  const clock = fakeClock()
+  const net = fakeNet({ 'https://shop.mapal.com/robots.txt': robots('User-agent: *\n') }, clock)
+  const f = make(net, clock, { allowedOrigins: ['https://shop.mapal.com'] })
+  for (const bad of [
+    'http://127.0.0.1:27499/admin?ref=shop.mapal.com/en/p/31270591',
+    'https://shop.mapal.com.evil.example/en/p/1',
+    'http://shop.mapal.com/en/p/1', // another scheme is another origin
+    'https://shop.mapal.com:8443/en/p/1',
+    'http://localhost/admin',
+    'http://[::1]/admin',
+  ])
+    await assert.rejects(f.get(bad), (e: unknown) => e instanceof VendorFetchError && e.kind === 'not_allowed' && /not fetched\. This job only contacts shop\.mapal\.com/.test(e.message), bad)
+  assert.deepEqual(net.calls, [], 'nothing was requested — not even robots.txt')
+})
+
+test('every redirect hop is checked: a maker page that redirects to another host is not followed', async () => {
+  const clock = fakeClock()
+  const net = fakeNet(
+    {
+      'https://shop.example.com/robots.txt': robots('User-agent: *\n'),
+      'https://shop.example.com/maker': new Response(null, { status: 302, headers: { location: 'http://127.0.0.1:27499/admin-via-redirect' } }),
+      'https://shop.example.com/other': new Response(null, { status: 301, headers: { location: 'https://x.example.com/p' } }),
+    },
+    clock,
+  )
+  const f = make(net, clock, { allowedOrigins: ['https://shop.example.com'] })
+  await assert.rejects(f.getText('https://shop.example.com/maker'), (e: unknown) => e instanceof VendorFetchError && e.kind === 'not_allowed' && /shop\.example\.com redirected to http:\/\/127\.0\.0\.1:27499/.test(e.message))
+  await assert.rejects(f.getText('https://shop.example.com/other'), (e: unknown) => e instanceof VendorFetchError && e.kind === 'not_allowed')
+  assert.ok(net.calls.every((c) => c.url.startsWith('https://shop.example.com/')), 'no other host was contacted')
+  // robots.txt itself redirecting off the site: the site is not scanned (its rules can't be read).
+  const net2 = fakeNet({ 'https://k.example.com/robots.txt': new Response(null, { status: 301, headers: { location: 'http://10.0.0.5/robots.txt' } }) }, clock)
+  const g = make(net2, clock, { allowedOrigins: ['https://k.example.com'] })
+  await assert.rejects(g.getText('https://k.example.com/a'), (e: unknown) => e instanceof VendorFetchError && e.kind === 'not_allowed' && /robots\.txt redirects to http:\/\/10\.0\.0\.5/.test(e.message))
+  assert.deepEqual(net2.calls.map((c) => c.url), ['https://k.example.com/robots.txt'])
+})
+
+test('a host that resolves to this PC or the office network is not contacted — first address and redirect targets', async () => {
+  const clock = fakeClock()
+  const dns: Record<string, string[]> = {
+    'shop.example.com': ['93.184.215.14'],
+    'k.example.com': ['127.0.0.1'],
+    'x.example.com': ['192.168.1.20'],
+    'y.example.com': ['93.184.215.14', 'fd12:3456::1'], // one private answer is enough to refuse
+    'z.example.com': ['169.254.169.254'],
+  }
+  const lookups: string[] = []
+  const lookup: LookupFn = async (h) => (lookups.push(h), dns[h] ?? [])
+  const net = fakeNet(
+    {
+      'https://shop.example.com/robots.txt': robots('User-agent: *\n'),
+      'https://shop.example.com/hop': new Response(null, { status: 302, headers: { location: 'https://z.example.com/latest/meta-data/' } }),
+    },
+    clock,
+  )
+  const f = make(net, clock, { lookup })
+  for (const host of ['k', 'x', 'y'])
+    await assert.rejects(f.getText(`https://${host}.example.com/a`), (e: unknown) => e instanceof VendorFetchError && e.kind === 'not_allowed' && /not a public internet address/.test(e.message), host)
+  await assert.rejects(f.getText('https://shop.example.com/hop'), (e: unknown) => e instanceof VendorFetchError && e.kind === 'not_allowed' && /z\.example\.com points to 169\.254\.169\.254/.test(e.message))
+  assert.ok(lookups.includes('z.example.com'), 'the redirect target was looked up too')
+  assert.ok(net.calls.every((c) => c.url.startsWith('https://shop.example.com/')), `only the public host was contacted: ${net.calls.map((c) => c.url).join(', ')}`)
+  // A failed lookup is a network error (retried, then reported) — never a reason to skip the check.
+  const none = make(fakeNet({}, clock), clock, { lookup: async () => Promise.reject(Object.assign(new Error('getaddrinfo ENOTFOUND'), { code: 'ENOTFOUND' })) })
+  await assert.rejects(none.getText('https://n.example.com/a'), (e: unknown) => e instanceof VendorFetchError && e.kind === 'network' && /ENOTFOUND/.test(e.message))
+})
+
+test('the default fetcher checks real DNS: "localhost" (even if allowed by mistake) is refused', async () => {
+  const net = fakeNet({})
+  const f = new PoliteFetcher({ userAgent: 'HolderCatalogue/t', allowedOrigins: ['http://localhost:9'], fetch: net.fn, sleep: async () => {}, gates: new HostGates(), retries: 0 })
+  await assert.rejects(f.getText('http://localhost:9/admin'), (e: unknown) => e instanceof VendorFetchError && e.kind === 'not_allowed' && /localhost points to/.test(e.message))
+  assert.deepEqual(net.calls, [])
+})
+
+test('isPublicAddress: loopback, RFC 1918, RFC 4193, CGNAT, link-local and reserved ranges are not public', () => {
+  for (const ip of ['8.8.8.8', '185.110.152.174', '100.63.255.255', '100.128.0.1', '172.32.0.1', '2a00:1450:4009:81f::200e', '2001:4860:4860::8888', '::ffff:8.8.8.8', '64:ff9b::808:808'])
+    assert.equal(isPublicAddress(ip), true, ip)
+  for (const ip of [
+    '127.0.0.1', '127.255.0.9', '0.0.0.0', '10.1.2.3', '172.16.0.1', '172.31.255.255', '192.168.0.10', '100.64.0.1', '100.127.255.254', '169.254.169.254',
+    '192.0.0.8', '192.0.2.1', '198.18.0.1', '198.51.100.7', '203.0.113.9', '224.0.0.251', '240.0.0.1', '255.255.255.255',
+    '::', '::1', '::ffff:127.0.0.1', '::ffff:10.0.0.1', '::ffff:7f00:1', '::127.0.0.1', 'fc00::1', 'fd12:3456:789a::1', 'fe80::1', 'fe80::1%eth0', 'fec0::1', 'ff02::1',
+    '2001:db8::1', '2001::1', '2002:7f00:1::', '2002:c0a8:101::1', '64:ff9b::7f00:1', '64:ff9b:1::a00:1', '100::1', 'not-an-ip', '',
+  ])
+    assert.equal(isPublicAddress(ip), false, ip)
+})
+
+test('hooks: the allow-list applies to the injected test network as well; the DNS check runs whenever a resolver is given', async () => {
+  const fakeCtx = { version: '9.9.9', db: { value: () => JSON.stringify('qa@example.com') } } as any
+  const calls: string[] = []
+  const answer: FetchFn = async (url) => (calls.push(url), new Response('', { status: 404 }))
+  setVendorHooks(fakeCtx, { fetch: answer, sleep: async () => {}, gates: new HostGates() })
+  try {
+    await assert.rejects(makeFetcher(fakeCtx, { origins: ['https://shop.mapal.com'] }).getText('http://127.0.0.1:27499/admin'), (e: unknown) => e instanceof VendorFetchError && e.kind === 'not_allowed')
+    assert.deepEqual(calls, [])
+    // A test that brings its own resolver gets the address check too.
+    setVendorHooks(fakeCtx, { fetch: answer, lookup: async () => ['10.0.0.7'], sleep: async () => {}, gates: new HostGates() })
+    await assert.rejects(makeFetcher(fakeCtx, { origins: ['https://shop.mapal.com'] }).getText('https://shop.mapal.com/en/p/1'), /not a public internet address/)
+    assert.deepEqual(calls, [])
+  } finally {
+    setVendorHooks(fakeCtx, null)
+  }
 })

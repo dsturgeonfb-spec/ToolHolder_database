@@ -17,7 +17,7 @@ import type { Db, Row } from '../db.js'
 import { DATA_STATUSES, logChange, nextHolderId, nowStamp, today, type DataStatus } from '../domain.js'
 import { HttpError } from '../http.js'
 import { FIXED_BORE } from './classify.js'
-import { cleanText, interfaceMatch } from './parse.js'
+import { cleanText, interfaceMatch, labelCode } from './parse.js'
 import type { FieldChange, HolderRecord, Proposal } from './types.js'
 
 type Policy = 'value' | 'fill' | 'merge'
@@ -106,32 +106,58 @@ export function parseDimsJson(v: unknown): Record<string, string | number> {
   }
 }
 
+const ISO_CODE = /^[A-Z][A-Z0-9_]{1,11}$/
+
+/**
+ * Our label for a bare ISO 13399 code from a data file ("DLN"): the one existing label that carries that code,
+ * e.g. "DLN (diameter lock nut)" or "Lock nut diameter (DLN)". Undefined when none (or more than one) does.
+ */
+function labelForCode(existing: Record<string, unknown>, code: string): string | undefined {
+  if (!ISO_CODE.test(code)) return undefined
+  const hits = Object.keys(existing).filter((k) => labelCode(k).code === code)
+  return hits.length === 1 ? hits[0] : undefined
+}
+
 /**
  * Adds the source's dims to ours: new labels are added, differing values replaced, nothing removed.
- * Labels match ignoring case/spacing so "L length" and "L Length" are one dimension.
+ * Labels match ignoring case/spacing so "L length" and "L Length" are one dimension, and a bare ISO code
+ * from a file ("DLN") matches our label carrying that code ("DLN (diameter lock nut)") instead of adding a
+ * second entry. `refresh` values (codes that went into holder columns) only update such an existing label.
  */
-export function mergeDims(existing: Record<string, string | number>, incoming: Record<string, string | number> | undefined) {
+export function mergeDims(
+  existing: Record<string, string | number>,
+  incoming: Record<string, string | number> | undefined,
+  refresh?: Record<string, string | number>,
+) {
   const merged: Record<string, string | number> = { ...existing }
   const changed: string[] = []
   const byNorm = new Map(Object.keys(existing).map((k) => [keyNorm(k), k]))
+  const ourKey = (k: string) => byNorm.get(keyNorm(k)) ?? labelForCode(existing, k.trim())
   for (const [k, v] of Object.entries(incoming ?? {})) {
     if (blank(v)) continue
-    const ours = byNorm.get(keyNorm(k))
+    const ours = ourKey(k)
     if (ours !== undefined) {
-      if (dimValueEqual(existing[ours], v)) continue
+      if (dimValueEqual(merged[ours], v)) continue
       merged[ours] = v
-      changed.push(ours)
+      if (!changed.includes(ours)) changed.push(ours)
     } else {
       merged[k] = v
       changed.push(k)
     }
+  }
+  for (const [code, v] of Object.entries(refresh ?? {})) {
+    if (blank(v)) continue
+    const ours = ourKey(code)
+    if (ours === undefined || changed.includes(ours) || dimValueEqual(merged[ours], v)) continue
+    merged[ours] = v
+    changed.push(ours)
   }
   return { merged, changed }
 }
 
 /** Cleans a record from the web/a file: implausible numbers, non-http links and over-long text are dropped with a warning. */
 export function sanitizeRecord(db: Db, rec: HolderRecord): HolderRecord {
-  const r: HolderRecord = { ...rec, warnings: [...(rec.warnings ?? [])], dims: { ...(rec.dims ?? {}) } }
+  const r: HolderRecord = { ...rec, warnings: [...(rec.warnings ?? [])], type_warnings: [...(rec.type_warnings ?? [])], dims: { ...(rec.dims ?? {}) } }
   const any = r as unknown as Record<string, unknown>
   for (const [f, spec] of Object.entries(NUMERIC)) {
     const v = any[f]
@@ -155,20 +181,25 @@ export function sanitizeRecord(db: Db, rec: HolderRecord): HolderRecord {
     } else any[f] = s
   }
   for (const [f, max] of Object.entries(TEXT_MAX)) any[f] = blank(any[f]) ? null : cleanText(any[f], max)
-  const dims: Record<string, string | number> = {}
-  for (const [k, v] of Object.entries(r.dims ?? {}).slice(0, 150)) {
-    const key = cleanText(k, 120)
-    if (!key || blank(v)) continue
-    if (typeof v === 'number') {
-      if (Number.isFinite(v)) dims[key] = v
-    } else {
-      const t = cleanText(v, 300)
-      if (t) dims[key] = t
+  const cleanDims = (src: Record<string, unknown> | undefined) => {
+    const dims: Record<string, string | number> = {}
+    for (const [k, v] of Object.entries(src ?? {}).slice(0, 150)) {
+      const key = cleanText(k, 120)
+      if (!key || blank(v)) continue
+      if (typeof v === 'number') {
+        if (Number.isFinite(v)) dims[key] = v
+      } else {
+        const t = cleanText(v, 300)
+        if (t) dims[key] = t
+      }
     }
+    return dims
   }
-  r.dims = dims
+  r.dims = cleanDims(r.dims)
+  if (rec.dims_refresh) r.dims_refresh = cleanDims(rec.dims_refresh)
   if (r.type_code && !db.value(`SELECT 1 FROM holder_types WHERE type_code = ?`, [r.type_code])) {
-    r.warnings!.push(`Holder type "${r.type_code}" is not one of ours — it will be added as "Other".`)
+    // The type is only set on insert, so this note only goes on an insert proposal.
+    r.type_warnings!.push(`Holder type "${r.type_code}" is not one of ours — it will be added as "Other".`)
     r.type_code = 'OTHER'
   }
   if (!(DATA_STATUSES as readonly string[]).includes(r.data_status)) r.data_status = 'unverified'
@@ -210,14 +241,16 @@ export function proposalFor(db: Db, raw: HolderRecord, iface: string): Proposal 
       const v = f === 'interface_code' ? iface : f === 'dims' ? (Object.keys(rec.dims ?? {}).length ? rec.dims : null) : any[f]
       if (!blank(v)) fields[f] = { old: null, new: v }
     }
-    return { order_no: rec.order_no, manufacturer: maker.name, action: 'insert', fields, record: { ...rec, warnings }, source_url: src, warnings }
+    // Notes about the holder type only apply here: a new holder gets the type, an existing one keeps its own.
+    const ins = [...new Set([...warnings, ...(rec.type_warnings ?? [])])]
+    return { order_no: rec.order_no, manufacturer: maker.name, action: 'insert', fields, record: { ...rec, warnings: ins }, source_url: src, warnings: ins }
   }
   if (existing.interface_code !== iface) warnings.push(`In the catalogue this holder is filed under ${existing.interface_code}, not ${iface}.`)
   if (existing.order_no !== rec.order_no) warnings.push(`The catalogue spells the order no. "${existing.order_no}"; the source says "${rec.order_no}".`)
   for (const [f, policy] of UPDATE_FIELDS) {
     if (policy === 'merge') {
       const ours = parseDimsJson(existing.dims_json)
-      const { merged, changed } = mergeDims(ours, rec.dims)
+      const { merged, changed } = mergeDims(ours, rec.dims, rec.dims_refresh)
       if (changed.length) fields.dims = { old: ours, new: merged, keys: changed }
       continue
     }
@@ -236,7 +269,8 @@ export function proposalFor(db: Db, raw: HolderRecord, iface: string): Proposal 
     action: Object.keys(fields).length ? 'update' : 'same',
     holder_id: String(existing.holder_id),
     fields,
-    record: { ...rec, order_no: String(existing.order_no), warnings },
+    // No holder-type notes here: the type of an existing holder is never changed by a scan or import.
+    record: { ...rec, order_no: String(existing.order_no), warnings, type_warnings: undefined },
     source_url: src,
     warnings,
   }
@@ -380,7 +414,7 @@ export function applyProposals(ctx: AppContext, user: string, proposals: Proposa
           res.conflicts.push({ holder_id: String(cur.holder_id), order_no: p.order_no, field: f, reason: 'Changed in the catalogue since the proposal was made — not overwritten.' })
           continue
         }
-        const nv = f === 'dims' ? mergeDims(curVal as Record<string, string | number>, rec.dims).merged : p.fields[f]!.new
+        const nv = f === 'dims' ? mergeDims(curVal as Record<string, string | number>, rec.dims, rec.dims_refresh).merged : p.fields[f]!.new
         if (sameValue(f, curVal, nv)) continue
         sets[col] = store(f, nv)
         applied.push({ field: f, old: curVal, new: nv })

@@ -27,7 +27,13 @@ test('vendors page: a card per maker (automated or manual route), the polite-scr
   assert.equal(await haimer.locator('[data-act="pick-scan"]').count(), 1)
   const cer = e.page.locator('.vn-maker[data-maker="CERATIZIT"]')
   assert.match((await cer.textContent())!, /Manual route[\s\S]*403/)
+  assert.match((await cer.textContent())!, /All 7 Ceratizit holders in the catalogue carry data from the distributor Zedaro/, 'live count, not a fixed number')
   assert.equal(await cer.locator('[data-act="pick-scan"]').count(), 0, 'Ceratizit is never offered a scan')
+  for (const m of ['CUTWEL', 'SANDVIK COROMANT']) {
+    const card = e.page.locator(`.vn-maker[data-maker="${m}"]`)
+    assert.match((await card.textContent())!, /Manual route[\s\S]*File import[\s\S]*stays on the manual file-import route[\s\S]*Playwright\) that is not bundled with the app, and the site could not be tested from the build environment/, m)
+    assert.equal(await card.locator('[data-act="pick-scan"]').count(), 0, m)
+  }
   const notice = (await e.page.textContent('.vn-polite'))!
   assert.match(notice, /HolderCatalogue\/0\.1\.0 \(\+contact not set\)/)
   assert.match(notice, /robots\.txt/)
@@ -73,7 +79,9 @@ test('scan HAIMER for entered order nos → proposals → untick one field → a
   assert.match((await e.page.textContent('.vn-runs'))!, /Vendor scan · HAIMER[\s\S]*1 new · 1 updated/)
 
   await e.page.click('.vn-result a[href="#/holder/H0089"]')
-  await e.page.waitForFunction(() => location.hash === '#/holder/H0089' && !document.querySelector('#view .loading'))
+  // Wait for the holder page itself: the hash changes before the router runs (hashchange is async), so
+  // "hash set and nothing loading" could be seen while the vendors page was still showing.
+  await e.page.waitForFunction(() => location.hash === '#/holder/H0089' && !!document.querySelector('#view .hv') && !document.querySelector('#view .loading'))
   assert.match((await e.page.textContent('#view'))!, /A63\.147\.05\.1/)
   assert.deepEqual(e.errors, [])
 })
@@ -108,14 +116,33 @@ test('file import through the UI: choose a CSV, say where it came from, approve'
   assert.deepEqual(e.errors, [])
 })
 
+test('file import of an existing holder: no "will be added as Other" check note, and DLN updates the labelled lock-nut Ø', async () => {
+  await e.goto('#/vendors')
+  await e.page.click('.vn-maker[data-maker="CERATIZIT"] [data-act="pick-import"]')
+  const csv = 'Article,ADINTMS,DCONWS,LPR,DLN,WT,product_name,spec_code\r\n84719607,HSK-A63,1-7,100,17,"0,9",,\r\n'
+  await e.page.setInputFiles('[data-form="import"] input[type="file"]', { name: 'ceratizit_fix.csv', mimeType: 'text/csv', buffer: Buffer.from(csv, 'utf8') })
+  await e.page.fill('[data-form="import"] input[name="source"]', 'Ceratizit rep, corrected lock nut Ø')
+  await e.page.click('[data-form="import"] button[type="submit"]')
+  await e.page.waitForSelector('.vn-props .vn-table')
+  const upd = (await row('84719607').textContent())!
+  assert.match(upd, /Update/)
+  assert.doesNotMatch(upd, /added as "Other"/)
+  assert.match(upd, /Maker dimensions[\s\S]*DLN \(diameter lock nut\): 16 → 17/)
+  assert.doesNotMatch(upd, /DCONWS|(^|[^(])DLN: /, 'no bare ISO-code copies of the clamp/nose values')
+  assert.deepEqual(e.errors, [])
+})
+
 test('cache maker photos: job progress, then what was saved and why the rest failed', async () => {
   await e.goto('#/vendors')
   await e.page.click('[data-act="images"]')
   await e.page.waitForSelector('.vn-images .vn-job')
   await e.page.waitForSelector('.vn-images .warnbox, .vn-images .okbox', { timeout: 30_000 })
   const text = (await e.page.textContent('.vn-images'))!
-  assert.match(text, /\d+ saved, 0 already saved, \d+ could not be downloaded/)
+  // The 7 Ceratizit photos are on the distributor's CDN: no reader for that site, so not downloaded (with the reason).
+  assert.match(text, /\d+ saved, 0 already saved, 7 not downloaded \(no reader for that site\), \d+ could not be downloaded/)
   assert.match(text, /of them are saved on this PC/)
+  assert.match(text, /7 are on a site the app has no reader for/)
+  assert.match((await e.page.textContent('.vn-images [data-skipped]'))!, /H0010: CERATIZIT has no automated reader, so its photos are not downloaded \(no adapter for cdn\.shopify\.com\)/)
   const saved = Number(/(\d+) saved/.exec(text)![1])
   assert.ok(saved >= 2, `saved ${saved}`)
   assert.deepEqual(e.errors, [])
@@ -148,5 +175,33 @@ test('leaving the page mid-review and coming back: the last scan can be reopened
   await e.page.click('[data-act="approve"]')
   await e.page.waitForSelector('.vn-result')
   assert.match((await e.page.textContent('.vn-result'))!, /1 updated: H0018/)
+  assert.deepEqual(e.errors, [])
+})
+
+test('a holder added by an approval shows up in the other screens at once — no restart (reference data reloaded)', async () => {
+  // Same page session throughout: navigate by hash only, and prove the page was not reloaded.
+  const hash = async (h: string) => {
+    await e.page.evaluate((x) => (location.hash = x), h)
+    await e.page.waitForFunction((x) => location.hash === x && !document.querySelector('#view .loading'), h)
+  }
+  await e.goto('#/count')
+  await e.page.evaluate(() => ((window as any).__sameSession = true))
+  const countMakers = () => e.page.$$eval('[data-f="mk"] option', (os) => os.map((o) => (o as HTMLOptionElement).value))
+  assert.ok(!(await countMakers()).includes('CUTWEL'), 'no Cutwel articles yet, so not offered in Count')
+  await hash('#/vendors')
+  await e.page.waitForSelector('.vn-maker')
+  await e.page.click('.vn-maker[data-maker="CUTWEL"] [data-act="pick-import"]')
+  const csv = 'order_no,maker_order_no,product_name,gauge_length_mm\r\nCW-HSK63-SF06,A63.140.06,Shrink fit chuck HSK63 6mm,80\r\n'
+  await e.page.setInputFiles('[data-form="import"] input[type="file"]', { name: 'cutwel_hsk63.csv', mimeType: 'text/csv', buffer: Buffer.from(csv, 'utf8') })
+  await e.page.fill('[data-form="import"] input[name="source"]', 'Cutwel price list, 07/10/2026')
+  await e.page.click('[data-form="import"] button[type="submit"]')
+  await e.page.waitForSelector('.vn-props .vn-table')
+  if (!(await row('CW-HSK63-SF06').locator('[data-sel]').isChecked())) await row('CW-HSK63-SF06').locator('[data-sel]').check()
+  await e.page.click('[data-act="approve"]')
+  await e.page.waitForSelector('.vn-result')
+  assert.match((await e.page.textContent('.vn-result'))!, /1 added to the catalogue/)
+  await hash('#/count')
+  await e.page.waitForFunction(() => Array.from(document.querySelectorAll<HTMLOptionElement>('[data-f="mk"] option')).some((o) => o.value === 'CUTWEL'), null, { timeout: 5000 })
+  assert.equal(await e.page.evaluate(() => (window as any).__sameSession), true, 'the page was not reloaded')
   assert.deepEqual(e.errors, [])
 })

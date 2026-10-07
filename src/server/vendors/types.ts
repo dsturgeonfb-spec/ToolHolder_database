@@ -46,6 +46,17 @@ export interface HolderRecord {
   partial_fields?: string[]
   /** Things the person should look at before approving (shown on the proposal). */
   warnings?: string[]
+  /**
+   * Notes about the holder type ("will be added as Other"). They only matter when the record becomes a new
+   * holder — an existing holder's type is never changed by a scan or import — so only insert proposals show them.
+   */
+  type_warnings?: string[]
+  /**
+   * Values (by ISO 13399 code, e.g. DLN) that went into holder columns. They are not maker dimensions of their
+   * own; they only update a dimension the holder already carries under the same code ("DLN (diameter lock
+   * nut)"), so the holder page never shows a stale copy next to the column value. Never added as new labels.
+   */
+  dims_refresh?: Record<string, string | number>
 }
 
 /** A product to read: an order no. and, when known, the page that describes it. */
@@ -88,8 +99,13 @@ export interface VendorAdapter {
   robots: string
   /** Best entry point on the maker's site (opened in the browser), or null. */
   source_url: string | null
-  /** Origins the adapter fetches from (for the live robots.txt summary). */
+  /**
+   * The only origins (https://host) a scan of this maker may contact — enforced by the fetcher for every
+   * request and redirect hop. Also used for the live robots.txt summary on the maker card.
+   */
   origins?: string[]
+  /** Where the maker's product photos live, when not on `origins` (the photo cache only downloads from these). */
+  imageOrigins?: string[]
   /** Seconds between page requests expected before robots.txt has been read (for time estimates). */
   delay_hint_s?: number
   discover?(sc: ScanContext, iface: string, opts: DiscoverOptions): Promise<ProductRef[]>
