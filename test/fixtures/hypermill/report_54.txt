@@ -1,0 +1,552 @@
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER SPIGOT ARBOR 16mm
+                     A63.050.16.KKB 67GL
+Holder comment       HAIMER SPIGOT ARBOR 16mm A63-050-16-KKB
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER SPIGOT ARBOR 22mm
+                     A63.050.22.KKB 69GL
+Holder comment       HAIMER SPIGOT ARBOR 22mm A63-050-22-KKB.KKB
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   1/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER SPIGOT ARBOR 22mm
+                     A63.051.22.KKB 119GL
+Holder comment       HAIMER SPIGOT ARBOR 22mm A63-051-22-KKB
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER SPIGOT ARBOR 27mm
+                     A63.051.27.KKB 121GL
+Holder comment       HAIMER SPIGOT ARBOR 27mm A63-051-27-KKB
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   2/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) KEMMLER A63.06.12.3 M12 ARBOR 126GL
+Holder comment       
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER ER16 COLLET CHUCK
+                     A63.020.16 100GL
+Holder comment       HAIMER ER16 COLLET CHUCK A63-020-16
+Coupling             unknown           top
+                     unknown           bottom  file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   3/27
+
+
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER ER32 COLLET CHUCK
+                     A63.020.32 100GL
+Holder comment       HAIMER ER32 COLLET CHUCK A63-020-32
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER ER16 POWER COLLET CHUCK
+                     A63.022.16.3 160GL
+Holder comment       HAIMER ER16 POWER COLLET CHUCK A63-022-16-3
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   4/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER ER32 POWER COLLET CHUCK
+                     A63.022.32.3 160GL
+Holder comment       HAIMER ER32 POWER COLLET CHUCK A63-022-32-3
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) CERATIZIT ER11 SLIM COLLET CHUCK
+                     84719607 100GL
+Holder comment       CERATIZIT ER11 SLIM PRECISON COLLET CHUCK 84719607
+Coupling             adaptor           top         SPINDLE 40TAPER
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   5/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) CERATIZIT ER11 SLIM COLLET CHUCK
+                     84719707 130GL
+Holder comment       CERATIZIT ER11 SLIM PRECISON COLLET CHUCK 84719707
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) CERATIZIT ER16 SLIM COLLET CHUCK
+                     84719810 130GL
+Holder comment       CERATIZIT ER16 SLIM PRECISON COLLET CHUCK 84719810
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   6/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) CERATIZIT ER11 SLIM COLLET CHUCK
+                     84719608 160GL
+Holder comment       CERATIZIT ER11 SLIM PRECISON COLLET CHUCK 84719608
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) CERATIZIT ER16 SLIM COLLET CHUCK
+                     84719910 160GL
+Holder comment       CERATIZIT ER16 SLIM PRECISON COLLET CHUCK 84719910
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   7/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) CERATIZIT ER32 COLLET CHUCK
+                     84722621 100GL
+Holder comment       CERATIZIT ER32 COLLET CHUCK 84722621
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER HIGH-PRECISION COLLET
+                     CHUCK A63.120.01 120GL
+Holder comment       HAIMER HIGH-PRECISION COLLET CHUCK A63-120-01
+Coupling             unknown           top
+                     unknown           bottom  file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   8/27
+
+
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER HIGH-PRECISION COLLET
+                     CHUCK A63.120.02 120GL
+Holder comment       HAIMER HIGH-PRECISION COLLET CHUCK A63-120-02
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) MAPAL 12MM HTC HYDRAULIC CHUCK
+                     30524702 80GL
+Holder comment       Hydro High Pressure Chuck 12dia 606585650-000-00-e43
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   9/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) MAPAL 20MM HTC HYDRAULIC CHUCK
+                     30490553 80GL
+Holder comment       Hydro High Pressure Chuck 20dia 606585663-000-00-e43
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) MAPAL 6MM HYDRAULIC CHUCK
+                     31270591 65GL
+Holder comment       UNIQ hydraulic expansion 6dia 607517709-000-01-E43
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   10/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) MAPAL 8MM HYDRAULIC CHUCK
+                     31270593 65GL
+Holder comment       UNIQ hydraulic expansion 8dia 607517711-000-01-E43
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) MAPAL 10MM HYDRAULIC CHUCK
+                     31270595 75GL
+Holder comment       UNIQ hydraulic expansion 10dia 607517713-000-01-E43
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   11/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) MAPAL 12MM HYDRAULIC CHUCK
+                     31229418 75GL
+Holder comment       UNIQ hydraulic expansion 12dia 607444571-000-02-E43
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) MAPAL 32MM HTC HYDRAULIC CHUCK
+                     30588142 105GL
+Holder comment       
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   12/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 3mm POWER MINI SHRINK
+                     A63.182.03.8 160GL
+Holder comment       HAIMER 3mm POWER MINI SHRINK A63-182-03-8
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 4mm POWER MINI SHRINK
+                     A63.182.04.8 160GL
+Holder comment       HAIMER 4mm POWER MINI SHRINK A63-182-04-8
+Coupling             unknown           top
+                     unknown           bottom  file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   13/27
+
+
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 6mm POWER MINI SHRINK
+                     A63.182.06.8 160GL
+Holder comment       HAIMER 6mm POWER MINI SHRINK A63-182-06-8
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 3mm POWER MINI SHRINK
+                     A63.184.03.8 130GL
+Holder comment       HAIMER 3mm POWER MINI SHRINK A63-184-03-8
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   14/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 4mm POWER MINI SHRINK
+                     A63.184.04.8 130GL
+Holder comment       HAIMER 4mm POWER MINI SHRINK A63-184-04-8
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 6mm POWER MINI SHRINK
+                     A63.184.06.8 130GL
+Holder comment       HAIMER 6mm POWER MINI SHRINK A63-184-06-8
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   15/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 12mm POWER MINI SHRINK
+                     A63.184.12.8 130GL
+Holder comment       HAIMER 12mm POWER MINI SHRINK A63-184-12-8
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 6mm LNG POWER SHRINK
+                     A63.144.06.3 130GL
+Holder comment       HAIMER 6mm LNG POWER SHRINK A63-144-06-3
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   16/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 12mm LNG POWER SHRINK
+                     A63.144.12.3 130GL
+Holder comment       12mm LNG POWER SHRINK A63-144-12-3
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 3mm LNG SHRINK
+                     A63.144.03.1 130GL
+Holder comment       HAIMER 3mm LNG SHRINK A63-144-03-1
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   17/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 4mm LNG SHRINK
+                     A63.144.04.1 130GL
+Holder comment       HAIMER 4mm LNG SHRINK A63-144-04-1 130GL
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 6mm LNG SHRINK A63.144.06 130GL
+Holder comment       HAIMER 6mm LNG SHRINK A63-144-06
+Coupling             unknown           top
+                     unknown           bottom  file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   18/27
+
+
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 8mm LNG SHRINK A63.144.08 130GL
+Holder comment       HAIMER 8mm LNG SHRINK A63-144-08
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 12mm LNG SHRINK
+                     A63.144.12 130GL
+Holder comment       HAIMER 12mm LNG SHRINK A63-144-12
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   19/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 20mm HEAVY DUTY SHRINK
+                     A63.140.20.6 85GL
+Holder comment       HAIMER 20mm HEAVY DUTY SHRINK A63-140-20-6
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 6mm SHORT SHRINK
+                     A63.145.06.3 70GL
+Holder comment       HAIMER 6mm SHORT SHRINK A63-145-06-3
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   20/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 8mm SHORT SHRINK
+                     A63.145.08.3 70GL
+Holder comment       HAIMER 8mm SHORT SHRINK A63-145-08-3
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 12mm SHORT SHRINK
+                     A63.145.12.3 70GL
+Holder comment       HAIMER 12mm SHORT SHRINK A63-145-12-3
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   21/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 20mm SHORT SHRINK
+                     A63.145.20.3 75GL
+Holder comment       HAIMER 20mm SHORT SHRINK A63-145-20-3
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 3mm STD SLIT SHRINK
+                     A63.140.03 80GL
+Holder comment       HAIMER 3mm STD SHRINK A63-140-03
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   22/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 4mm STD SLIT SHRINK
+                     A63.140.04 80GL
+Holder comment       HAIMER 4mm STD SLIT SHRINK A63-140-04
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 6mm STD SHRINK A63.140.06 80GL
+Holder comment       HAIMER 6mm STD SHRINK A63-140-06
+Coupling             unknown           top
+                     unknown           bottom  file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   23/27
+
+
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 10mm STD SHRINK A63.140.10 85GL
+Holder comment       HAIMER 10mm STD SHRINK A63-140-10 90GL
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 8mm STD SHRINK A63.140.08 80GL
+Holder comment       HAIMER 8mm STD SHRINK A63-140-08 90GL
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   24/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 12mm STD SHRINK A63.140.12 90GL
+Holder comment       HAIMER 12mm STD SHRINK A63-140-12
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 16mm STD SHRINK A63.140.16 95GL
+Holder comment       HAIMER 16mm STD SHRINK A63-140-16
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   25/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) HAIMER 20mm STD SHRINK
+                     A63.140.20 100GL
+Holder comment       HAIMER 20mm STD SHRINK A63-140-20
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) CERATIZIT QC TAP CHUCK CLUTCHED
+                     83724612 64GL
+Holder comment       
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   26/27
+07/10/2026, 10:15                                         Holder_HSK63 HOLDERS
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) MAPAL DRILLING CHUCK 30259875 110GL
+Holder comment       MAPAL Drilling Chuck 0.5-12mm 606600509-000-00-E43
+Coupling             unknown           top
+                     unknown           bottom
+
+
+hyperMILL® Tool Database                Holder              HSK63 HOLDERS
+
+Holder:              (HSK63) MAPAL DRILLING CHUCK 30259879 115GL
+Holder comment       MAPAL Drilling Chuck 2.5-16mm 606726740-000-00-E43
+Coupling             unknown           top
+                     unknown           bottom
+
+
+file:///C:/Users/Public/Documents/OPEN MIND/tooldbReport/Holder_HSK63 HOLDERS_1/Holder_HSK63 HOLDERS.html   27/27

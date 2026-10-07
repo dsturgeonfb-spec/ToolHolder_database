@@ -1,1 +1,58 @@
-/* Styles owned by the hypermill module. Base tokens and components are in app.css. */
+/* Styles owned by the hypermill module: the hyperMILL import view (.hm-*).
+   Base tokens and components are in app.css; colours come only from its variables so dark mode works. */
+.hm{display:flex;flex-direction:column;gap:16px}
+.hm-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
+.hm-explain ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--ink-2)}
+.hm-explain b{color:var(--ink)}
+.hm-pathrow{display:flex;gap:8px;align-items:stretch}
+.hm-pathrow input{flex:1;font-family:var(--f-data);font-size:14px}
+.hm-pathrow .btn{white-space:nowrap;flex:none}
+/* app.css marks every direct span of a required field; only the label text should carry the asterisk. */
+.hm-form .fld.req > span:not(:first-child)::after{content:none}
+
+/* preview */
+.hm-preview{gap:14px}
+.hm-preview-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:8px 16px}
+.hm-preview-head p{margin:2px 0 0}
+.hm-counts{display:flex;flex-wrap:wrap;gap:6px}
+.hm-count{display:inline-flex;align-items:baseline;gap:5px;padding:5px 11px;border:1px solid var(--rule);border-radius:999px;background:var(--panel);
+  color:var(--ink-2);font:inherit;font-size:13.5px;cursor:pointer;min-height:34px}
+.hm-count b{font-family:var(--f-display);font-size:18px;color:var(--ink);font-variant-numeric:tabular-nums}
+.hm-count:hover{border-color:var(--accent)}
+.hm-count.new b{color:var(--ok)}
+.hm-count.rem b{color:var(--high)}
+.hm-count.warn{border-color:var(--med);background:var(--med-soft)}
+.hm-count.warn b{color:var(--med)}
+.hm-unchanged{margin:0;font-size:14px;color:var(--ink-2)}
+.hm-unchanged b{color:var(--ink);font-family:var(--f-data)}
+.hm-sec{display:flex;flex-direction:column;gap:6px;scroll-margin-top:12px}
+.hm-sec h4{margin:0;font-family:var(--f-display);font-size:18px;font-weight:600;display:flex;align-items:center;gap:8px}
+.hm-sec > p{margin:0}
+.hm-none{font-style:italic}
+.hm-warnings{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.hm-table td{vertical-align:middle}
+.hm-table td .mk{font-size:13px}
+.hm-thumb{display:block;width:92px;height:61px}
+.hm-thumb.none{font-size:11px}
+.hm-changes{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:3px;font-size:13.5px}
+.hm-old{color:var(--ink-3);text-decoration:line-through;text-decoration-thickness:1px;overflow-wrap:anywhere}
+.hm-new{color:var(--ink);overflow-wrap:anywhere}
+.hm-arrow{color:var(--accent);font-weight:600;padding:0 2px}
+.hm-apply{display:flex;flex-direction:column;align-items:flex-start;gap:8px;border-top:1px solid var(--rule-2);padding-top:12px}
+.hm-apply p{margin:0}
+.hm-error .btn{margin-left:8px}
+
+/* result + history */
+.hm-done ul.hm-links{margin:4px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:2px}
+.hm-done p{margin:0}
+.hm-history td.hm-file{max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hm-zoom{background:var(--img-bg);border:1px solid var(--rule-2);border-radius:4px}
+.hm-zoom img{display:block;width:100%;height:auto;filter:var(--img-filter)}
+
+@media (max-width:880px){
+  .hm-top{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .hm-pathrow{flex-direction:column}
+  .hm-thumb{width:72px;height:48px}
+}
