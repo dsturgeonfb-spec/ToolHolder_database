@@ -1,0 +1,27 @@
+# Test fixture modelled on https://shop.haimer.com/robots.txt as recorded in data/raw/source_register.json:
+# Allow / with Crawl-delay 10; /printpage/, /downloadfile/, /widgets/, /search, /suggest, /checkout/,
+# /account/, /wishlist disallowed (and their /*/ language variants); Meta's AI crawler fully disallowed.
+User-agent: *
+Allow: /
+Disallow: /printpage/
+Disallow: /*/printpage/
+Disallow: /downloadfile/
+Disallow: /*/downloadfile/
+Disallow: /widgets/
+Disallow: /*/widgets/
+Disallow: /search
+Disallow: /*/search
+Disallow: /suggest
+Disallow: /*/suggest
+Disallow: /checkout/
+Disallow: /*/checkout/
+Disallow: /account/
+Disallow: /*/account/
+Disallow: /wishlist
+Disallow: /*/wishlist
+Crawl-delay: 10
+
+User-agent: meta-externalagent
+Disallow: /
+
+Sitemap: https://shop.haimer.com/sitemap.xml
