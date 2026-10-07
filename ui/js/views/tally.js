@@ -145,11 +145,13 @@ function clampHTML(rows) {
     return r ? esc(r.holders_on_site) : ''
   }
   const table = dias.length
-    ? `<div class="tablewrap"><table class="data"><thead><tr><th>Ø mm</th><th class="n">Shrink</th><th class="n">Hydraulic</th><th>Gauge lengths (mm)</th></tr></thead><tbody>
+    ? // In the three-column card grid this card is ~340 px wide: the header and the gauge-length list wrap
+      // (catalogue.css .tv-clamp) instead of pushing the last column out of the card.
+      `<div class="tablewrap"><table class="data tv-clamp"><thead><tr><th>Ø mm</th><th class="n">Shrink</th><th class="n">Hydraulic</th><th>Gauge lengths (mm)</th></tr></thead><tbody>
       ${dias
         .map((d) => {
           const gls = [...new Set(main.filter((r) => r.clamp_dia_mm === d).flatMap((r) => r.gauge_lengths))].sort((a, b) => a - b)
-          return `<tr><td class="mono">${esc(mm(d))}</td><td class="n">${cell(d, 'SHRINK')}</td><td class="n">${cell(d, 'HYDRAULIC')}</td><td class="mono">${gls.map(mm).join(' · ')}</td></tr>`
+          return `<tr><td class="mono">${esc(mm(d))}</td><td class="n">${cell(d, 'SHRINK')}</td><td class="n">${cell(d, 'HYDRAULIC')}</td><td class="mono">${esc(gls.map(mm).join(', '))}</td></tr>`
         })
         .join('')}</tbody></table></div>`
     : ''

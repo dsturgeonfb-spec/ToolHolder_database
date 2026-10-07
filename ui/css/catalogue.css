@@ -113,6 +113,10 @@
 .tv .bar small{color:var(--ink-3);font-size:12px;margin-left:4px}
 .tv tfoot td{font-weight:600;border-top:1px solid var(--rule)}
 .tv th{white-space:nowrap}
+/* Clamp-Ø table sits in a ~340 px card: let its header and gauge-length list wrap so nothing is cut off. */
+.tv .tv-clamp th{vertical-align:bottom}
+.tv .tv-clamp th:last-child{white-space:normal}
+.tv .tv-clamp th,.tv .tv-clamp td{padding-inline:6px}
 .tv-arbors{margin:0;font-size:13.5px;color:var(--ink-2)}
 .tv-exports .btnrow .btn[aria-busy="true"]{opacity:.6}
 @media (max-width:640px){.tv-progress{grid-template-columns:1fr}.tv-progress .tv-go{justify-self:start}}

@@ -3,7 +3,7 @@
 // units, want list and the change history. Also exports the add/edit form for catalogue data, which the
 // catalogue view reuses, and small formatting helpers shared with it.
 import { esc, fmtDate, sevChip, statusChip, rulerHTML, toast, toastError, kvHTML, DATA_STATUS_LABEL } from '../ui.js'
-import { api } from '../api.js'
+import { api, newRequestKey } from '../api.js'
 import { state } from '../state.js'
 import { openStockAction } from '../components/stock-actions.js'
 import { raiseFlagDialog, closeFlagDialog } from '../components/flag-actions.js'
@@ -30,6 +30,15 @@ export function dataStatusChip(h) {
     .filter(Boolean)
     .join(' · ')
   return `<span class="chip ds-${esc(h.data_status)}" title="${esc(title)}">${esc(label)}</span>`
+}
+
+/**
+ * Count-status chip next to a quantity. 'booked' means on site through receipts etc. (not counted yet), so a holder
+ * with nothing on site always reads "Not on site" — never "0 on site · Booked in" — whatever its history.
+ */
+export function countChip(h) {
+  const status = h.count_status === 'booked' && !(Number(h.qty_on_site) > 0) ? 'none' : h.count_status
+  return statusChip(status)
 }
 
 /** Maker spigot length (Haimer "L length (spigot)") — explains the face-mill-arbor GL convention. */
@@ -95,6 +104,25 @@ function parseNumber(raw, label) {
   if (!Number.isFinite(n)) throw new Error(`${label} must be a number in mm (got "${s}").`)
   return n
 }
+/**
+ * A whole number (max rpm) as people type or paste it: "25000", "25,000" (how this app shows it), "25.000",
+ * "25 000", "25'000", optionally with "rpm" or "1/min". A separator counts as a thousands separator only when every
+ * group after it has three digits; "25,5", "25,00" or "1.5" could be a typo of either reading and are refused —
+ * "25,000" must never become 25. Same rule as the server (src/server/catalogue/write.ts parseWholeNumber).
+ */
+function parseWholeNumber(raw, label) {
+  const shown = String(raw ?? '').trim()
+  if (!shown) return null
+  const s = shown
+    .replace(/[\u00A0\u2007\u2009\u202F]/g, ' ')
+    .trim()
+    .replace(/\s*(?:rpm|1\/min|min-1|min⁻¹)$/i, '')
+    .trim()
+  if (/^\d+$/.test(s)) return Number(s)
+  if (/^\d{1,3}([,.' ’])\d{3}(?:\1\d{3})*$/.test(s)) return Number(s.replace(/\D/g, ''))
+  throw new Error(/\d/.test(s) ? `${label} must be a whole number — write it as 25000 or 25,000 (got "${shown}").` : `${label} must be a number (got "${shown}").`)
+}
+const INTEGER_FIELDS = new Set(['max_rpm'])
 
 function fieldHTML(f, value) {
   const id = `hf-${f.name}`
@@ -109,7 +137,7 @@ function fieldHTML(f, value) {
     input = `<textarea id="${id}" name="${f.name}" class="${f.mono ? 'mono' : ''}" ${f.placeholder ? `placeholder="${esc(f.placeholder)}"` : ''}>${esc(v)}</textarea>`
   } else {
     const num = f.type === 'number'
-    input = `<input id="${id}" name="${f.name}" type="${num ? 'text' : f.type || 'text'}" ${num ? 'inputmode="decimal"' : ''} class="${f.mono ? 'mono' : ''}"
+    input = `<input id="${id}" name="${f.name}" type="${num ? 'text' : f.type || 'text'}" ${num ? `inputmode="${f.integer ? 'numeric' : 'decimal'}"` : ''} class="${f.mono ? 'mono' : ''}"
       value="${esc(v)}" ${f.placeholder ? `placeholder="${esc(f.placeholder)}"` : ''} ${f.list ? `list="${f.list}"` : ''} autocomplete="off">`
   }
   return `<label class="${cls}" for="${id}" data-field="${f.name}"><span>${esc(f.label)}</span>${input}${f.help ? `<span class="help">${esc(f.help)}</span>` : ''}</label>`
@@ -162,7 +190,7 @@ function formSections(meta, mode, h) {
       fields: [
         { name: 'coolant', label: 'Coolant' },
         { name: 'balance', label: 'Balance', placeholder: 'e.g. G2.5 at 25,000 rpm' },
-        { name: 'max_rpm', label: 'Max rpm', type: 'number' },
+        { name: 'max_rpm', label: 'Max rpm', type: 'number', integer: true, placeholder: 'e.g. 25,000', help: 'Whole number — 25000 or 25,000' },
         { name: 'mass_kg', label: 'Mass (kg)', type: 'number' },
       ],
     },
@@ -202,12 +230,21 @@ function readHolderForm(form) {
   const get = (n) => form.elements.namedItem(n)?.value ?? ''
   for (const n of SELECT_FIELDS) v[n] = get(n).trim()
   for (const n of TEXT_FIELDS) v[n] = get(n).trim()
-  for (const [n, label] of Object.entries(NUMBER_FIELDS)) v[n] = parseNumber(get(n), label)
-  if (v.max_rpm != null && !Number.isInteger(v.max_rpm)) throw new Error('Max rpm must be a whole number.')
+  for (const [n, label] of Object.entries(NUMBER_FIELDS)) v[n] = INTEGER_FIELDS.has(n) ? parseWholeNumber(get(n), label) : parseNumber(get(n), label)
   v.dimsText = get('dims')
   v.dims = textToDims(v.dimsText)
   v.data_source = get('data_source').trim()
   return v
+}
+
+/** Short hash (FNV-1a, 32 bit) of a string, for request keys. */
+function fnv1a(s) {
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 0x01000193) >>> 0
+  }
+  return h.toString(16).padStart(8, '0')
 }
 
 const sameLines = (a, b) => {
@@ -267,6 +304,11 @@ export function holderFormDialog({ mode = 'add', holder = null, meta = state.met
     const err = d.querySelector('[data-err]')
     const diffLine = d.querySelector('[data-diff]')
     const submit = d.querySelector('button[type=submit]')
+    // One key per dialog and payload: if a save reached the server but the answer was lost, resending the same values
+    // gets that first result back (not "already in the catalogue" for the record it just created); values changed
+    // after that make a new request, so an edit is never swallowed by the replay of an earlier one.
+    const requestKey = newRequestKey()
+    const keyFor = (payload) => `${requestKey}-${fnv1a(JSON.stringify(payload))}`
     let result = null
     const showErr = (html) => {
       err.innerHTML = html
@@ -324,8 +366,11 @@ export function holderFormDialog({ mode = 'add', holder = null, meta = state.met
       }
       submit.disabled = true
       try {
+        const opts = { idempotencyKey: keyFor(payload) }
         result =
-          mode === 'add' ? await api.post('/api/holders', payload) : await api.patch('/api/holders/' + encodeURIComponent(h.holder_id), payload)
+          mode === 'add'
+            ? await api.post('/api/holders', payload, opts)
+            : await api.patch('/api/holders/' + encodeURIComponent(h.holder_id), payload, opts)
         d.close('ok')
       } catch (e) {
         const other = e.details && e.details.holder_id
@@ -494,7 +539,7 @@ function pageHTML(h) {
       <h2>${esc(h.order_no)}</h2>
       ${sub.length ? `<p class="hv-sub">${sub.map(esc).join(' — ')}</p>` : ''}
       ${h.spec_code ? `<p class="hv-spec">${esc(h.spec_code)}</p>` : ''}
-      <div class="hv-chips">${dataStatusChip(h)}${statusChip(h.count_status)}${counted}
+      <div class="hv-chips">${dataStatusChip(h)}${countChip(h)}${counted}
         ${h.is_distributor ? '<span class="tag warn" title="Distributor SKU — the maker order no. may differ">Distributor SKU</span>' : ''}
         ${issuesChip}${h.on_want_list ? `<span class="chip src">${h.on_want_list} on want list</span>` : ''}</div>
       <p class="tiny muted" style="margin:2px 0 0">Data: ${esc(h.data_source || 'no source recorded')}${h.last_checked ? ` · last checked ${esc(fmtDate(h.last_checked))}` : ''} · ${esc(h.holder_id)}</p>

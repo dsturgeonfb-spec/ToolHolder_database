@@ -65,6 +65,25 @@ const ALIASES: Record<string, string> = { dims_json: 'dims' }
 
 const isBlank = (v: unknown) => v === null || v === undefined || (typeof v === 'string' && v.trim() === '')
 
+/**
+ * A whole number as people type or paste it (max rpm): "25000", "25,000" (how the app shows it), "25.000",
+ * "25 000", "25'000", optionally followed by "rpm" or "1/min". A comma, dot, space or apostrophe is read as a
+ * thousands separator only when every group after it has exactly three digits and the same separator is used
+ * throughout. Anything else with a separator ("25,5", "25,00", "1.5", "25,000.5") could be a typo of either
+ * reading, so it is refused (null) rather than guessed — "25,000" must never become 25.
+ * The UI form (ui/js/views/holder.js parseWholeNumber) applies the same rule before sending.
+ */
+export function parseWholeNumber(raw: string): number | null {
+  const s = raw
+    .replace(/[\u00A0\u2007\u2009\u202F]/g, ' ') // no-break / thin spaces (fr-FR, de-CH number formats)
+    .trim()
+    .replace(/\s*(?:rpm|1\/min|min-1|min⁻¹)$/i, '')
+    .trim()
+  if (/^\d+$/.test(s)) return Number(s)
+  if (/^\d{1,3}([,.' ’])\d{3}(?:\1\d{3})*$/.test(s)) return Number(s.replace(/\D/g, ''))
+  return null
+}
+
 function parseDimsValue(v: unknown): string | null {
   let obj: unknown = v
   if (typeof v === 'string') {
@@ -115,7 +134,17 @@ function parseField(ctx: AppContext, name: string, spec: FieldSpec, v: unknown):
     }
     case 'posnum':
     case 'int': {
-      const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v.trim().replace(',', '.')) : NaN
+      // Decimal values (mm, kg) take a decimal comma ("12,5"); whole numbers (rpm) take thousands separators.
+      let n: number
+      if (typeof v === 'number') n = v
+      else if (typeof v !== 'string') n = NaN
+      else if (spec.kind === 'posnum') n = Number(v.trim().replace(',', '.'))
+      else {
+        const whole = parseWholeNumber(v)
+        if (whole == null && /\d/.test(v))
+          throw new HttpError(400, `${spec.label} must be a whole number — write it as 25000 or 25,000 (got "${v.trim().slice(0, 30)}")`)
+        n = whole ?? NaN
+      }
       if (!Number.isFinite(n)) throw new HttpError(400, `${spec.label} must be a number (got "${String(v).slice(0, 30)}")`)
       if (n <= 0) throw new HttpError(400, `${spec.label} must be greater than 0`)
       if (spec.kind === 'int' && !Number.isInteger(n)) throw new HttpError(400, `${spec.label} must be a whole number`)
@@ -205,18 +234,27 @@ function settleClamp(rec: Record<string, unknown>, given: Map<string, unknown>, 
   if (min != null && max != null && min > max) throw new HttpError(400, `Clamp min Ø (${min}) is larger than clamp max Ø (${max}).`)
 }
 
+/**
+ * Identity = (maker, order no.) — BUILD_SPEC §3. Matched ignoring letter case and outer spaces, as the hyperMILL
+ * import and vendor sync match it: "a63.140.12" is the same HAIMER article as "A63.140.12", not a second record
+ * that would split its stock, flags and want-list lines. (The schema's UNIQUE constraint is case-sensitive, so this
+ * check is what keeps case variants out.)
+ */
 function assertUniqueIdentity(ctx: AppContext, manufacturerId: number, orderNo: string, exceptId?: string): void {
-  const other = ctx.db.get<{ holder_id: string; name: string }>(
-    `SELECT h.holder_id, m.name FROM holders h JOIN manufacturers m ON m.manufacturer_id = h.manufacturer_id
-     WHERE h.manufacturer_id = ? AND h.order_no = ? AND h.holder_id <> COALESCE(?, '')`,
+  const other = ctx.db.get<{ holder_id: string; order_no: string; name: string }>(
+    `SELECT h.holder_id, h.order_no, m.name FROM holders h JOIN manufacturers m ON m.manufacturer_id = h.manufacturer_id
+     WHERE h.manufacturer_id = ? AND TRIM(h.order_no) = TRIM(?) COLLATE NOCASE AND h.holder_id <> COALESCE(?, '')
+     ORDER BY h.holder_id LIMIT 1`,
     [manufacturerId, orderNo, exceptId ?? null],
   )
-  if (other)
-    throw new HttpError(
-      409,
-      `${other.name} order no. ${orderNo} is already in the catalogue (${other.holder_id}) — open that record and edit it instead.`,
-      { holder_id: other.holder_id },
-    )
+  if (other) {
+    const base = `${other.name} order no. ${other.order_no} is already in the catalogue (${other.holder_id})`
+    const msg =
+      String(other.order_no).trim() !== orderNo.trim()
+        ? `${base} — "${orderNo}" is the same order no. in other capitals. Open that record and edit it instead.`
+        : `${base} — open that record and edit it instead.`
+    throw new HttpError(409, msg, { holder_id: other.holder_id })
+  }
 }
 
 const COLUMNS_ON_INSERT = [

@@ -179,6 +179,12 @@ test('add a holder from a maker catalogue, then find it under Can buy', async ()
   await dlg.locator('[data-err]:not(.hidden)').waitFor()
   assert.match((await dlg.locator('[data-err]').textContent())!, /already in the catalogue \(H0049\)/)
   assert.equal(await dlg.locator('[data-err] a').getAttribute('href'), '#/holder/H0049')
+  // The same order no. typed in lower case is the same article (review finding: it used to create a duplicate).
+  await dlg.locator('[name="order_no"]').fill(' a63.140.12')
+  await dlg.locator('button[type=submit]').click()
+  await e.page.waitForFunction(() => /a63\.140\.12|A63\.140\.12 is already/.test(document.querySelector('dialog.hf-dlg [data-err]')?.textContent ?? '') && !!document.querySelector('dialog.hf-dlg button[type=submit]:not([disabled])'))
+  assert.match((await dlg.locator('[data-err]').textContent())!, /A63\.140\.12 is already in the catalogue \(H0049\)/)
+  assert.equal(await dlg.locator('[data-err] a').getAttribute('href'), '#/holder/H0049')
   await dlg.locator('[name="order_no"]').fill('A63.140.25')
   await dlg.locator('button[type=submit]').click()
   await e.page.waitForFunction(() => location.hash === '#/holder/H0089')
@@ -228,6 +234,82 @@ test('tablet width (800 px): catalogue, record and tally fit without sideways sc
     await e.page.waitForSelector('.cat-list .row, .hv-head, .tv-progress')
     const over = await e.page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
     assert.ok(over <= 0, `${hash} overflows by ${over}px`)
+  }
+  await e.page.setViewportSize({ width: 1280, height: 900 })
+  assert.deepEqual(e.errors, [])
+})
+
+// Review finding: max rpm typed as "25,000" — the way the record shows it — was saved as 25.
+test('max rpm typed as the record shows it ("25,000") keeps its value; ambiguous input is refused in the form', async () => {
+  await e.goto('#/holder/H0010')
+  await e.page.waitForSelector('.hv-head')
+  assert.match((await e.page.textContent('.kv'))!, /Max rpm\s*25,000/)
+  const dlg = e.page.locator('dialog.hf-dlg')
+  await e.page.click('.hv-actions [data-act="edit"]')
+  await dlg.waitFor()
+  await dlg.locator('[name="max_rpm"]').fill('25,000')
+  assert.equal(await dlg.locator('[data-diff]').textContent(), '', 'the same value in another format is not a change')
+  assert.equal(await dlg.locator('[data-field="max_rpm"].changed').count(), 0)
+  // A decimal mark in a whole-number field could be a typo of either reading: the form says so and sends nothing.
+  await dlg.locator('[name="max_rpm"]').fill('25,5')
+  await dlg.locator('[name="data_source"]').fill('MAPAL catalogue 2025 p. 9')
+  await dlg.locator('button[type=submit]').click()
+  await dlg.locator('[data-err]:not(.hidden)').waitFor()
+  assert.match((await dlg.locator('[data-err]').textContent())!, /Max rpm must be a whole number/)
+  assert.equal(e.t.app.ctx.db.value(`SELECT max_rpm FROM holders WHERE holder_id = 'H0010'`), 25000)
+  // A real change, with a space as the thousands separator, is saved as thirty thousand.
+  await dlg.locator('[name="max_rpm"]').fill('30 000')
+  assert.match((await dlg.locator('[data-diff]').textContent())!, /1 field changed/)
+  await dlg.locator('button[type=submit]').click()
+  await dlg.waitFor({ state: 'detached' })
+  await e.page.waitForFunction(() => /Max rpm\s*30,000/.test(document.querySelector('.kv')?.textContent ?? ''))
+  assert.equal(e.t.app.ctx.db.value(`SELECT max_rpm FROM holders WHERE holder_id = 'H0010'`), 30000)
+  assert.match((await e.page.textContent('.hv-change'))!, /25000\s*→\s*30000/)
+  assert.deepEqual(e.errors, [])
+})
+
+// Review finding: a holder received and then scrapped showed "0 on site · Booked in".
+test('count-status chip and filter: nothing on site reads "Not on site", never "Booked in"', async () => {
+  const book = async (txn_type: string, reference: string) => {
+    const r = await e.t.api('POST', '/api/transactions', { holder_id: 'H0061', location_id: 2, txn_type, qty: 1, reference })
+    assert.ok(r.status < 300, JSON.stringify(r.body))
+  }
+  const chip = () => e.page.locator('[data-row="H0061"] .cat-qty')
+  await book('RECEIPT', 'PO 2')
+  await e.goto('#/catalogue?scope=site&status=booked')
+  await e.page.waitForSelector('[data-row="H0061"]')
+  assert.match((await chip().textContent())!, /1\s*on site\s*Booked in/)
+  await book('SCRAP', 'NCR-1')
+  await e.goto('#/catalogue?scope=all&status=none')
+  await e.page.waitForSelector('[data-row="H0061"]')
+  const text = (await chip().textContent())!
+  assert.match(text, /0\s*on site\s*Not on site/)
+  assert.doesNotMatch(text, /Booked in/)
+  // The filter's options say what each status means.
+  const labels = await e.page.$$eval('#fstatus option', (os) => os.map((o) => [o.getAttribute('value'), o.textContent]))
+  assert.deepEqual(labels, [
+    ['', 'Any status'],
+    ['counted', 'Counted'],
+    ['unverified', 'Unverified (opening balance)'],
+    ['booked', 'Booked in, not counted'],
+    ['none', 'Not on site'],
+  ])
+  await e.goto('#/holder/H0061')
+  await e.page.waitForSelector('.hv-head')
+  assert.match((await e.page.textContent('.hv-chips'))!, /Not on site/)
+  assert.doesNotMatch((await e.page.textContent('.hv-chips'))!, /Booked in/)
+  assert.deepEqual(e.errors, [])
+})
+
+// Review finding: the clamp-Ø table was wider than its card at 1280 px (header read "Gauge lengths (mm", 90 read "9(").
+test('tally: the fixed-bore clamp-Ø table fits its card at desktop and tablet widths', async () => {
+  for (const width of [1280, 1024, 820, 800, 390]) {
+    await e.page.setViewportSize({ width, height: 900 })
+    await e.goto('#/tally')
+    await e.page.waitForSelector('[aria-labelledby="tv-clamp-h"] table')
+    const m = await e.page.$eval('[aria-labelledby="tv-clamp-h"] .tablewrap', (w) => ({ scroll: w.scrollWidth, client: w.clientWidth, text: w.querySelector('thead')!.textContent }))
+    assert.ok(m.scroll <= m.client, `${width} px: table ${m.scroll} px in a ${m.client} px card`)
+    assert.match(m.text!, /Gauge lengths/)
   }
   await e.page.setViewportSize({ width: 1280, height: 900 })
   assert.deepEqual(e.errors, [])

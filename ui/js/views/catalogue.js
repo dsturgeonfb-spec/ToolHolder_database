@@ -1,23 +1,28 @@
 // Catalogue (#/catalogue): the prototype's catalogue tab made live. Filtering is server-side (GET /api/holders)
 // and the filter state lives in the URL query (#/catalogue?scope=site&fit=12…), so back/forward and deep links
 // work. Rows are grouped by holder type and read like a presetter readout: profile · identity · clamp · GL · stock.
-import { esc, statusChip, rulerHTML, profileHTML, toast, toastError, kvHTML, sevChip } from '../ui.js'
+import { esc, rulerHTML, profileHTML, toast, toastError, kvHTML, sevChip } from '../ui.js'
 import { api } from '../api.js'
 import { state } from '../state.js'
 import { addToWantListDialog } from '../components/want-actions.js'
-import { holderFormDialog, mm, extLink, dataStatusChip } from './holder.js'
+import { holderFormDialog, mm, extLink, dataStatusChip, countChip } from './holder.js'
 
 const SCOPES = [
   ['site', 'On site'],
   ['cat', 'Can buy'],
   ['all', 'All'],
 ]
+// count_status values (v_count_status). 'none' = nothing on site and not counted; a holder counted at 0 stays
+// "Counted" (the count is the evidence), so the option label and the row chip always say the same thing.
 const COUNT_STATUS = [
   ['counted', 'Counted'],
-  ['unverified', 'Unverified'],
-  ['booked', 'Booked in'],
+  ['unverified', 'Unverified (opening balance)'],
+  ['booked', 'Booked in, not counted'],
   ['none', 'Not on site'],
 ]
+const COUNT_STATUS_HELP =
+  'Counted: a physical count is booked. Unverified: hyperMILL opening balance still waiting for a count. ' +
+  'Booked in: on site by receipt or return, not counted yet. Not on site: nothing on site (a holder counted at 0 stays under Counted).'
 const TYPING_DELAY = 200
 
 /** Filter state from the URL query. Unknown values fall back to the defaults (On site, no filters). */
@@ -75,7 +80,7 @@ export async function render(root, ctx) {
     <div class="view-head">
       <div><h2>Catalogue</h2>
         <p class="muted small">Every article for the taper form, from the hyperMILL tool database and maker catalogues. Quantities are the sum of booked
-        transactions — <em>Unverified</em> means only the hyperMILL opening balance so far.</p></div>
+        transactions — <em>Unverified</em> means its hyperMILL opening balance is still waiting for a physical count.</p></div>
       <div class="btnrow">
         <button class="btn ghost" type="button" data-act="export" data-fmt="csv" title="The articles shown, with the current filters">Export CSV</button>
         <button class="btn ghost" type="button" data-act="export" data-fmt="xlsx" title="The articles shown, with the current filters">Export XLSX</button>
@@ -94,7 +99,7 @@ export async function render(root, ctx) {
           .join('')}</select></label>
         <label class="field">Fits shank Ø <input id="fit" type="number" min="0.1" max="100" step="any" inputmode="decimal" placeholder="mm" value="${esc(f.fit)}"></label>
         <label class="field"><input id="fflag" type="checkbox" ${f.flag ? 'checked' : ''}> With issues</label>
-        <label class="field">Count status <select id="fstatus"><option value="">Any status</option>${COUNT_STATUS.map(
+        <label class="field" title="${esc(COUNT_STATUS_HELP)}">Count status <select id="fstatus"><option value="">Any status</option>${COUNT_STATUS.map(
           ([k, l]) => `<option value="${k}" ${f.status === k ? 'selected' : ''}>${l}</option>`,
         ).join('')}</select></label>
         <span class="count-line" id="countLine" aria-live="polite"></span>
@@ -218,7 +223,7 @@ export async function render(root, ctx) {
       <div class="gl"><span class="num">GL ${mm(gl)} mm${camNote}</span>${rulerHTML(gl || 0, cgl || 0)}</div>
       <div class="nose">${h.nose_dia_mm != null ? 'Ø' + mm(h.nose_dia_mm) : '–'}<small>nose Ø</small></div>
       <div class="stock">
-        <span class="cat-qty"><b class="${qty > 0 ? '' : 'zero'}">${esc(qty)}</b>on site ${statusChip(h.count_status)}</span>
+        <span class="cat-qty"><b class="${qty > 0 ? '' : 'zero'}">${esc(qty)}</b>on site ${countChip(h)}</span>
         <span class="cat-acts"><a class="btn sm ghost" href="#/count?holder=${encodeURIComponent(h.holder_id)}" title="Count this holder">Count</a>${want}</span>
       </div>
       ${open ? detailHTML(h) : ''}
