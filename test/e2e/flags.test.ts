@@ -192,6 +192,42 @@ test('raise a general issue (no holder)', async () => {
   assert.deepEqual(e.errors, [])
 })
 
+test('over-long text stops in the form: raise, close and reopen fields and the search box have the server limits', async () => {
+  await e.goto('#/issues?status=all')
+  await e.page.waitForSelector('.iss-list .iss-row')
+  assert.equal(await e.page.getAttribute('[data-f="q"]', 'maxlength'), '200')
+  // Raise (general issue).
+  await e.page.click('[data-act="raise"]')
+  await e.page.waitForSelector('dialog.iss-pick[open]')
+  await e.page.click('dialog.iss-pick [data-general]')
+  await e.page.waitForSelector(`${dlg} select[name="severity"]`)
+  assert.equal(await e.page.getAttribute(`${dlg} input[name="category"]`, 'maxlength'), '60')
+  assert.equal(await e.page.getAttribute(`${dlg} textarea[name="message"]`, 'maxlength'), '2000')
+  assert.equal(await e.page.getAttribute(`${dlg} textarea[name="action"]`, 'maxlength'), '2000')
+  await e.page.fill(`${dlg} textarea[name="action"]`, 'x'.repeat(2100))
+  assert.equal((await e.page.inputValue(`${dlg} textarea[name="action"]`)).length, 2000)
+  await e.page.click(`${dlg} [data-close].btn`)
+  await e.page.waitForSelector(dlg, { state: 'detached' })
+  // Close.
+  await e.page.click('.iss-row [data-act="close"] >> nth=0')
+  await e.page.waitForSelector(`${dlg} textarea[name="note"]`)
+  assert.equal(await e.page.getAttribute(`${dlg} textarea[name="note"]`, 'maxlength'), '2000')
+  await e.page.click(`${dlg} [data-close].btn`)
+  await e.page.waitForSelector(dlg, { state: 'detached' })
+  // Reopen (issue 3 was closed by Sam CAM above).
+  await e.page.click('.iss-row[data-id="3"] [data-act="reopen"]')
+  await e.page.waitForSelector(`${dlg} textarea[name="note"]`)
+  assert.equal(await e.page.getAttribute(`${dlg} textarea[name="note"]`, 'maxlength'), '2000')
+  await e.page.click(`${dlg} [data-close].btn`)
+  await e.page.waitForSelector(dlg, { state: 'detached' })
+  // A search pasted into the URL is cut to the 200 characters the server accepts, not an error.
+  await e.goto('#/issues?q=' + encodeURIComponent('shrink ' + 'x'.repeat(300)))
+  await e.page.waitForSelector('.iss-list .empty')
+  assert.equal((await e.page.inputValue('[data-f="q"]')).length, 200)
+  assert.equal(await e.page.$('.iss-list .errorbox'), null)
+  assert.deepEqual(e.errors, [])
+})
+
 test('hyperMILL write-back: checklist, mark fixed records who, CSV and printable', async () => {
   await e.goto('#/issues/writeback')
   await e.page.waitForSelector('.wb-fix')

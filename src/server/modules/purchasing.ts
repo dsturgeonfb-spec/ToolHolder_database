@@ -183,9 +183,7 @@ function parseStatus(v: unknown): WishStatus {
 }
 
 function parseReason(v: unknown): string | null {
-  const s = optStr(v, 100_000)
-  if (s && s.length > MAX_REASON) throw new HttpError(400, `Reason is too long — keep it under ${MAX_REASON} characters.`)
-  return s
+  return optStr(v, MAX_REASON, 'Reason')
 }
 
 /** Topping up an open line keeps both reasons (without repeating one that is already there). */

@@ -1,5 +1,6 @@
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
+import type { Request } from 'playwright-core'
 import { startE2E, type E2E } from './helpers.js'
 import { today } from '../../src/server/domain.js'
 import { addDays } from '../../src/server/modules/units.js'
@@ -176,6 +177,91 @@ test('cancelling a line asks first and keeps it as CANCELLED', async () => {
   assert.deepEqual(e.errors, [])
 })
 
+const openLine = (holderId: string) => db().get<any>(`SELECT * FROM wishlist WHERE holder_id = ? AND status = 'OPEN'`, [holderId])
+const MAPAL_WANT = '[data-row="H0070"] [data-act="want"]'
+
+test('the want dialog says what an add will do: a new line when the existing one is ordered, a top-up of an open line', async () => {
+  // H0070's earlier line was cancelled; a new one is ordered, so nothing open is left to top up.
+  const first = await e.t.api('POST', '/api/wishlist', { holder_id: 'H0070', qty_wanted: 2, reason: 'Job 5120' })
+  assert.equal(first.status, 201)
+  assert.equal((await e.t.api('PATCH', `/api/wishlist/${first.body.wish_id}`, { status: 'ORDERED' })).status, 200)
+  await e.goto('#/catalogue?scope=cat&mk=MAPAL')
+  await e.page.waitForFunction((sel) => document.querySelector(sel)?.textContent?.includes('Wanted · 2'), MAPAL_WANT)
+  await e.page.click(MAPAL_WANT)
+  await e.page.waitForSelector(`${dlg} form`)
+  let text = (await e.page.textContent(`${dlg} .wl-dlg`))!
+  assert.match(text, /2 already ordered — this starts a new line/)
+  assert.doesNotMatch(text, /added to/)
+  // Over-long reasons stop in the form (the server allows 1000 characters).
+  assert.equal(await e.page.getAttribute(`${dlg} textarea[name="reason"]`, 'maxlength'), '1000')
+  await e.page.fill(`${dlg} input[name="qty_wanted"]`, '1')
+  await e.page.click(`${dlg} button[type=submit]`)
+  await e.page.waitForSelector(dlg, { state: 'detached' })
+  await until(() => openLine('H0070')?.qty_wanted === 1, 'a new open line')
+  assert.equal(db().value(`SELECT qty_wanted FROM wishlist WHERE wish_id = ?`, [first.body.wish_id]), 2, 'the ordered line is unchanged')
+
+  // Now there is an open line: the next add goes onto it.
+  await e.page.waitForFunction((sel) => document.querySelector(sel)?.textContent?.includes('Wanted · 3'), MAPAL_WANT)
+  await e.page.click(MAPAL_WANT)
+  await e.page.waitForSelector(`${dlg} form`)
+  text = (await e.page.textContent(`${dlg} .wl-dlg`))!
+  assert.match(text, /1 already on its open line — this quantity is added to it/)
+  assert.match(text, /2 more already ordered/)
+  await e.page.click(`${dlg} [data-close].btn`)
+  await e.page.waitForSelector(dlg, { state: 'detached' })
+
+  // From the holder page (the wishlist rows come with the holder): H0006's only line is QUOTED.
+  await e.goto('#/holder/H0006')
+  await e.page.click('[data-act="want"] >> nth=0')
+  await e.page.waitForSelector(`${dlg} form`)
+  text = (await e.page.textContent(`${dlg} .wl-dlg`))!
+  assert.match(text, /3 already quoted — this starts a new line/)
+  await e.page.click(`${dlg} [data-close].btn`)
+  assert.deepEqual(e.errors, [])
+})
+
+test('the want dialog sends one request key for all its attempts, so a resent add is not booked twice', async () => {
+  const line = openLine('H0070')!
+  assert.equal((await e.t.api('PATCH', `/api/wishlist/${line.wish_id}`, { qty_wanted: 998 })).status, 200)
+  await e.goto('#/catalogue?scope=cat&mk=MAPAL&q=31229439')
+  await e.page.waitForSelector(MAPAL_WANT)
+  const keys: string[] = []
+  const onRequest = (r: Request) => {
+    if (r.method() === 'POST' && new URL(r.url()).pathname === '/api/wishlist') keys.push(r.headers()['idempotency-key'] ?? '')
+  }
+  e.page.on('request', onRequest)
+  try {
+    await e.page.click(MAPAL_WANT)
+    await e.page.waitForSelector(`${dlg} form`)
+    // The first attempt is refused by the server (999 is the most on one line); the second one goes through.
+    await e.page.fill(`${dlg} input[name="qty_wanted"]`, '5')
+    await e.page.click(`${dlg} button[type=submit]`)
+    await e.page.waitForSelector(`${dlg} [data-err]:not(.hidden)`)
+    assert.match((await e.page.textContent(`${dlg} [data-err]`))!, /That would make 1003 wanted/)
+    await e.page.fill(`${dlg} input[name="qty_wanted"]`, '1')
+    await e.page.click(`${dlg} button[type=submit]`)
+    await e.page.waitForSelector(dlg, { state: 'detached' })
+  } finally {
+    e.page.off('request', onRequest)
+  }
+  await until(() => openLine('H0070')?.qty_wanted === 999, 'topped up')
+  assert.equal(keys.length, 2)
+  assert.match(keys[0]!, /^[0-9a-f]{32}$/)
+  assert.equal(keys[1], keys[0], 'the same key on every attempt from one dialog')
+  // The answer to the second attempt is "lost" and it is sent again: the first result comes back, nothing is added.
+  const resend = await fetch(`${e.t.base}/api/wishlist`, {
+    method: 'POST',
+    headers: { 'X-Requested-With': 'HolderCatalogue', 'X-User': 'E2E Tester', 'Content-Type': 'application/json', 'Idempotency-Key': keys[0]! },
+    body: JSON.stringify({ holder_id: 'H0070', qty_wanted: 1 }),
+  })
+  assert.equal(resend.status, 200)
+  assert.equal(resend.headers.get('idempotent-replay'), 'true')
+  assert.equal(openLine('H0070')!.qty_wanted, 999)
+  // Chromium logs the refused first attempt; nothing else may have gone wrong.
+  assert.deepEqual(e.errors, ['console: Failed to load resource: the server responded with a status of 400 (Bad Request)'])
+  e.errors.length = 0
+})
+
 // ------------------------------------------------------------------ serialised units
 
 test('Serialised: empty state, add a unit through the holder picker, duplicate id refused in the dialog', async () => {
@@ -282,6 +368,65 @@ test('overdue units are highlighted and the due filters find them', async () => 
   await e.page.selectOption('[data-f="due"]', '')
   await e.page.fill('[data-f="q"]', 'HMR-778')
   await e.page.waitForFunction(() => document.querySelectorAll('.un-row').length === 1 && !!document.querySelector('.un-row[data-id="U-0001"]'))
+  assert.deepEqual(e.errors, [])
+})
+
+test('Edit… on a unit: change where it is kept and the serial no., add a remark — all in its log, stock untouched', async () => {
+  const loc = await e.t.api('POST', '/api/locations', { name: 'DMG 1 magazine', kind: 'machine', counts_as_on_site: true })
+  assert.ok(loc.status < 300, JSON.stringify(loc.body))
+  const dmg = Number(db().value(`SELECT location_id FROM locations WHERE name = 'DMG 1 magazine'`))
+  const txns = Number(db().value('SELECT COUNT(*) FROM stock_transactions'))
+  await e.goto('#/units?q=U-0001')
+  await e.page.click('.un-row[data-id="U-0001"] [data-act="edit"]')
+  await e.page.waitForSelector(`${dlg} form select[name="location_id"]`)
+  assert.equal(await e.page.textContent(`${dlg} h2`), 'Edit serialised unit')
+  assert.equal(await e.page.inputValue(`${dlg} select[name="location_id"]`), '2', 'starts at its current location (Tool crib)')
+  assert.equal(await e.page.inputValue(`${dlg} input[name="serial_no"]`), 'HMR-77812')
+  assert.equal(await e.page.getAttribute(`${dlg} input[name="serial_no"]`, 'maxlength'), '80')
+  assert.equal(await e.page.getAttribute(`${dlg} textarea[name="note"]`, 'maxlength'), '2000')
+  // Nothing changed: said in the dialog, nothing sent.
+  await e.page.click(`${dlg} button[type=submit]`)
+  await e.page.waitForSelector(`${dlg} [data-err]:not(.hidden)`)
+  assert.match((await e.page.textContent(`${dlg} [data-err]`))!, /Nothing to save/)
+  await e.page.selectOption(`${dlg} select[name="location_id"]`, String(dmg))
+  await e.page.fill(`${dlg} input[name="serial_no"]`, 'HMR-77813')
+  await e.page.fill(`${dlg} textarea[name="note"]`, 'Serial misread, checked against cert 1234')
+  await e.page.click(`${dlg} button[type=submit]`)
+  await e.page.waitForSelector(dlg, { state: 'detached' })
+  await until(() => unit('U-0001')!.location_id === dmg, 'unit moved')
+  const u = unit('U-0001')!
+  assert.equal(u.serial_no, 'HMR-77813')
+  assert.match(u.note, /E2E Tester: Edited: serial no\. "HMR-77812" → "HMR-77813"; location Tool crib → DMG 1 magazine\. Note: Serial misread, checked against cert 1234$/)
+  await e.page.waitForFunction(() => /DMG 1 magazine/.test(document.querySelector('.un-row[data-id="U-0001"]')?.textContent || ''))
+  assert.equal(db().value(`SELECT by_user FROM audit_events WHERE entity = 'unit' AND entity_id = 'U-0001' AND action = 'EDIT' ORDER BY rowid DESC LIMIT 1`), 'E2E Tester')
+  assert.equal(Number(db().value('SELECT COUNT(*) FROM stock_transactions')), txns, 'editing a unit books nothing')
+  assert.deepEqual(e.errors, [])
+})
+
+test('scrapping a unit preselects its own location in "Book scrap", not where most stock is', async () => {
+  const dmg = Number(db().value(`SELECT location_id FROM locations WHERE name = 'DMG 1 magazine'`))
+  // H0012: 3 counted at the Tool crib, 1 of them moved into the DMG 1 magazine — the unit is that one.
+  assert.equal((await e.t.api('POST', '/api/counts', { holder_id: 'H0012', location_id: 2, counted_qty: 3 })).status, 200)
+  assert.equal((await e.t.api('POST', '/api/moves', { holder_id: 'H0012', from_location_id: 2, to_location_id: dmg, qty: 1 })).status, 200)
+  assert.equal((await e.t.api('POST', '/api/units', { unit_id: 'U-SCRAP', holder_id: 'H0012', location_id: dmg })).status, 201)
+  const at = (loc: number) => Number(db().value(`SELECT COALESCE(SUM(qty_delta), 0) FROM stock_transactions WHERE holder_id = 'H0012' AND location_id = ?`, [loc]))
+  await e.goto('#/units?q=U-SCRAP')
+  await e.page.click('.un-row[data-id="U-SCRAP"] [data-act="status"]')
+  await e.page.waitForSelector(`${dlg} select[name="status"]`)
+  await e.page.selectOption(`${dlg} select[name="status"]`, 'SCRAPPED')
+  await e.page.fill(`${dlg} textarea[name="note"]`, 'NCR-2026-099 taper cracked')
+  await e.page.click(`${dlg} button[type=submit]`)
+  await e.page.waitForSelector(`${dlg} [data-ok]`)
+  assert.equal(await e.page.textContent(`${dlg} [data-ok]`), 'Book scrap now')
+  await e.page.click(`${dlg} [data-ok]`)
+  await e.page.waitForSelector(`${dlg} form input[name="reference"]`)
+  assert.equal(await e.page.textContent(`${dlg} h2`), 'Scrap a holder')
+  assert.equal(await e.page.inputValue(`${dlg} select[name="location_id"]`), String(dmg), 'the unit’s location, not the Tool crib (2 there)')
+  await e.page.fill(`${dlg} input[name="reference"]`, 'NCR-2026-099')
+  await e.page.click(`${dlg} button[type=submit]`)
+  await until(() => at(dmg) === 0, 'scrap booked at the DMG 1 magazine')
+  assert.equal(at(2), 2, 'Tool crib untouched')
+  assert.equal(unit('U-SCRAP')!.status, 'SCRAPPED')
   assert.deepEqual(e.errors, [])
 })
 
