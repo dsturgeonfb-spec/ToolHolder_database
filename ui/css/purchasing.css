@@ -1,1 +1,124 @@
-/* Styles owned by the purchasing module. Base tokens and components are in app.css. */
+/* Styles owned by the purchasing and units modules: Want list (#/want), Serialised (#/units) and their dialogs.
+   Base tokens and components are in app.css — colours come only from its variables so dark mode works. */
+
+/* ======================================================================= Want list */
+.wl{display:flex;flex-direction:column;gap:14px}
+.wl-seg{max-width:100%;overflow-x:auto}
+.wl-seg button{min-height:34px;white-space:nowrap}
+.wl-seg .n{font-family:var(--f-data);font-size:12px;opacity:.8}
+.wl-group{margin-bottom:4px}
+.wl-grp{align-items:center;flex-wrap:wrap}
+.wl-grp .btn{min-height:34px}
+
+/* one line per want-list row: holder · clamp/GL · on site · qty · reason · status · added */
+.wl-head,.wl-row{display:grid;grid-template-columns:minmax(0,2.3fr) minmax(0,1.1fr) 62px 96px minmax(0,1.4fr) 186px 118px;gap:6px 14px;padding:8px 14px;align-items:start}
+.wl-head{padding-block:6px;border-bottom:1px solid var(--rule);font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.04em;color:var(--ink-3)}
+.wl-head .n{text-align:right}
+.wl-row{border-bottom:1px solid var(--rule-2)}
+.wl-row:last-child{border-bottom:0}
+.wl-row.st-RECEIVED,.wl-row.st-CANCELLED{background:var(--paper)}
+.wl-row.st-CANCELLED .wl-holder,.wl-row.st-CANCELLED .wl-clamp{opacity:.7}
+.wl-holder{display:flex;flex-direction:column;gap:2px;min-width:0}
+.wl-ident{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}
+.wl-ident .ord{text-decoration:none}
+.wl-ident .ord:hover{text-decoration:underline}
+.wl-desc{color:var(--ink-2);overflow-wrap:anywhere}
+.wl-url{align-self:flex-start}
+.wl-note{font-size:12.5px;color:var(--ink);background:var(--med-soft);border-radius:4px;padding:3px 7px;margin-top:3px;overflow-wrap:anywhere}
+.wl-clamp{display:flex;flex-direction:column;gap:1px;min-width:0;font-size:14px}
+.wl-site{text-align:right;font-size:15px}
+.wl-site .zero{color:var(--ink-3)}
+.wl-qty,.wl-reason,.wl-status{display:flex;flex-direction:column;gap:3px;min-width:0}
+.wl-row input,.wl-row select{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:6px 8px;font-size:14px;color:var(--ink);min-width:0;width:100%;min-height:36px}
+.wl-row input[type=number]{font-family:var(--f-data);text-align:right}
+.wl-row input:disabled{background:var(--paper);color:var(--ink-2)}
+.wl-status .linkbtn{align-self:flex-start}
+.wl-added{display:flex;flex-direction:column;gap:1px;color:var(--ink-2)}
+.wl-row .cell-label{display:none;font-size:12px;color:var(--ink-3);font-weight:600}
+.wl-empty{align-items:center;text-align:center}
+.wl-empty .note{margin:0 auto}
+.wl-emptybtn{justify-content:center}
+
+/* add-to-want-list dialog (formDialog puts the intro in a <p>, so these are spans laid out as blocks) */
+.wl-dlg,.un-dlg{display:flex;flex-direction:column;gap:4px;color:var(--ink)}
+.wl-dlg > span,.un-dlg > span{display:block}
+.wl-dlg-note{font-size:13px;background:var(--med-soft);border-radius:4px;padding:4px 8px}
+
+/* holder picker */
+.wl-pick-bar{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end}
+.wl-pick-q{flex:1 1 260px}
+.wl-pick-bar .seg button{min-height:38px}
+.wl-pick-list{display:flex;flex-direction:column;margin-top:10px;border:1px solid var(--rule);border-radius:var(--r);max-height:min(50vh,440px);overflow:auto;background:var(--panel)}
+.wl-pick-item{flex-shrink:0;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"id tags" "facts tags";gap:2px 12px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--rule-2);padding:9px 12px;min-height:50px;cursor:pointer;color:var(--ink);align-items:center}
+.wl-pick-item:last-child{border-bottom:0}
+.wl-pick-item:hover,.wl-pick-item:focus-visible{background:var(--accent-soft)}
+.wl-pick-id{grid-area:id;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;min-width:0}
+.wl-pick-facts{grid-area:facts;color:var(--ink-2);overflow-wrap:anywhere}
+.wl-pick-tags{grid-area:tags;display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.wl-pick-hint{margin:0;padding:12px;color:var(--ink-3)}
+
+/* ======================================================================= Serialised units */
+.un{display:flex;flex-direction:column;gap:14px}
+.un-sum{display:flex;flex-wrap:wrap;gap:6px 8px;min-height:0}
+.un-sum:empty{display:none}
+.un-chip{cursor:pointer;font:inherit;font-size:13px;padding:3px 11px;min-height:30px}
+.un-chip:hover:not(:disabled){border-color:currentColor}
+.un-chip:disabled{opacity:.55;cursor:default}
+.un-q input{width:min(280px,70vw)}
+.un-wrap{border:1px solid var(--rule);border-radius:var(--r);background:var(--panel);overflow-x:auto}
+.un-table{font-size:14px}
+.un-table td{vertical-align:middle}
+.un-table th.actions,.un-table td.actions{text-align:right;white-space:nowrap}
+.un-acts .btn{min-height:34px;margin-left:4px}
+.un-id{font-size:15px;white-space:nowrap}
+.un-table td[data-label="Serial no."]{white-space:nowrap}
+.un-desc,.un-by{display:block}
+.un-row.due-overdue td:first-child{box-shadow:inset 4px 0 0 var(--high)}
+.un-row.due-overdue td{background:var(--high-soft)}
+.un-row.due-due_soon td:first-child,.un-row.due-never td:first-child{box-shadow:inset 4px 0 0 var(--med)}
+.un-row.st-SCRAPPED td{color:var(--ink-3)}
+.un-due{font-family:var(--f-data);font-size:13.5px;white-space:nowrap}
+.un-due.overdue{color:var(--high);font-weight:600}
+.un-due.due_soon,.un-due.never{color:var(--med);font-weight:600}
+.un-due.never{font-family:var(--f-body)}
+.un-logrow td{background:var(--paper)}
+.un-log{margin:0;padding:4px 0 4px 22px;font-size:13px;color:var(--ink-2);display:flex;flex-direction:column;gap:3px;overflow-wrap:anywhere}
+.un-logdate{font-family:var(--f-data);color:var(--ink)}
+.un-empty{align-items:center;text-align:center}
+.un-empty .note{margin:0 auto}
+.un-emptybtn{justify-content:center}
+.un-table .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ======================================================================= tablet / phone */
+@media (max-width:980px){
+  .wl-head{display:none}
+  .wl-row{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:"h h h" "c s q" "r r st" "a a a";gap:8px 12px;padding:12px 14px}
+  .wl-holder{grid-area:h}.wl-clamp{grid-area:c}.wl-site{grid-area:s;text-align:left}.wl-qty{grid-area:q}
+  .wl-reason{grid-area:r}.wl-status{grid-area:st}.wl-added{grid-area:a;flex-direction:row;flex-wrap:wrap;gap:4px 10px}
+  .wl-row .cell-label{display:block}
+  .wl-added .cell-label{display:none}
+
+  .un-table thead{display:none}
+  .un-table,.un-table tbody,.un-table tr,.un-table td{display:block}
+  .un-table tr.un-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 12px;padding:12px 14px;border-bottom:1px solid var(--rule-2)}
+  .un-table tr.un-row td{border:0;padding:0;background:none}
+  .un-table tr.un-row.due-overdue{background:var(--high-soft);box-shadow:inset 4px 0 0 var(--high)}
+  .un-table tr.un-row.due-due_soon,.un-table tr.un-row.due-never{box-shadow:inset 4px 0 0 var(--med)}
+  .un-row.due-overdue td:first-child,.un-row.due-due_soon td:first-child,.un-row.due-never td:first-child{box-shadow:none}
+  .un-table td[data-label]::before{content:attr(data-label);display:block;font-family:var(--f-body);font-size:12px;font-weight:600;color:var(--ink-3)}
+  .un-table td[data-label="Serial no."]{white-space:normal;overflow-wrap:anywhere}
+  .un-table td[data-label="Holder"]{grid-column:span 2}
+  .un-table td.n{text-align:left}
+  .un-table td.actions{grid-column:1/-1;text-align:left;white-space:normal;display:flex;flex-wrap:wrap;gap:6px}
+  .un-acts .btn{margin-left:0;min-height:40px}
+  .un-table tr.un-logrow td{padding:6px 14px 12px}
+  table.data.un-table tr:hover td{background:none}
+}
+@media (max-width:520px){
+  .wl-row{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"h h" "c s" "q st" "r r" "a a"}
+  .un-table tr.un-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .un-table td[data-label="Holder"]{grid-column:1/-1}
+  .wl-pick-item{grid-template-columns:minmax(0,1fr);grid-template-areas:"id" "facts" "tags"}
+  .wl-pick-tags{justify-content:flex-start}
+}
+@media print{.wl-row input,.wl-row select{border:0;padding:0}}
