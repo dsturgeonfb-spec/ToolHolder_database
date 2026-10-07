@@ -208,18 +208,44 @@ export async function render(root, ctx) {
   })
 
   // Changes outside the stock ledger (audit_events), loaded when opened.
-  const ENTITY = { location: 'Location', wishlist: 'Want list', unit: 'Serialised unit' }
+  const ENTITY = { location: 'Location', wishlist: 'Want list', unit: 'Serialised unit', setting: 'Setting' }
+  // Plain words for what the audit records store (a machinist or an auditor reads this, not a programmer).
+  const LABEL = {
+    holder_id: 'Holder', serial_no: 'Serial no.', location_id: 'Kept at', runout_check_um: 'Runout µm', last_inspected: 'Last inspected',
+    qty_wanted: 'Qty wanted', added_qty: 'Added', reason: 'Reason', status: 'Status', note: 'Note', name: 'Name', kind: 'Kind',
+    counts_as_on_site: 'Counts as on site', users: 'People who book', unit_inspection_days: 'Inspection interval (days)',
+    vendor_contact: 'Vendor contact e-mail', default_interface: 'Taper form', share: 'Network sharing',
+  }
+  const STATUS = { IN_SERVICE: 'In service', QUARANTINE: 'Quarantine', SCRAPPED: 'Scrapped', OPEN: 'Open', QUOTED: 'Quoted', ORDERED: 'Ordered', RECEIVED: 'Received', CANCELLED: 'Cancelled' }
+  const locName = (id) => locations.find((l) => String(l.location_id) === String(id))?.name || `location ${id}`
+  const val = (k, v) => {
+    if (v === null || v === undefined || v === '') return '–'
+    if (Array.isArray(v)) return v.length ? v.join(', ') : '–'
+    if (typeof v === 'boolean') return v ? 'yes' : 'no'
+    if (k === 'location_id') return locName(v)
+    if (k === 'status' || k === 'from' || k === 'to') return STATUS[v] || String(v)
+    return typeof v === 'object' ? JSON.stringify(v) : String(v)
+  }
+  const label = (k) => LABEL[k] || k
   const describe = (e) => {
     const d = e.detail || {}
     if (e.entity === 'unit' && e.action === 'INSPECT')
-      return `Runout ${d.runout_check_um ?? '–'} µm — ${d.passed ? 'passed' : 'FAILED'}${d.status_after !== d.status_before ? ` (${d.status_before} → ${d.status_after})` : ''}${d.note ? ` · ${d.note}` : ''}`
-    if (d.from && d.to && typeof d.from === 'object') return Object.keys(d.to).map((k) => `${k}: ${d.from[k] ?? '–'} → ${d.to[k] ?? '–'}`).join(' · ')
-    if (d.from && d.to) return `${d.from} → ${d.to}${d.note ? ` · ${d.note}` : ''}`
+      return `Runout ${d.runout_check_um ?? '–'} µm — ${d.passed ? 'passed' : 'FAILED'}${d.status_after !== d.status_before ? ` (${val('status', d.status_before)} → ${val('status', d.status_after)})` : ''}${d.note ? ` · ${d.note}` : ''}`
+    if (e.entity === 'setting') return `${val(e.entity_id, d.from)} → ${val(e.entity_id, d.to)}`
+    if (d.from && d.to && typeof d.from === 'object')
+      return Object.keys(d.to).map((k) => `${label(k)}: ${val(k, d.from[k])} → ${val(k, d.to[k])}`).join(' · ')
+    if (d.from !== undefined && d.to !== undefined) return `${val('status', d.from)} → ${val('status', d.to)}${d.note ? ` · ${d.note}` : ''}`
     if (Array.isArray(d.changes) && d.changes.length) return d.changes.join(' · ') + (d.note ? ` · ${d.note}` : '')
     return Object.entries(d)
-      .filter(([, v]) => v !== null && v !== '' && v !== undefined)
-      .map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`)
+      .filter(([k, v]) => v !== null && v !== '' && v !== undefined && k !== 'holder_id')
+      .map(([k, v]) => `${label(k)}: ${val(k, v)}`)
       .join(' · ')
+  }
+  const which = (e) => {
+    if (e.entity === 'setting') return label(e.entity_id)
+    if (e.entity === 'location') return e.detail?.name || locName(e.entity_id)
+    if (e.entity === 'wishlist') return `Line #${e.entity_id}${e.detail?.holder_id ? ` · ${e.detail.holder_id}` : ''}`
+    return e.entity_id
   }
   const audit = el.querySelector('[data-audit]')
   audit.addEventListener('toggle', async () => {
@@ -234,7 +260,7 @@ export async function render(root, ctx) {
            ${events
              .map(
                (e) => `<tr><td class="nowrap">${stamp(e.at)}</td><td>${esc(ENTITY[e.entity] || e.entity)} · ${esc(e.action.toLowerCase())}</td>
-               <td class="mono">${e.entity === 'unit' ? `<a href="#/units?q=${encodeURIComponent(e.entity_id)}">${esc(e.entity_id)}</a>` : esc(e.detail?.name || e.detail?.holder_id || '#' + e.entity_id)}</td>
+               <td>${e.entity === 'unit' ? `<a class="mono" href="#/units?q=${encodeURIComponent(e.entity_id)}">${esc(e.entity_id)}</a>` : e.detail?.holder_id && e.entity === 'wishlist' ? `<a href="#/holder/${encodeURIComponent(e.detail.holder_id)}">${esc(which(e))}</a>` : esc(which(e))}</td>
                <td>${esc(describe(e))}</td><td>${esc(e.by_user || '')}</td></tr>`,
              )
              .join('')}</tbody></table></div>`

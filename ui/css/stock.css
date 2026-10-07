@@ -116,6 +116,15 @@
   .cm-pm{width:64px;height:64px}
   .cm-qty{height:72px;font-size:48px}
 }
+/* Phone: the card is taller than the screen — keep Back / Skip / Confirm pinned to the bottom edge so the
+   counter never scrolls for them; a smaller picture leaves more of the holder's data in view. */
+@media (max-width:480px){
+  .cm-img{max-width:160px}
+  .cm-actions{position:sticky;bottom:0;z-index:5;background:var(--panel);padding:8px 0 calc(8px + env(safe-area-inset-bottom));
+    margin:0 -2px;box-shadow:0 -6px 12px -8px rgba(0,0,0,.35)}
+  .cm-scope{display:flex;flex-direction:column;align-self:stretch}
+  .cm-scope button{text-align:left}
+}
 
 /* ------------------------------------------------------------------ ledger */
 .lg{display:flex;flex-direction:column;gap:12px}

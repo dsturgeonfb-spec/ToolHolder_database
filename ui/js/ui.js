@@ -36,7 +36,7 @@ export const DATA_STATUS_LABEL = {
   verified: 'Verified on maker site',
   partial: 'Partly verified',
   distributor_only: 'From distributor (maker site blocked)',
-  catalogue_pdf: 'Maker PDF catalogue',
+  catalogue_pdf: 'Maker catalogue / data file',
   unverified: 'Unverified',
 }
 
@@ -66,6 +66,8 @@ export function toast(message, kind = '') {
   t.className = `toast ${kind}`
   t.textContent = message
   box.appendChild(t)
+  // A fast count run would otherwise stack toasts over the screen.
+  while (box.children.length > 3) box.firstElementChild.remove()
   setTimeout(() => t.remove(), kind === 'error' ? 8000 : 3500)
 }
 export const toastError = (e) => toast(e && e.message ? e.message : String(e), 'error')

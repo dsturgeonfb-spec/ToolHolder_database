@@ -268,15 +268,21 @@ GROUP BY h.clamp_dia_mm, ht.type_code ORDER BY h.clamp_dia_mm;
 --  'none'       not on site (never booked, or everything booked has gone out again).
 CREATE VIEW IF NOT EXISTS v_count_status AS
 SELECT x.holder_id, x.has_opening, x.has_count, x.last_count_date, x.qty_unassigned,
-       CASE WHEN x.has_opening = 1 AND x.qty_unassigned > 0 THEN 'unverified'
+       CASE WHEN x.qty_unassigned > 0 THEN 'unverified'
             WHEN x.has_count = 1 THEN 'counted'
             WHEN x.has_any = 1 AND x.qty_on_site > 0 THEN 'booked'
             ELSE 'none' END AS count_status
 FROM (SELECT h.holder_id,
              EXISTS (SELECT 1 FROM stock_transactions t WHERE t.holder_id = h.holder_id AND t.txn_type = 'OPENING_BALANCE') AS has_opening,
-             EXISTS (SELECT 1 FROM stock_transactions t WHERE t.holder_id = h.holder_id AND t.txn_type = 'COUNT_ADJUST')    AS has_count,
+             -- A physical count: any count at a real location, or a write-off at Unassigned. A 0 "confirmation" at
+             -- Unassigned only says "still not located" — it is not a count of the holder.
+             EXISTS (SELECT 1 FROM stock_transactions t JOIN locations l USING (location_id)
+                     WHERE t.holder_id = h.holder_id AND t.txn_type = 'COUNT_ADJUST'
+                       AND (l.name <> 'Unassigned – count required' OR t.qty_delta <> 0))                             AS has_count,
              EXISTS (SELECT 1 FROM stock_transactions t WHERE t.holder_id = h.holder_id)                                    AS has_any,
-             (SELECT MAX(t.txn_date) FROM stock_transactions t WHERE t.holder_id = h.holder_id AND t.txn_type = 'COUNT_ADJUST') AS last_count_date,
+             (SELECT MAX(t.txn_date) FROM stock_transactions t JOIN locations l USING (location_id)
+               WHERE t.holder_id = h.holder_id AND t.txn_type = 'COUNT_ADJUST'
+                 AND (l.name <> 'Unassigned – count required' OR t.qty_delta <> 0))                                   AS last_count_date,
              COALESCE((SELECT SUM(t.qty_delta) FROM stock_transactions t JOIN locations l USING (location_id)
                        WHERE t.holder_id = h.holder_id AND l.name = 'Unassigned – count required'), 0) AS qty_unassigned,
              COALESCE((SELECT SUM(t.qty_delta) FROM stock_transactions t JOIN locations l USING (location_id)

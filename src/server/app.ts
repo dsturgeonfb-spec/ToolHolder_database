@@ -12,7 +12,7 @@
  */
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { randomBytes, randomInt, timingSafeEqual } from 'node:crypto'
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, createReadStream, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, createReadStream, writeFileSync } from 'node:fs'
 import { hostname, networkInterfaces } from 'node:os'
 import { dirname, extname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -119,6 +119,8 @@ export class AppServer {
   private pinFailures: number[] = []
   private timers: NodeJS.Timeout[] = []
   private readonly lockFile: string
+  /** Set when another process took the data lock over: this one then refuses every write. */
+  lockLost = false
   private readonly autoBackup: boolean
 
   constructor(opts: AppOptions) {
@@ -168,8 +170,16 @@ export class AppServer {
         this.ctx.log('warn', `Could not resume network sharing: ${err instanceof Error ? err.message : err}`)
       }
     }
-    // Keep the data lock fresh so another PC can tell this one is alive.
-    this.timers.push(setInterval(() => touchDataLock(this.lockFile), 60_000))
+    // Keep the data lock fresh so another PC can tell this one is alive. If another process has taken the lock
+    // over (this PC slept for longer than the stale time), stop writing: two writers would corrupt the database.
+    this.timers.push(
+      setInterval(() => {
+        if (!this.lockLost && !touchDataLock(this.lockFile)) {
+          this.lockLost = true
+          this.ctx.log('error', 'Another Holder Catalogue has taken over this data folder — no more changes are accepted here. Restart the app.')
+        }
+      }, 60_000),
+    )
     if (this.autoBackup) {
       const tick = () => {
         try {
@@ -280,6 +290,8 @@ export class AppServer {
     const method = req.method ?? 'GET'
     if (method !== 'GET' && method !== 'HEAD' && req.headers[CSRF_HEADER] !== CSRF_VALUE)
       throw new HttpError(403, 'Missing request header — use the app UI or send X-Requested-With: HolderCatalogue')
+    if (this.lockLost && method !== 'GET' && method !== 'HEAD')
+      throw new HttpError(503, 'Another Holder Catalogue has taken over this data folder (this PC was asleep or offline for a while). Nothing was saved — close and restart the app.')
     let sessionUser: string | null = null
     if (!isHost) {
       const open = url.pathname === '/api/login' || url.pathname === '/api/session' || url.pathname === '/api/health'
@@ -561,6 +573,10 @@ function acquireDataLock(file: string, log: Logger): void {
     try {
       lock = JSON.parse(readFileSync(file, 'utf8')) as DataLock
     } catch {
+      // Unreadable (being rewritten on a slow share, or damaged): held by someone unknown unless it's old.
+      const age = Date.now() - statSync(file).mtimeMs
+      if (age < LOCK_STALE_MS)
+        throw new Error('This catalogue’s data folder is in use by another Holder Catalogue (its lock file is being written). Try again in a minute.')
       lock = null
     }
     const fresh = lock && Date.now() - new Date(lock.heartbeat).getTime() < LOCK_STALE_MS
@@ -576,18 +592,29 @@ function acquireDataLock(file: string, log: Logger): void {
   writeLock(file, new Date().toISOString())
 }
 
+/** Written to a temp file and renamed into place, so a reader never sees a half-written lock. */
 function writeLock(file: string, started: string): void {
   const lock: DataLock = { host: hostname(), pid: process.pid, started, heartbeat: new Date().toISOString() }
-  writeFileSync(file, JSON.stringify(lock, null, 2), 'utf8')
+  const tmp = `${file}.${process.pid}.tmp`
+  writeFileSync(tmp, JSON.stringify(lock, null, 2), 'utf8')
+  renameSync(tmp, file)
 }
 
-function touchDataLock(file: string): void {
+/** Refreshes the heartbeat. Returns false when the lock now belongs to someone else (taken over). */
+function touchDataLock(file: string): boolean {
+  let cur: DataLock
   try {
-    const cur = JSON.parse(readFileSync(file, 'utf8')) as DataLock
-    if (cur.pid === process.pid && cur.host === hostname()) writeLock(file, cur.started)
+    cur = JSON.parse(readFileSync(file, 'utf8')) as DataLock
   } catch {
-    /* the folder may be briefly unreachable; the next tick tries again */
+    return true // briefly unreachable or mid-rename; the next tick tries again
   }
+  if (cur.pid !== process.pid || cur.host !== hostname()) return false
+  try {
+    writeLock(file, cur.started)
+  } catch {
+    /* next tick */
+  }
+  return true
 }
 
 function releaseDataLock(file: string): void {

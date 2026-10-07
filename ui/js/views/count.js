@@ -36,6 +36,7 @@ let cleanups = []
 export function teardown() {
   cleanups.forEach((fn) => fn())
   cleanups = []
+  document.body.classList.remove('count-mode')
 }
 
 const store = {
@@ -57,6 +58,7 @@ const store = {
 
 export async function render(root, ctx) {
   teardown()
+  document.body.classList.add('count-mode')
   // Listeners go on this element, not on `root`: #view outlives the view, this element doesn't.
   const el = document.createElement('div')
   el.className = 'cm'
@@ -332,7 +334,8 @@ export async function render(root, ctx) {
     if (h.counted_here_today) return `<span class="cm-badge ok" title="Counted here today">✓ ${esc(h.qty_at_location)}</span>`
     if (h.count_status === 'unverified') return '<span class="cm-badge unver" title="Opening balance only — never physically counted">Unverified</span>'
     if (h.count_status === 'booked') return '<span class="cm-badge booked" title="Booked in by receipt, not yet counted">Booked</span>'
-    if (h.qty_on_site > 0) return `<span class="cm-badge booked" title="Last counted ${esc(fmtDate(h.last_count_date))}">Counted ${esc(fmtDate(h.last_count_date))}</span>`
+    // Short form (✓ dd/mm) so the order no. beside it isn't cut off; the full date is in the tooltip.
+    if (h.qty_on_site > 0) return `<span class="cm-badge booked" title="Last counted ${esc(fmtDate(h.last_count_date))}">✓ ${esc(fmtDate(h.last_count_date).slice(0, 5))}</span>`
     return '<span class="cm-badge none">Not on site</span>'
   }
 
@@ -540,6 +543,8 @@ export async function render(root, ctx) {
     if (s.blind) {
       if (s.qty === 0)
         return pendingOf(h) > 0 ? `Confirming 0 writes the opening balance off: ${WRITE_OFF}.` : 'Confirm records 0 still not located.'
+      if (pendingOf(h) === 0 && h.count_status !== 'unverified')
+        return 'This holder was already found elsewhere — recording it here as not located makes it unverified again and adds to the site total.'
       return `Confirm records ${s.qty} still not located — it stays unverified.`
     }
     const delta = s.qty - h.qty_at_location
@@ -549,6 +554,9 @@ export async function render(root, ctx) {
         ? `Writes off the opening balance (${waiting}): ${WRITE_OFF}. Site total after: ${after}.`
         : `Nothing is waiting here — confirming records the check. Site total after: ${after}.`
     const first = delta !== 0 ? `books ${signed(delta)} here` : h.counted_here_today ? 'same as already counted here today' : 'matches the books'
+    // Already found somewhere: recording it as "not located" puts it back to unverified and adds to the site total.
+    if (pendingOf(h) === 0 && h.count_status !== 'unverified' && delta > 0)
+      return `This holder was already found (it is booked at another location). Recording ${s.qty} here as not located makes it unverified again and adds ${delta} to the site total (after: ${after}).`
     return `${s.qty} still not located — ${first}; it stays unverified. Site total after: ${after}.`
   }
 

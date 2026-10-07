@@ -19,6 +19,11 @@ test('numbers: units stripped, decimal commas, thousands separators in integer m
   assert.equal(parseNum('25.000 1/min', { integer: true }), 25000)
   assert.equal(parseNum('25,000 rpm', { integer: true }), 25000)
   assert.equal(parseNum('35000', { integer: true }), 35000)
+  // The whole-number rule shared with the catalogue form: space/apostrophe groups too, never a rounded decimal.
+  assert.equal(parseNum('25 000 rpm', { integer: true }), 25000)
+  assert.equal(parseNum("25'000", { integer: true }), 25000)
+  assert.equal(parseNum('n max 8000 min-1', { integer: true }), 8000)
+  assert.equal(parseNum('25,5', { integer: true }), null)
   assert.equal(parseMassKg('957 g'), 0.957)
   assert.equal(parseMassKg('0,957 kg'), 0.957)
 })

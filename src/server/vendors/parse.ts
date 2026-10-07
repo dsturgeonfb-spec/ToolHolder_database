@@ -12,23 +12,27 @@ const SPACES = /[    ]/g
  * First number in a maker value. Units and text around it are ignored.
  * Decimal mode (mm, kg): a single "," or "." is the decimal mark ("1,265 kg" → 1.265, "12,5" → 12.5);
  * when both appear the last one is the decimal mark ("1.234,5" → 1234.5).
- * Integer mode (rpm): "," and "." between groups of three digits are thousands separators
- * ("25.000 1/min" and "25,000 rpm" → 25000).
+ * Integer mode (rpm) follows the catalogue form's whole-number rule: ",", ".", space or apostrophe between
+ * groups of exactly three digits are thousands separators ("25.000 1/min", "25,000 rpm", "25 000", "25'000"
+ * → 25000); a value with a decimal part ("25,5") is refused (null) rather than rounded — never 25 for 25,000.
  */
 export function parseNum(v: unknown, opts: { integer?: boolean } = {}): number | null {
   if (typeof v === 'number') return Number.isFinite(v) ? v : null
   if (v === null || v === undefined) return null
   const s = String(v).replace(SPACES, ' ').replace(/−/g, '-')
+  if (opts.integer) {
+    const grouped = /(?:^|[^\d])(\d{1,3}(?:([,.' ’])\d{3})(?:\2\d{3})*)(?![\d.,])/.exec(s)
+    if (grouped) return Number(grouped[1]!.replace(/\D/g, ''))
+    const plain = /(?:^|[^\d.,])(\d+)(?![\d.,]*\d)/.exec(s)
+    return plain ? Number(plain[1]) : null
+  }
   const m = /-?\d[\d.,]*/.exec(s)
   if (!m) return null
   let tok = m[0].replace(/[.,]+$/, '')
   const neg = tok.startsWith('-')
   if (neg) tok = tok.slice(1)
   let n: number
-  if (opts.integer) {
-    if (/^\d{1,3}(?:[.,]\d{3})+$/.test(tok)) n = Number(tok.replace(/[.,]/g, ''))
-    else n = Math.round(Number(tok.replace(',', '.')))
-  } else {
+  {
     const lastDot = tok.lastIndexOf('.')
     const lastComma = tok.lastIndexOf(',')
     if (lastDot >= 0 && lastComma >= 0) {

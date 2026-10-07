@@ -31,6 +31,7 @@ const plural = (n, one, many = one + 's') => `${n} ${n === 1 ? one : many}`
 
 function dueHTML(u) {
   if (u.status === 'SCRAPPED') return '<span class="muted">—</span>'
+  if (u.status === 'QUARANTINE') return '<span class="un-due overdue">Re-inspect before release</span>'
   if (!u.next_due) return '<span class="un-due never">Never inspected</span>'
   const d = u.days_to_due
   const when =

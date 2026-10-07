@@ -183,3 +183,37 @@ test('maker + order no. is unique ignoring letter case, at database level too', 
     /UNIQUE/,
   )
 })
+
+test('count status: a 0 "still not located" at Unassigned is not a physical count of a receipt-only holder', async () => {
+  const can = 'H0060' // a MAPAL UNIQ chuck: catalogue only, never on site
+  const crib = 2
+  const unassigned = 1
+  await t.api('POST', '/api/transactions', { holder_id: can, location_id: crib, txn_type: 'RECEIPT', qty: 1, reference: 'PO 1' })
+  const status = () => t.app.ctx.db.value<string>('SELECT count_status FROM v_count_status WHERE holder_id = ?', [can])
+  assert.equal(status(), 'booked')
+  await t.api('POST', '/api/counts', { holder_id: can, location_id: unassigned, counted_qty: 0 })
+  assert.equal(status(), 'booked', 'a 0 at Unassigned only says "nothing waiting here"')
+  await t.api('POST', '/api/counts', { holder_id: can, location_id: crib, counted_qty: 1 })
+  assert.equal(status(), 'counted')
+})
+
+test('a quarantined unit is not "due" on a date', async () => {
+  await t.api('POST', '/api/units', { unit_id: 'Q-1', holder_id: 'H0010', last_inspected: '2026-10-01' })
+  await t.api('POST', '/api/units/Q-1/inspect', { runout_check_um: 12, passed: false, note: 'runout' })
+  const u = (await t.api('GET', '/api/units/Q-1')).body
+  assert.equal(u.status, 'QUARANTINE')
+  assert.equal(u.due_state, null)
+  assert.equal(u.overdue, false)
+})
+
+test('once another process has taken over the data lock, writes are refused (reads still work)', async () => {
+  t.app.lockLost = true
+  try {
+    const w = await t.api('POST', '/api/flags', { severity: 'LOW', category: 'Test', message: 'after lock loss' })
+    assert.equal(w.status, 503)
+    assert.match(w.body.error, /taken over this data folder/)
+    assert.equal((await t.api('GET', '/api/summary')).status, 200)
+  } finally {
+    t.app.lockLost = false
+  }
+})

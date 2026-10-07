@@ -95,8 +95,10 @@ async function start(): Promise<void> {
   console.log(`[main] ${APP_NAME} ${app.getVersion()} on Electron ${process.versions.electron} (Node ${process.versions.node}); log ${logFile}`)
   console.log(`[main] data folder ${dataDir} (${resolution.source})`)
   if (resolution.notice) console.warn(`[main] ${resolution.notice}`)
-  if (isUncPath(dataDir) || isOneDrivePath(dataDir, process.env) || (await isNetworkDrive(dataDir)))
-    console.warn(`[main] the data folder is on a network drive or OneDrive — only this PC may open it (the data lock enforces that)`)
+  // Informational only (the data lock is what enforces one PC) — so it never delays the window.
+  const sharedWarning = () => console.warn(`[main] the data folder ${dataDir} is on a network drive or OneDrive — only this PC may open it (the data lock enforces that)`)
+  if (isUncPath(dataDir) || isOneDrivePath(dataDir, process.env)) sharedWarning()
+  else void isNetworkDrive(dataDir).then((net) => net && sharedWarning())
 
   // An upgrade migrates the database: copy it first, while nothing has it open.
   const dbPath = join(dataDir, 'holder_catalogue.sqlite')
@@ -128,7 +130,9 @@ async function start(): Promise<void> {
     try {
       port = await server.listen(pointer.port && !envData ? pointer.port : 0)
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== 'EADDRINUSE') throw err
+      // Taken (EADDRINUSE) or reserved since the last run (Windows excluded port ranges → EACCES): any free port will do.
+      if (!pointer.port || envData) throw err
+      console.warn(`[main] remembered port ${pointer.port} unavailable (${(err as NodeJS.ErrnoException).code ?? err}); using a new one`)
       port = await server.listen(0)
     }
     origin = `http://127.0.0.1:${port}`
@@ -199,7 +203,26 @@ async function recoverDataFolder(dir: string, why: 'unreachable' | 'missing-db')
     await dialog.showMessageBox({ type: 'error', title: 'Folder not empty', message: 'Choose an empty folder for a new catalogue.' })
     return recoverDataFolder(dir, why)
   }
-  writePointer(pointerFile(), { ...readPointer(pointerFile()), dataDir: target })
+  if (isOneDrivePath(target, process.env)) {
+    await dialog.showMessageBox({ type: 'error', title: 'Not a OneDrive folder', message: 'Choose a folder outside OneDrive — it copies the database while the app has it open, which corrupts it.' })
+    return recoverDataFolder(dir, why)
+  }
+  if (isUncPath(target) || (await isNetworkDrive(target))) {
+    const { response: go } = await dialog.showMessageBox({
+      type: 'warning',
+      title: 'Network folder',
+      message: 'That is a network folder. Only ONE PC may ever run the app against it.',
+      detail: 'For several users keep the data on one PC and turn on Settings → Share on network there.',
+      buttons: ['Use it anyway', 'Choose another'],
+      defaultId: 1,
+      cancelId: 1,
+    })
+    if (go !== 0) return recoverDataFolder(dir, why)
+  }
+  // A new catalogue is a first run in that folder: drop lastVersion so the next start seeds it instead of
+  // reporting the (deliberately) missing database again.
+  const { lastVersion: _lv, ...rest } = readPointer(pointerFile())
+  writePointer(pointerFile(), response === 2 ? { ...rest, dataDir: target } : { ...rest, lastVersion: _lv, dataDir: target })
   relaunch()
 }
 
@@ -360,22 +383,32 @@ async function moveDataFolder(): Promise<void> {
     detail:
       (unc
         ? 'That is a network folder. Only ONE PC may ever run the app against it — SQLite on a shared drive corrupts when two PCs write. For several users, keep the data on one PC and turn on Settings → Share on network instead.\n\n'
-        : '') + `The app restarts afterwards. The old folder (${current}) is left as it is.`,
+        : '') +
+      (existing
+        ? `The app restarts afterwards. The current folder (${current}) is left as it is.`
+        : `The app restarts afterwards. In the old folder (${current}) the database is renamed holder_catalogue.MOVED-<date>.sqlite and a MOVED-TO note points to the new folder, so nobody opens the old copy by mistake.`),
   })
   if (response !== 0) return
   const s = server
   server = null
   await s.close()
+  let stage: 'copy' | 'pointer' | 'retire' = 'copy'
   try {
-    if (!existing) {
-      copyDataFolder(current, target)
-      // The old copy must not be opened again by mistake (another Windows account, a lost location.json).
-      retireOldCopy(current, target)
-    }
+    if (!existing) copyDataFolder(current, target)
+    stage = 'pointer'
     const pointer: Pointer = { ...readPointer(pointerFile()), dataDir: target, lastVersion: app.getVersion() }
     writePointer(pointerFile(), pointer)
+    // Only once the app points at the new copy: the old one must not be opened again by mistake.
+    stage = 'retire'
+    if (!existing) retireOldCopy(current, target)
   } catch (err) {
-    await dialog.showMessageBox(mainWindow, { type: 'error', title: 'Move failed', message: String(err), detail: 'Nothing was changed; the app restarts on the old folder.' })
+    const detail =
+      stage === 'copy'
+        ? 'Nothing was changed; the app restarts on the old folder. (A partial copy may be left in the new folder — delete it before trying again.)'
+        : stage === 'pointer'
+          ? 'The data was copied, but the app could not record the new folder; it restarts on the old folder.'
+          : `The catalogue now runs from ${target}, but the old database in ${current} could not be renamed — rename or delete holder_catalogue.sqlite there by hand so nobody opens it by mistake.`
+    await dialog.showMessageBox(mainWindow, { type: 'error', title: stage === 'retire' ? 'Moved — old copy not retired' : 'Move failed', message: String(err), detail })
   }
   app.relaunch()
   quitting = true

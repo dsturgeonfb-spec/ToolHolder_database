@@ -5,7 +5,7 @@
 /* Layout: a tool-crib register — tally strip on top, then a dense holder list read like a presetter
    readout (profile · identity · clamp · gauge-length ruler · stock). Tabs for tally, issues and sources. */
 :root{
-  --paper:#F2F4F6; --panel:#FFFFFF; --ink:#15202A; --ink-2:#4B5966; --ink-3:#7A8794;
+  --paper:#F2F4F6; --panel:#FFFFFF; --ink:#15202A; --ink-2:#4B5966; --ink-3:#66727E;
   --rule:#D6DDE4; --rule-2:#E7ECF0;
   --accent:#1E4E9E; --accent-ink:#FFFFFF; --accent-soft:#E2EAF6;
   --high:#B42318; --high-soft:#FBE7E5; --med:#A86200; --med-soft:#FBEFD9; --low:#56677A; --low-soft:#E8EDF2;
@@ -284,11 +284,18 @@ table.data td.actions{white-space:nowrap;text-align:right}
 
 /* Text on the green / red buttons and toasts: white on the light theme's dark fills, dark on the dark theme's
    light fills (white on #62C58F / #F0857A is ~2:1 — unreadable on a shop-floor screen). */
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.ok,:root:not([data-theme="light"]) .btn.danger,
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.ok:not(.ghost),:root:not([data-theme="light"]) .btn.danger:not(.ghost),
   :root:not([data-theme="light"]) .toast.ok,:root:not([data-theme="light"]) .toast.error{color:#0E141A}}
-:root[data-theme="dark"] .btn.ok,:root[data-theme="dark"] .btn.danger,:root[data-theme="dark"] .toast.ok,:root[data-theme="dark"] .toast.error{color:#0E141A}
+:root[data-theme="dark"] .btn.ok:not(.ghost),:root[data-theme="dark"] .btn.danger:not(.ghost),:root[data-theme="dark"] .toast.ok,:root[data-theme="dark"] .toast.error{color:#0E141A}
 
 /* Ten tabs: tighter below desktop width so they fit, and the active one is scrolled into view (app.js). */
 @media (max-width:1100px){.tab{padding:8px 9px 7px;font-size:16px}.tab .n{display:none}}
+@media (max-width:880px){.tab{padding:8px 6px 7px;font-size:15px;letter-spacing:0}}
+/* Tablets hide overlay scrollbars: a fade on the right says the tab strip scrolls. */
+@media (max-width:760px){.tabs{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}}
+/* Expanded catalogue row on a tablet: keep the profile small so the data stays in view. */
+@media (max-width:880px){.detail .bigprof{max-width:340px}}
+/* Count mode: toasts at the top, away from the Confirm button and the note field. */
+body.count-mode #toasts{top:16px;bottom:auto}
 
 @media print{.topbar,.tabs,.strip,#toasts,.noprint{display:none!important}body{background:#fff}}

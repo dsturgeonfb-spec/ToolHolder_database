@@ -108,7 +108,8 @@ function hydrate(r: Record<string, unknown>, interval: number, now: string): Uni
   const next_due = last ? addDays(last, interval) : null
   const days_to_due = next_due ? daysBetween(now, next_due) : null
   let due_state: DueState = null
-  if (u.status !== 'SCRAPPED') {
+  // A quarantined unit isn't "due" on a date — it needs a passing inspection before it goes back into service.
+  if (u.status === 'IN_SERVICE') {
     if (!next_due) due_state = 'never'
     else if (days_to_due! < 0) due_state = 'overdue'
     else if (days_to_due! <= DUE_SOON_DAYS) due_state = 'due_soon'
