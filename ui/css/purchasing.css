@@ -69,7 +69,9 @@
 .un-table{font-size:14px}
 .un-table td{vertical-align:middle}
 .un-table th.actions,.un-table td.actions{text-align:right;white-space:nowrap}
-.un-acts .btn{min-height:34px;margin-left:4px}
+.un-acts .btn{min-height:34px;margin:2px 0 2px 4px}
+/* A narrow desktop window: the action buttons wrap inside their cell rather than push the table sideways. */
+@media (max-width:1180px){table.data.un-table td.actions{white-space:normal;min-width:150px}}
 .un-id{font-size:15px;white-space:nowrap}
 .un-table td[data-label="Serial no."]{white-space:nowrap}
 .un-desc,.un-by{display:block}

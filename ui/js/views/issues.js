@@ -1,8 +1,10 @@
 // Issues: data flags raised between the hyperMILL tool database and the makers' own data, closed with
 // what was done (who + when + note), plus the hyperMILL write-back checklist for the CAM engineer.
 // Routes: #/issues?status=&severity=&category=&q=&holder=   and   #/issues/writeback
-import { esc, fmt, fmtDate, sevChip, toast, toastError, debounce, emptyHTML, formDialog } from '../ui.js'
-import { raiseFlagDialog, closeFlagDialog, CAM_CATEGORIES } from '../components/flag-actions.js'
+import { esc, fmt, fmtDate, sevChip, toast, toastError, debounce, emptyHTML } from '../ui.js'
+import { newRequestKey } from '../api.js'
+import { raiseFlagDialog, closeFlagDialog, CAM_CATEGORIES, FLAG_LIMITS } from '../components/flag-actions.js'
+import { limitedFormDialog } from '../components/want-actions.js'
 
 const STATUSES = [
   ['OPEN', 'Open'],
@@ -40,7 +42,8 @@ export async function render(root, ctx) {
     // Only the choices the severity box offers; anything else in a hand-typed URL means "all".
     severity: SEVERITY_FILTERS.some(([v]) => v && v === ctx.query.get('severity')) ? ctx.query.get('severity') : '',
     category: ctx.query.get('category') || '',
-    q: ctx.query.get('q') || '',
+    // A search pasted into the URL is cut to what the server accepts.
+    q: (ctx.query.get('q') || '').slice(0, FLAG_LIMITS.search),
     holder: ctx.query.get('holder') || '',
   }
   // Flags shown on screen, by id — the close/reopen buttons look their flag up here.
@@ -73,7 +76,7 @@ export async function render(root, ctx) {
         <div class="seg" role="group" aria-label="Status">${STATUSES.map(([v, l]) => `<button type="button" data-status="${v}" aria-pressed="${f.status === v}">${l}</button>`).join('')}</div>
         <label class="field">Severity <select data-f="severity">${SEVERITY_FILTERS.map(([v, l]) => `<option value="${v}" ${v === f.severity ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         <label class="field">Category <select data-f="category"><option value="">All categories</option></select></label>
-        <label class="field iss-q"><input type="search" data-f="q" value="${esc(f.q)}" placeholder="Search order no., hyperMILL name, text…" aria-label="Search issues" autocomplete="off"></label>
+        <label class="field iss-q"><input type="search" data-f="q" value="${esc(f.q)}" maxlength="${FLAG_LIMITS.search}" placeholder="Search order no., hyperMILL name, text…" aria-label="Search issues" autocomplete="off"></label>
         <span data-holderpill></span>
         <button class="btn ghost sm" type="button" data-act="csv" title="The issues matching these filters, for Excel">Export CSV</button>
         <span class="count-line" data-count></span>
@@ -339,13 +342,23 @@ export async function render(root, ctx) {
     if (!flag) return
     const who = await ctx.ensureUser()
     if (!who) return
-    const row = await formDialog({
+    const requestKey = newRequestKey()
+    const row = await limitedFormDialog({
       title: 'Reopen issue',
       intro: `${sevChip(flag.severity)} <b>${esc(flag.holder_id ? holderLabel(flag) : 'General issue')}</b> <span class="muted">· #${esc(flag.flag_id)}</span>
         <br>${esc(flag.message)}<br><span class="tiny muted">The earlier closure (${esc(fmtDate(flag.closed_on))}, ${esc(flag.closed_by || '?')}) is kept in the issue's action history.</span>`,
-      fields: [{ name: 'note', label: 'Why is it being reopened?', type: 'textarea', required: true, placeholder: 'e.g. Still shows 90GL in hyperMILL after the last import' }],
+      fields: [
+        {
+          name: 'note',
+          label: 'Why is it being reopened?',
+          type: 'textarea',
+          required: true,
+          maxlength: FLAG_LIMITS.text,
+          placeholder: 'e.g. Still shows 90GL in hyperMILL after the last import',
+        },
+      ],
       submitLabel: 'Reopen issue',
-      onSubmit: (v) => ctx.api.post(`/api/flags/${encodeURIComponent(flag.flag_id)}/reopen`, { note: v.note }),
+      onSubmit: (v) => ctx.api.post(`/api/flags/${encodeURIComponent(flag.flag_id)}/reopen`, { note: v.note }, { idempotencyKey: requestKey }),
     })
     if (!row) return
     toast(`Issue #${row.flag_id} reopened`, 'ok')

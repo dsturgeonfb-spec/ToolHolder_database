@@ -109,6 +109,41 @@ test('bad filter values are refused with a plain message', async () => {
   assert.match(v.body.error, /HIGH, MEDIUM, LOW or INFO/)
 })
 
+test('search: a very long pasted search is a plain 400, not a server error; only the first 20 words count', async () => {
+  // ~1000 words used to build an SQL expression deeper than SQLite allows (500 "Expression tree is too large").
+  const huge = await t.api('GET', '/api/flags?q=' + encodeURIComponent(Array(1000).fill('ab').join(' ')))
+  assert.equal(huge.status, 400, JSON.stringify(huge.body))
+  assert.match(huge.body.error, /Search text is too long \(at most 200 characters\)/)
+  const csv = await t.api('GET', '/api/export/flags.csv?q=' + encodeURIComponent('x'.repeat(201)))
+  assert.equal(csv.status, 400)
+  assert.match(csv.body.error, /Search text is too long/)
+  // 200 characters is allowed.
+  const max = await t.api('GET', '/api/flags?q=' + encodeURIComponent(('a '.repeat(100)).slice(0, 200)))
+  assert.equal(max.status, 200)
+  // Words after the 20th are ignored, as in the catalogue search.
+  const capped = await t.api('GET', '/api/flags?q=' + encodeURIComponent(`${Array(20).fill('a').join(' ')} zzzz-no-such-thing`))
+  assert.equal(capped.status, 200)
+  assert.equal(capped.body.length, (await t.api('GET', '/api/flags?q=a')).body.length)
+})
+
+test('raise: over-long text is refused with a message that names the field', async () => {
+  const before = Number(db().value('SELECT COUNT(*) FROM data_flags'))
+  const ok = { holder_id: 'H0048', severity: 'LOW', category: 'Data source', message: 'Long action test' }
+  const action = await t.api('POST', '/api/flags', { ...ok, action: 'x'.repeat(2001) })
+  assert.equal(action.status, 400)
+  assert.match(action.body.error, /What should be done \(action\) is too long \(at most 2000 characters\)/)
+  const holder = await t.api('POST', '/api/flags', { ...ok, holder_id: 'H'.repeat(41) })
+  assert.equal(holder.status, 400)
+  assert.match(holder.body.error, /Holder id is too long/)
+  const category = await t.api('POST', '/api/flags', { ...ok, category: 'c'.repeat(61) })
+  assert.equal(category.status, 400)
+  assert.match(category.body.error, /Category is too long/)
+  assert.equal(Number(db().value('SELECT COUNT(*) FROM data_flags')), before, 'nothing was written')
+  // 2000 characters is still fine.
+  const fits = await t.api('POST', '/api/flags', { ...ok, action: 'y'.repeat(2000) })
+  assert.equal(fits.status, 201)
+})
+
 test('categories: distinct, sorted', async () => {
   const r = await t.api('GET', '/api/flags/categories')
   assert.equal(r.status, 200)

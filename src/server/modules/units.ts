@@ -27,6 +27,7 @@ const DEFAULT_INTERVAL = 180
 const MAX_UNIT_ID = 40
 const MAX_RUNOUT_UM = 1000
 const MAX_NOTE = 2000
+const MAX_SERIAL = 80
 
 export type DueState = 'overdue' | 'due_soon' | 'ok' | 'never' | null
 
@@ -211,13 +212,6 @@ function parseUnitId(v: unknown): string {
   return s
 }
 
-/** Optional text with a message that names the field (optStr's own says only "Value is too long"). */
-function optText(v: unknown, max: number, label: string): string | null {
-  const s = optStr(v, Number.MAX_SAFE_INTEGER)
-  if (s && s.length > max) throw new HttpError(400, `${label} is too long — keep it under ${max} characters.`)
-  return s
-}
-
 function parseRunout(v: unknown, required: boolean): number | null {
   if (v === null || v === undefined || String(v).trim() === '') {
     if (required) throw new HttpError(400, 'Enter the measured runout in µm (0 or more).')
@@ -323,11 +317,11 @@ export function register(r: Router, ctx: AppContext): void {
     const b = (req.body ?? {}) as Record<string, unknown>
     const unitId = parseUnitId(b.unit_id)
     const holderId = requireHolder(db, b.holder_id)
-    const serial = optText(b.serial_no, 80, "Maker's serial no.")
+    const serial = optStr(b.serial_no, MAX_SERIAL, "Maker's serial no.")
     const locationId = parseLocation(db, b.location_id)
     const runout = parseRunout(b.runout_check_um, false)
     const lastInspected = parseDate(b.last_inspected, 'Last inspected')
-    const note = optText(b.note, MAX_NOTE, 'Note')
+    const note = optStr(b.note, MAX_NOTE, 'Note')
     return db.tx(() => {
       // Case-insensitive: "u-12" and "U-12" etched on two holders would be the same number to a person.
       const clash = db.get<{ unit_id: string; manufacturer: string; order_no: string }>(
@@ -385,7 +379,7 @@ export function register(r: Router, ctx: AppContext): void {
         }
       }
       if (has(b, 'serial_no')) {
-        const serial = optText(b.serial_no, 80, "Maker's serial no.")
+        const serial = optStr(b.serial_no, MAX_SERIAL, "Maker's serial no.")
         if (serial !== cur.serial_no) {
           sets.push('serial_no = ?')
           params.push(serial)
@@ -417,7 +411,7 @@ export function register(r: Router, ctx: AppContext): void {
           changes.push(`last inspected ${cur.last_inspected ?? '—'} → ${last ?? '—'}`)
         }
       }
-      const remark = has(b, 'note') ? optText(b.note, MAX_NOTE, 'Note') : null
+      const remark = has(b, 'note') ? optStr(b.note, MAX_NOTE, 'Note') : null
       if (!sets.length && !remark) return cur
       if (sets.length) db.run(`UPDATE holder_units SET ${sets.join(', ')} WHERE unit_id = ?`, [...params, id])
       // A note sent with an edit is a remark added to the log — the log itself is never rewritten.
@@ -436,7 +430,7 @@ export function register(r: Router, ctx: AppContext): void {
     const runout = parseRunout(b.runout_check_um, true)!
     if (typeof b.passed !== 'boolean') throw new HttpError(400, 'Say whether the unit passed the inspection (passed: true or false).')
     const passed = b.passed
-    const note = optText(b.note, MAX_NOTE, 'Note')
+    const note = optStr(b.note, MAX_NOTE, 'Note')
     if (!passed && !note) throw new HttpError(400, 'Say what failed (note) — it is the reason the unit goes into quarantine.')
     return db.tx(() => {
       const cur = getUnit(db, id)
@@ -470,7 +464,7 @@ export function register(r: Router, ctx: AppContext): void {
     const status = String(b.status ?? '').trim().toUpperCase()
     if (!(UNIT_STATUSES as readonly string[]).includes(status))
       throw new HttpError(400, 'Status must be IN_SERVICE, QUARANTINE or SCRAPPED.')
-    const note = optText(b.note, MAX_NOTE, 'Note')
+    const note = optStr(b.note, MAX_NOTE, 'Note')
     if (!note) throw new HttpError(400, 'A status change needs a note — say why (e.g. "re-ground taper, runout 2 µm", or the NCR no.).')
     return db.tx(() => {
       const cur = getUnit(db, id)

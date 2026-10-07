@@ -1,8 +1,9 @@
 // Serialised (#/units?status=&due=&q=): holders tracked one by one — each with the number etched on it, its own
 // balance/runout certificate, presetter ID or chip. Shows when each is next due for a runout check, flags the
-// overdue ones, records inspections (a fail quarantines the unit) and status changes (always with a note).
+// overdue ones, records inspections (a fail quarantines the unit), status changes (always with a note) and edits
+// (where it is kept, serial no., a remark) — every one appended to the unit's log.
 import { esc, fmt, fmtDate, toastError, debounce, emptyHTML, confirmDialog } from '../ui.js'
-import { addUnitDialog, inspectUnitDialog, unitStatusDialog, unitStatusChip } from '../components/unit-actions.js'
+import { addUnitDialog, editUnitDialog, inspectUnitDialog, unitStatusDialog, unitStatusChip } from '../components/unit-actions.js'
 import { pickHolderDialog } from '../components/want-actions.js'
 import { openStockAction } from '../components/stock-actions.js'
 
@@ -188,6 +189,7 @@ export async function render(root, ctx) {
         <td data-label="Status">${unitStatusChip(u.status)}</td>
         <td class="actions un-acts">
           ${scrapped ? '' : `<button class="btn sm" type="button" data-act="inspect" data-id="${id}">Inspect…</button>`}
+          <button class="btn sm ghost" type="button" data-act="edit" data-id="${id}" title="Where it is kept, serial no., a note for its log">Edit…</button>
           <button class="btn sm ghost" type="button" data-act="status" data-id="${id}">Status…</button>
           <button class="btn sm ghost" type="button" data-act="log" data-id="${id}" aria-expanded="${open}" aria-controls="un-log-${id}">Log ${open ? '▾' : '▸'}</button>
         </td>
@@ -218,7 +220,8 @@ export async function render(root, ctx) {
         `Unit ${res.unit_id} is marked scrapped, but the stock tally still counts the holder. Book the scrap (with the NCR no.) so ${holderLabel(res)} comes off the books.`,
         { ok: 'Book scrap now', danger: true },
       )
-      if (go && (await openStockAction('scrap', res))) ctx.refreshSummary()
+      // Preselect where this unit is, not wherever most of the holder's stock happens to be.
+      if (go && (await openStockAction('scrap', res, { locationId: res.location_id ?? undefined }))) ctx.refreshSummary()
     }
   }
 
@@ -285,6 +288,9 @@ export async function render(root, ctx) {
         }
         case 'status':
           if (u) await changeStatus(u)
+          return
+        case 'edit':
+          if (u && (await editUnitDialog(u))) await afterWrite()
           return
       }
     } catch (err) {

@@ -5,9 +5,12 @@
 //   The row is the server's want-list line (holder fields joined in) plus `merged: true` when the quantity
 //   was added to the holder's existing OPEN line instead of starting a new one.
 // The dialog posts the line and shows a toast; the caller refreshes its own view.
-// Also exported (used by the Want list and Serialised views):
+// Also exported:
 //   pickHolderDialog({ title, intro, scope }) -> Promise<holder|null>   search picker over GET /api/holders
-import { api } from '../api.js'
+//                                                (Want list and Serialised views)
+//   limitedFormDialog(opts)                   -> formDialog that honours a `maxlength` on its fields
+//                                                (want, unit and issue dialogs)
+import { api, newRequestKey } from '../api.js'
 import { debounce, esc, fmt, formDialog, toast } from '../ui.js'
 import { ensureUser } from '../state.js'
 
@@ -20,8 +23,61 @@ export const WANT_STATUS_LABEL = {
   CANCELLED: 'Cancelled',
 }
 const MAX_QTY = 999
+/** Same limit as the server (purchasing.ts MAX_REASON). */
+const MAX_REASON = 1000
 
 const label = (h) => `${h.manufacturer || ''} ${h.order_no || h.holder_id}`.trim()
+
+/**
+ * formDialog, plus a `maxlength` on any field that has one, so over-long text stops in the form instead of
+ * coming back from the server as an error. formDialog (ui.js) has no maxlength option of its own, but it
+ * builds and opens its dialog synchronously, so the newest open dialog is this one.
+ */
+export function limitedFormDialog(opts) {
+  const done = formDialog(opts)
+  const d = [...document.querySelectorAll('dialog[open]')].pop()
+  for (const f of opts.fields) if (f.maxlength && d) d.querySelector(`[name="${f.name}"]`)?.setAttribute('maxlength', String(f.maxlength))
+  return done
+}
+
+const sumQty = (lines) => lines.reduce((n, w) => n + (Number(w.qty_wanted) || 0), 0)
+
+/**
+ * The holder's lines still wanted (OPEN / QUOTED / ORDERED). The holder page sends its rows along; list
+ * holders only carry the total (`on_want_list`), so the lines are looked up. null if that fails.
+ */
+async function activeLines(holder) {
+  const active = (w) => w.status === 'OPEN' || w.status === 'QUOTED' || w.status === 'ORDERED'
+  if (Array.isArray(holder.wishlist)) return holder.wishlist.filter(active)
+  if (!(Number(holder.on_want_list) > 0)) return []
+  try {
+    const rows = await api.get(`/api/wishlist?status=active&holder_id=${encodeURIComponent(holder.holder_id)}`)
+    return Array.isArray(rows) ? rows.filter(active) : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * What adding will do, as the server does it: the quantity goes onto the holder's OPEN line; a line that is
+ * already quoted or ordered is left alone and a new open line is started.
+ */
+function alreadyWantedHTML(lines, fallbackQty) {
+  if (lines === null) {
+    return fallbackQty
+      ? ` <b>${esc(fallbackQty)} already on the want list.</b> If its line is still open the quantity is added to it; if it is quoted or ordered, a new line is started.`
+      : ''
+  }
+  const open = sumQty(lines.filter((w) => w.status === 'OPEN'))
+  const later = lines.filter((w) => w.status !== 'OPEN')
+  const laterQty = sumQty(later)
+  const states = [...new Set(later.map((w) => w.status))]
+  const laterWord = states.length === 1 ? (states[0] === 'QUOTED' ? 'quoted' : 'ordered') : 'quoted or ordered'
+  if (open) return ` <b>${esc(open)} already on its open line</b> — this quantity is added to it.${laterQty ? ` ${esc(laterQty)} more already ${laterWord}.` : ''}`
+  if (laterQty)
+    return ` <b>${esc(laterQty)} already ${laterWord}</b> — this starts a new line for the next RFQ (the ${laterWord} ${later.length === 1 ? 'line is' : 'lines are'} not changed).`
+  return ''
+}
 
 /** Open 'Purchasing' issues for a holder (e.g. "MAPAL also lists another order no.") — a hint, so failures are ignored. */
 async function purchasingNotes(holder) {
@@ -39,9 +95,10 @@ export async function addToWantListDialog(holder) {
   if (!holder || !holder.holder_id) throw new Error('addToWantListDialog needs a holder with a holder_id')
   const who = await ensureUser()
   if (!who) return null
-  const notes = await purchasingNotes(holder)
+  const [notes, lines] = await Promise.all([purchasingNotes(holder), activeLines(holder)])
+  // One key for every submit of this dialog: a resend after a lost answer can't add the quantity twice.
+  const requestKey = newRequestKey()
   const onSite = Number(holder.qty_on_site) || 0
-  const wanted = Number(holder.on_want_list) || 0
   const facts = [
     holder.spec_code,
     holder.series || holder.product_name,
@@ -52,15 +109,13 @@ export async function addToWantListDialog(holder) {
   const intro = `<span class="wl-dlg">
       <b class="mono">${esc(label(holder))}</b>
       ${facts.length ? `<span class="muted">${esc(facts.join(' · '))}</span>` : ''}
-      <span>${onSite > 0 ? `${esc(onSite)} on site now.` : 'None on site now.'}${
-        wanted ? ` <b>${esc(wanted)} already on the want list</b> — the quantity is added to its open line.` : ''
-      }</span>
+      <span>${onSite > 0 ? `${esc(onSite)} on site now.` : 'None on site now.'}${alreadyWantedHTML(lines, Number(holder.on_want_list) || 0)}</span>
       ${notes
         .map((n) => `<span class="wl-dlg-note"><span class="tag warn">Check</span> ${esc(n.message)}${n.action ? ` → ${esc(n.action)}` : ''}</span>`)
         .join('')}
       <span class="tiny muted">Recorded as added by ${esc(who)} today. Nothing is ordered until someone sends the RFQ.</span>
     </span>`
-  const row = await formDialog({
+  const row = await limitedFormDialog({
     title: 'Add to want list',
     intro,
     fields: [
@@ -69,6 +124,7 @@ export async function addToWantListDialog(holder) {
         name: 'reason',
         label: 'Reason',
         type: 'textarea',
+        maxlength: MAX_REASON,
         placeholder: 'e.g. Job 4711 needs Ø32 at 110 GL · second holder for DMG cell 2 · replacement for scrapped unit',
         help: 'Printed on the RFQ notes, so the maker and whoever orders can see why.',
       },
@@ -77,7 +133,11 @@ export async function addToWantListDialog(holder) {
     onSubmit: async (v) => {
       if (!Number.isInteger(v.qty_wanted) || v.qty_wanted < 1 || v.qty_wanted > MAX_QTY)
         throw new Error(`Quantity wanted must be a whole number from 1 to ${MAX_QTY}.`)
-      return api.post('/api/wishlist', { holder_id: holder.holder_id, qty_wanted: v.qty_wanted, reason: v.reason || null })
+      return api.post(
+        '/api/wishlist',
+        { holder_id: holder.holder_id, qty_wanted: v.qty_wanted, reason: v.reason || null },
+        { idempotencyKey: requestKey },
+      )
     },
   })
   if (!row) return null

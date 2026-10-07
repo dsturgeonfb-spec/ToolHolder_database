@@ -4,9 +4,15 @@
 // The returned row is the server's flag object (holder maker/order no. joined in). raiseFlagDialog's
 // row carries `created: false` when an identical open flag already existed and was returned instead.
 // These only post the flag: the caller refreshes its list and the header summary.
-import { esc, formDialog, sevChip } from '../ui.js'
-import { api } from '../api.js'
+// Also exported (used by the Issues view): FLAG_LIMITS.
+// Each dialog sends one request key for all its submit attempts, so a resend after a lost answer is not booked twice.
+import { esc, sevChip } from '../ui.js'
+import { api, newRequestKey } from '../api.js'
 import { ensureUser } from '../state.js'
+import { limitedFormDialog } from './want-actions.js'
+
+/** The server's limits (flags.ts), set on the inputs so over-long text stops in the form. */
+export const FLAG_LIMITS = { category: 60, text: 2000, search: 200 }
 
 /** Categories whose fixes are made in the hyperMILL tool database (same list as the server's write-back). */
 export const CAM_CATEGORIES = ['CAM model', 'Naming', 'Gauge length', 'hyperMILL']
@@ -69,7 +75,8 @@ export async function raiseFlagDialog(holder) {
       ? `For <b>${esc(label)}</b>${holder.cam_name ? ` <span class="mono tiny">(hyperMILL: ${esc(holder.cam_name)})</span>` : ''}. Recorded as raised by ${esc(who)} today.`
       : `A <b>general issue</b> — not about one holder. Recorded as raised by ${esc(who)} today.`
   }</span>`
-  const res = await formDialog({
+  const requestKey = newRequestKey()
+  const res = await limitedFormDialog({
     title: 'Raise an issue',
     intro,
     fields: [
@@ -78,23 +85,35 @@ export async function raiseFlagDialog(holder) {
         name: 'category',
         label: 'Category',
         required: true,
+        maxlength: FLAG_LIMITS.category,
         list: listId,
         placeholder: 'e.g. Naming, Gauge length, CAM model, Data source',
         help: `CAM model, Naming, Gauge length and hyperMILL issues go on the hyperMILL write-back list for the CAM engineer.`,
       },
-      { name: 'message', label: 'What is wrong', type: 'textarea', required: true, placeholder: "e.g. hyperMILL comment says 90GL; Haimer's page says 80 mm" },
-      { name: 'action', label: 'What should be done', type: 'textarea', placeholder: 'e.g. Fix the comment in hyperMILL and check the holder model is the 80 mm one' },
+      {
+        name: 'message',
+        label: 'What is wrong',
+        type: 'textarea',
+        required: true,
+        maxlength: FLAG_LIMITS.text,
+        placeholder: "e.g. hyperMILL comment says 90GL; Haimer's page says 80 mm",
+      },
+      {
+        name: 'action',
+        label: 'What should be done',
+        type: 'textarea',
+        maxlength: FLAG_LIMITS.text,
+        placeholder: 'e.g. Fix the comment in hyperMILL and check the holder model is the 80 mm one',
+      },
     ],
     submitLabel: 'Raise issue',
     wide: true,
     onSubmit: (v) =>
-      api.post('/api/flags', {
-        holder_id: holder?.holder_id || null,
-        severity: v.severity,
-        category: v.category,
-        message: v.message,
-        action: v.action || null,
-      }),
+      api.post(
+        '/api/flags',
+        { holder_id: holder?.holder_id || null, severity: v.severity, category: v.category, message: v.message, action: v.action || null },
+        { idempotencyKey: requestKey },
+      ),
   })
   return res || null
 }
@@ -111,7 +130,8 @@ export async function closeFlagDialog(flag) {
       <span class="muted">· ${esc(flag.category || 'Uncategorised')} · #${esc(flag.flag_id)}</span>
       <span class="msg">${esc(flag.message)}</span>${flag.action ? `<span class="act">→ ${esc(flag.action)}</span>` : ''}</span>
     Closed by <b>${esc(who)}</b> today.${cam ? ' This is a hyperMILL fix: say what you changed in the hyperMILL tool database.' : ''}`
-  const res = await formDialog({
+  const requestKey = newRequestKey()
+  const res = await limitedFormDialog({
     title: cam ? 'Mark fixed in hyperMILL' : 'Close issue',
     intro,
     fields: [
@@ -120,13 +140,14 @@ export async function closeFlagDialog(flag) {
         label: cam ? 'What did you change in hyperMILL?' : 'What was done',
         type: 'textarea',
         required: true,
+        maxlength: FLAG_LIMITS.text,
         placeholder: cam ? 'e.g. Comment changed to "HAIMER 8mm STD SHRINK A63-140-08 80GL"' : 'e.g. Checked against the Haimer drawing — nose Ø is 22 mm, catalogue corrected',
         help: 'An auditor will read this: what was checked or changed, and against what.',
       },
     ],
     submitLabel: cam ? 'Mark fixed' : 'Close issue',
     wide: true,
-    onSubmit: (v) => api.post(`/api/flags/${encodeURIComponent(flag.flag_id)}/close`, { note: v.note }),
+    onSubmit: (v) => api.post(`/api/flags/${encodeURIComponent(flag.flag_id)}/close`, { note: v.note }, { idempotencyKey: requestKey }),
   })
   return res || null
 }

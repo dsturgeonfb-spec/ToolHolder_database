@@ -26,6 +26,9 @@ const STANDARD_CATEGORIES = [...CAM_CATEGORIES, 'Data source', 'Purchasing']
 
 const MAX_CATEGORY = 60
 const MAX_TEXT = 2000
+/** Free-text search limits, as in the other searches: longer pastes are refused, extra words ignored. */
+const MAX_SEARCH = 200
+const MAX_SEARCH_TERMS = 20
 
 export interface FlagRow {
   flag_id: number
@@ -76,7 +79,7 @@ function filterFromQuery(q: URLSearchParams): FlagFilter {
     severity: q.get('severity'),
     category: q.get('category'),
     holder_id: q.get('holder_id'),
-    q: q.get('q'),
+    q: optStr(q.get('q'), MAX_SEARCH, 'Search text'),
   }
 }
 
@@ -133,8 +136,9 @@ export function listFlags(db: Db, filter: FlagFilter): FlagRow[] {
     params.push(holderId)
   }
 
-  // Every whitespace-separated term must match somewhere; "#12" finds flag 12.
-  for (const term of (filter.q ?? '').trim().split(/\s+/).filter(Boolean)) {
+  // Every whitespace-separated term must match somewhere; "#12" finds flag 12. Each term adds a 13-way
+  // OR group, so the number of terms is capped (SQLite refuses expressions nested ~1000 deep).
+  for (const term of (filter.q ?? '').trim().split(/\s+/).filter(Boolean).slice(0, MAX_SEARCH_TERMS)) {
     const idTerm = /^#?(\d+)$/.exec(term)
     const like = `%${likeEscape(term)}%`
     const ors = SEARCH_FIELDS.map((f) => `${f} LIKE ? ESCAPE '\\'`)
@@ -339,8 +343,8 @@ export function register(r: Router, ctx: AppContext): void {
     if (!SEVERITIES.includes(severity as Severity)) throw new HttpError(400, `Unknown severity ${severity} — use HIGH, MEDIUM, LOW or INFO`)
     const category = canonicalCategory(db, str(b.category, 'Category', MAX_CATEGORY))
     const message = str(b.message, 'What is wrong (message)', MAX_TEXT)
-    const action = optStr(b.action, MAX_TEXT)
-    const holderId = optStr(b.holder_id, 40)
+    const action = optStr(b.action, MAX_TEXT, 'What should be done (action)')
+    const holderId = optStr(b.holder_id, 40, 'Holder id')
     if (holderId && !db.value(`SELECT 1 FROM holders WHERE holder_id = ?`, [holderId]))
       throw new HttpError(404, `There is no holder ${holderId} — pick the holder from the search list, or raise a general issue.`)
     const res = db.tx(() =>
