@@ -35,16 +35,16 @@ jobs:
         run: npm run build
 
       - name: Unit and API tests (incl. BUILD_SPEC §7 acceptance checks)
-        run: node --test --test-concurrency=2 "dist/test/{unit,api}/**/*.test.js"
+        run: node --test --test-reporter=spec --test-concurrency=2 "dist/test/{unit,api}/**/*.test.js"
 
       - name: Install Chromium for the browser tests
         run: npx playwright-core install --with-deps chromium
 
       - name: Browser tests
-        run: node --test --test-concurrency=1 "dist/test/e2e/**/*.test.js"
+        run: node --test --test-reporter=spec --test-concurrency=1 "dist/test/e2e/**/*.test.js"
 
       - name: Desktop app smoke test
-        run: xvfb-run -a node --test dist/test/electron/smoke.test.js
+        run: xvfb-run -a node --test --test-reporter=spec dist/test/electron/smoke.test.js
 
       - name: Seed rebuild still matches the committed catalogue
         # build_catalogue.py regenerates the seed from data/raw; the committed DB must agree on the
