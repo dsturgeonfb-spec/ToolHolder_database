@@ -5,7 +5,11 @@
 //     holder: { holder_id, manufacturer, order_no, ... } (any holder object from the API)
 //     opts: { locationId?: number, qty?: number, reference?: string }  preselects a location / pre-fills qty and reference
 // 'adjust' doesn't open a dialog: a correction is a physical count, so it opens Count mode on the holder.
-import { api } from '../api.js'
+//
+// Retry-safe: each dialog gets one request key when it opens, sent (Idempotency-Key) with every press of
+// its Book button. If the Wi-Fi drops after the server booked it, pressing Book again returns that first
+// booking instead of booking twice. The toast reports what the server says was booked.
+import { api, newRequestKey } from '../api.js'
 import { esc, formDialog, infoDialog, toast, todayIso } from '../ui.js'
 import { ensureUser, refreshSummary } from '../state.js'
 
@@ -57,6 +61,8 @@ export async function openStockAction(kind, holder, opts = {}) {
     return false
   }
 
+  // What the server booked (on a replayed retry this is the first booking, whatever the form says now).
+  const bookedQty = (r, fallback) => Math.abs(Number(r.posted?.[0]?.qty_delta ?? fallback))
   const qtyField = (help) => ({ name: 'qty', label: 'Quantity', type: 'number', required: true, value: Number.isInteger(opts.qty) && opts.qty > 0 ? opts.qty : 1, min: 1, step: 1, help })
   const noteField = (labelText = 'Note', placeholder = '') => ({ name: 'note', label: labelText, type: 'textarea', placeholder })
   const intro = (text) => `<b>${esc(name)}</b>${holder.series ? ` · ${esc(holder.series)}` : ''}<br>${esc(text)}`
@@ -76,7 +82,7 @@ export async function openStockAction(kind, holder, opts = {}) {
       ],
       body: (v) => ({ txn_type: 'RECEIPT', location_id: Number(v.location_id), qty: v.qty, reference: v.reference, txn_date: v.txn_date, note: v.note }),
       path: '/api/transactions',
-      done: (v, r) => `Booked receipt: ${v.qty} × ${holder.order_no} at ${r.posted[0]?.location ?? ''}`,
+      done: (v, r) => `Booked receipt: ${bookedQty(r, v.qty)} × ${holder.order_no} at ${r.posted[0]?.location ?? ''}`,
     }
   } else if (kind === 'return') {
     // A holder back from repair is still on the books at the vendor location: that's a move, not a return.
@@ -99,7 +105,7 @@ export async function openStockAction(kind, holder, opts = {}) {
       ],
       body: (v) => ({ txn_type: 'RETURN', location_id: Number(v.location_id), qty: v.qty, reference: v.reference, txn_date: v.txn_date, note: v.note }),
       path: '/api/transactions',
-      done: (v, r) => `Booked return: ${v.qty} × ${holder.order_no} at ${r.posted[0]?.location ?? ''}`,
+      done: (v, r) => `Booked return: ${bookedQty(r, v.qty)} × ${holder.order_no} at ${r.posted[0]?.location ?? ''}`,
     }
   } else if (kind === 'move') {
     const firstOther = realOptions.find((o) => o.value !== preHeld)
@@ -116,7 +122,7 @@ export async function openStockAction(kind, holder, opts = {}) {
       ],
       body: (v) => ({ from_location_id: Number(v.from_location_id), to_location_id: Number(v.to_location_id), qty: v.qty, reference: v.reference, note: v.note }),
       path: '/api/moves',
-      done: (v, r) => `Moved ${v.qty} × ${holder.order_no}: ${r.posted[0]?.location ?? ''} → ${r.posted[1]?.location ?? ''}`,
+      done: (v, r) => `Moved ${bookedQty(r, v.qty)} × ${holder.order_no}: ${r.posted[0]?.location ?? ''} → ${r.posted[1]?.location ?? ''}`,
     }
   } else {
     dlg = {
@@ -132,10 +138,12 @@ export async function openStockAction(kind, holder, opts = {}) {
       ],
       body: (v) => ({ txn_type: 'SCRAP', location_id: Number(v.location_id), qty: v.qty, reference: v.reference, note: v.note }),
       path: '/api/transactions',
-      done: (v, r) => `Scrapped ${v.qty} × ${holder.order_no} at ${r.posted[0]?.location ?? ''} (${v.reference})`,
+      done: (v, r) => `Scrapped ${bookedQty(r, v.qty)} × ${holder.order_no} at ${r.posted[0]?.location ?? ''} (${r.posted[0]?.reference ?? v.reference})`,
     }
   }
 
+  // One key for this dialog, made as it opens and sent with every attempt (see the note at the top).
+  const requestKey = newRequestKey()
   const result = await formDialog({
     title: dlg.title,
     intro: dlg.intro,
@@ -144,7 +152,7 @@ export async function openStockAction(kind, holder, opts = {}) {
     danger: !!dlg.danger,
     onSubmit: async (v) => {
       if (!Number.isInteger(v.qty) || v.qty < 1) throw new Error('Quantity must be a whole number, 1 or more.')
-      const res = await api.post(dlg.path, { holder_id: holder.holder_id, ...dlg.body(v) })
+      const res = await api.post(dlg.path, { holder_id: holder.holder_id, ...dlg.body(v) }, { idempotencyKey: requestKey })
       return { v, res }
     },
   })

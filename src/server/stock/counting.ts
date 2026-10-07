@@ -4,7 +4,7 @@
 import type { AppContext } from '../context.js'
 import { HttpError } from '../http.js'
 import { esc, printPage } from '../lib/html.js'
-import { nowStamp, today, unassignedLocationId } from '../domain.js'
+import { UNASSIGNED_LOCATION, nowStamp, today, unassignedLocationId } from '../domain.js'
 import { holderRows, type Holder } from './holders.js'
 import { SUPERSEDE_NOTE, defaultCountReference, getLocation, isUnassigned, type LocationRow } from './ledger.js'
 
@@ -105,28 +105,45 @@ export function countList(ctx: AppContext, o: CountListOptions): { location: Loc
  * holders found that aren't listed, and a sign-off. Default list: what is booked at the location
  * plus holders whose location is still unknown (opening balance at Unassigned); for the
  * Unassigned location itself, everything on site. A scope (as in count mode) overrides that.
+ * `blind`: a blind count — the sheet leaves out what the books expect (no "Booked here" column,
+ * no "not located" hint), so the counter writes down what they see.
  */
 export function countSheetHtml(
   ctx: AppContext,
-  o: { location_id: number; scope?: CountScope | null; type?: string | null; mk?: string | null; reference?: string | null; user?: string | null },
+  o: {
+    location_id: number
+    scope?: CountScope | null
+    type?: string | null
+    mk?: string | null
+    reference?: string | null
+    user?: string | null
+    blind?: boolean
+  },
 ): string {
   const location = getLocation(ctx.db, o.location_id)
+  const blind = !!o.blind
+  const atUnassigned = isUnassigned(location)
   let holders: CountListItem[]
   let scopeText: string
   if (o.scope) {
     holders = countList(ctx, { location_id: location.location_id, scope: o.scope, type: o.type, mk: o.mk }).holders
     scopeText = { site: 'holders expected on site', all: 'every holder in the catalogue', location: `holders booked at ${location.name}` }[o.scope]
-  } else if (isUnassigned(location)) {
+  } else if (atUnassigned) {
     holders = countList(ctx, { location_id: location.location_id, scope: 'site', type: o.type, mk: o.mk }).holders
     scopeText = 'every holder on site'
   } else {
-    // A holder still on the opening balance could be anywhere on site, so it belongs on every sheet until it is counted.
+    // A holder still on the opening balance could be anywhere on site, so it belongs on every sheet until it is found.
     holders = countList(ctx, { location_id: location.location_id, scope: 'site', type: o.type, mk: o.mk }).holders.filter(
       (h) => h.qty_at_location !== 0 || h.qty_unassigned > 0,
     )
     scopeText = `holders booked at ${location.name}, and holders not yet located (still on the opening balance)`
   }
   const reference = o.reference || defaultCountReference(location)
+  // Blind: no "Booked here" cell at all, so the sheet gives nothing away.
+  const booked = (h: CountListItem) =>
+    blind
+      ? ''
+      : `<td class="n">${h.qty_at_location !== 0 ? esc(h.qty_at_location) : h.qty_unassigned > 0 ? '<span class="muted">not located</span>' : '0'}</td>`
   const rows = holders
     .map(
       (h, i) => `<tr>
@@ -136,22 +153,35 @@ export function countSheetHtml(
   <td class="mono"><b>${esc(h.order_no)}</b></td>
   <td>${esc([h.series, h.clamp_spec].filter(Boolean).join(' · '))}</td>
   <td class="n">${h.gauge_length_mm != null ? esc(h.gauge_length_mm) : '–'}</td>
-  <td class="n">${h.qty_at_location !== 0 ? esc(h.qty_at_location) : h.qty_unassigned > 0 ? '<span class="muted">not located</span>' : '0'}</td>
+  ${booked(h)}
   <td class="box"></td>
   <td style="width:30mm"></td>
 </tr>`,
     )
     .join('')
-  const blanks = Array.from({ length: 6 }, () => `<tr><td class="n">+</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="box"></td><td></td></tr>`).join('')
+  const blanks = Array.from(
+    { length: 6 },
+    () => `<tr><td class="n">+</td>${'<td></td>'.repeat(blind ? 5 : 6)}<td class="box"></td><td></td></tr>`,
+  ).join('')
+  // What a number means here (docs/API.md, the count rule).
+  const how = atUnassigned
+    ? `“${esc(UNASSIGNED_LOCATION)}” is not a place on the shop floor: on each line write how many are <b>still not located</b> — not found at any location. ` +
+      `0 writes the opening balance off (the holder leaves the site tally as not found anywhere), so count every real location first.`
+    : `Write the quantity physically at <b>${esc(location.name)}</b> on every line — including 0. A 0 for a holder that is not yet located only ` +
+      `means it is not here: it stays on the other sheets until it is found (or written off at “${esc(UNASSIGNED_LOCATION)}”).`
   const body = `
-<p class="sub">Reference <b class="mono">${esc(reference)}</b> · ${esc(holders.length)} line${holders.length === 1 ? '' : 's'}: ${esc(scopeText)}.</p>
-<p class="sub">Write the quantity physically at <b>${esc(location.name)}</b> on every line — including 0. Add holders you find that are not listed on the blank lines (maker + order no. as engraved). Book the counts in the app's Count mode with the same reference.</p>
+<p class="sub">Reference <b class="mono">${esc(reference)}</b> · ${esc(holders.length)} line${holders.length === 1 ? '' : 's'}: ${esc(scopeText)}.${
+    blind ? ' <b>Blind count</b> — the booked quantities are not printed.' : ''
+  }</p>
+<p class="sub">${how} Add holders you find that are not listed on the blank lines (maker + order no. as engraved). Book the counts in the app's Count mode with the same reference.</p>
 <table>
-<thead><tr><th class="n">#</th><th>ID</th><th>Maker</th><th>Order no.</th><th>Series · clamping</th><th class="n">GL mm</th><th class="n">Booked here</th><th>Counted</th><th>Note</th></tr></thead>
+<thead><tr><th class="n">#</th><th>ID</th><th>Maker</th><th>Order no.</th><th>Series · clamping</th><th class="n">GL mm</th>${
+    blind ? '' : '<th class="n">Booked here</th>'
+  }<th>Counted</th><th>Note</th></tr></thead>
 <tbody>${rows}${blanks}</tbody>
 </table>
 <div class="sign"><span>Counted by (name)</span><span>Signature</span><span>Date</span></div>
 <div class="sign"><span>Booked in app by</span><span>Checked by</span><span>Date</span></div>
 <p class="sub" style="margin-top:14px">Printed ${esc(nowStamp())}${o.user ? ` by ${esc(o.user)}` : ''}.</p>`
-  return printPage(`Count sheet — ${location.name}`, body, { subtitle: `Holder count · ${location.name}` })
+  return printPage(`Count sheet — ${location.name}`, body, { subtitle: `Holder count · ${location.name}${blind ? ' · blind count' : ''}` })
 }

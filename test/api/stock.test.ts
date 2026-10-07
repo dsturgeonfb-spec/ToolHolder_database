@@ -141,17 +141,19 @@ describe('physical counts', () => {
     assert.equal(onSite('H0001'), 2)
   })
 
-  test('count 0 removes a holder from site', async () => {
+  // The count rule changed in review: a 0 at a real location only means "not here". It no longer
+  // supersedes the opening balance (that made the holder vanish from every other location's list).
+  test('count 0 at a real location only says "not here": a not-yet-located holder stays unverified on site', async () => {
     const r = await t.api('POST', '/api/counts', { holder_id: 'H0002', location_id: CRIB, counted_qty: 0 })
     assert.equal(r.status, 200)
-    assert.equal(r.body.posted.length, 2)
+    assert.equal(r.body.posted.length, 1)
     assert.equal(r.body.posted[0].qty_delta, 0)
     assert.equal(r.body.posted[0].note, 'count confirmed, no change')
-    assert.equal(r.body.posted[1].qty_delta, -1)
-    assert.equal(onSite('H0002'), 0)
-    assert.equal(r.body.holder.count_status, 'counted')
+    assert.equal(onSite('H0002'), 1)
+    assert.equal(qtyAt('H0002', UNASSIGNED), 1)
+    assert.equal(r.body.holder.count_status, 'unverified')
     const s = await summary()
-    assert.equal(s.holders_on_site, 55 - 1) // H0001 is 2 now (54 + 1), H0002 gone
+    assert.equal(s.holders_on_site, 55) // H0001 is 2 now (54 + 1); H0002 still on site, not yet located
     // Still in today's count list at the crib, so counting it to 0 doesn't make it vanish mid-run.
     const list = await t.api('GET', '/api/count/list?location_id=2&scope=site')
     const h2 = list.body.holders.find((h: any) => h.holder_id === 'H0002')
@@ -161,12 +163,13 @@ describe('physical counts', () => {
   })
 
   test('counting AT the Unassigned location does not post a supersede row', async () => {
+    // Counting at Unassigned answers "how many are still not located": 1 there keeps it unverified.
     const r = await t.api('POST', '/api/counts', { holder_id: 'H0003', location_id: UNASSIGNED, counted_qty: 1 })
     assert.equal(r.status, 200)
     assert.equal(r.body.posted.length, 1)
     assert.equal(r.body.posted[0].location_id, UNASSIGNED)
     assert.equal(r.body.posted[0].qty_delta, 0)
-    assert.equal(r.body.holder.count_status, 'counted')
+    assert.equal(r.body.holder.count_status, 'unverified')
     assert.equal(onSite('H0003'), 1)
   })
 
@@ -241,7 +244,8 @@ describe('moves', () => {
   test('moving out of Unassigned locates a holder without counting it', async () => {
     const r = await t.api('POST', '/api/moves', { holder_id: 'H0006', from_location_id: UNASSIGNED, to_location_id: CRIB, qty: 1 })
     assert.equal(r.status, 200)
-    assert.equal(r.body.holder.count_status, 'unverified')
+    // Located (nothing waits at Unassigned any more) but not counted: 'booked' under the core v_count_status.
+    assert.equal(r.body.holder.count_status, 'booked')
     assert.equal(onSite('H0006'), 1)
   })
 
@@ -428,7 +432,8 @@ describe('count sheet', () => {
     assert.ok(r.text.includes('td class="box"'))
     assert.match(r.text, /Counted by/)
     assert.match(r.text, /Checked by/)
-    assert.ok(!r.text.includes(db().value<string>(`SELECT order_no FROM holders WHERE holder_id = 'H0002'`)! + '</b>'), 'H0002 was counted to 0 and is not located anywhere')
+    // H0002 was counted 0 at the crib: still not located, so it stays on the sheet until it is found or written off.
+    assert.ok(r.text.includes(db().value<string>(`SELECT order_no FROM holders WHERE holder_id = 'H0002'`)! + '</b>'), 'H0002 is still not located')
   })
 
   test('Unassigned lists everything on site; scope, filters and reference apply; location required', async () => {
