@@ -1,6 +1,6 @@
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
+import { PYTHON, runPython } from '../openpyxl.js'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { inflateRawSync } from 'node:zlib'
@@ -272,8 +272,8 @@ function unzipEntry(buf: Buffer, name: string): string | null {
   return null
 }
 
-function openpyxlSheets(buf: Buffer, file: string): Record<string, string[][]> | null {
-  if (spawnSync('python3', ['-I', '-c', 'import openpyxl'], { encoding: 'utf8' }).status !== 0) return null
+async function openpyxlSheets(buf: Buffer, file: string): Promise<Record<string, string[][]> | null> {
+  if (!PYTHON) return null
   const path = join(t.dataDir, file)
   writeFileSync(path, buf)
   const py = [
@@ -281,9 +281,7 @@ function openpyxlSheets(buf: Buffer, file: string): Record<string, string[][]> |
     'wb = openpyxl.load_workbook(sys.argv[1])',
     'print(json.dumps({ws.title: [[("" if c is None else str(c)) for c in row] for row in ws.iter_rows(values_only=True)] for ws in wb.worksheets}))',
   ].join('\n')
-  const r = spawnSync('python3', ['-I', '-c', py, path], { encoding: 'utf8' })
-  assert.equal(r.status, 0, r.stderr)
-  return JSON.parse(r.stdout)
+  return JSON.parse(await runPython(py, [path]))
 }
 
 test('rfq.xlsx: a valid workbook with one sheet per maker', async (tc) => {
@@ -299,7 +297,7 @@ test('rfq.xlsx: a valid workbook with one sheet per maker', async (tc) => {
   assert.match(mapal, /30524702/)
   assert.match(mapal, /31229439/)
   assert.ok(!mapal.includes('A63.020.16'))
-  const sheets = openpyxlSheets(buf, 'rfq.xlsx')
+  const sheets = await openpyxlSheets(buf, 'rfq.xlsx')
   if (!sheets) return tc.skip('python3 + openpyxl not available')
   assert.deepEqual(Object.keys(sheets), ['HAIMER', 'MAPAL'])
   assert.equal(sheets.HAIMER!.length, 2)
@@ -315,7 +313,7 @@ test('rfq.xlsx with nothing to quote still opens (one empty RFQ sheet)', async (
   assert.equal(res.status, 200)
   const buf = Buffer.from(await res.arrayBuffer())
   assert.deepEqual([...unzipEntry(buf, 'xl/workbook.xml')!.matchAll(/<sheet name="([^"]+)"/g)].map((m) => m[1]), ['RFQ'])
-  const sheets = openpyxlSheets(buf, 'rfq-empty.xlsx')
+  const sheets = await openpyxlSheets(buf, 'rfq-empty.xlsx')
   if (!sheets) return tc.skip('python3 + openpyxl not available')
   assert.equal(sheets.RFQ!.length, 1, 'header row only')
 })

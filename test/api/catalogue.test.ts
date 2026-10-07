@@ -1,6 +1,6 @@
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
+import { PYTHON, runPython } from '../openpyxl.js'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { startTestApp, type TestApp } from '../helpers.js'
@@ -475,15 +475,12 @@ async function download(path: string): Promise<{ buf: Buffer; res: Response }> {
 }
 
 /** Opens an XLSX with openpyxl when available — proves Excel-compatible structure. Returns null if not available. */
-function openpyxlSummary(buf: Buffer, name: string): Record<string, number> | null {
-  const probe = spawnSync('python3', ['-I', '-c', 'import openpyxl'], { encoding: 'utf8' })
-  if (probe.status !== 0) return null
+async function openpyxlSummary(buf: Buffer, name: string): Promise<Record<string, number> | null> {
+  if (!PYTHON) return null
   const file = join(t.dataDir, name)
   writeFileSync(file, buf)
   const py = 'import sys, json, openpyxl\nwb = openpyxl.load_workbook(sys.argv[1])\nprint(json.dumps({ws.title: ws.max_row for ws in wb.worksheets}))'
-  const r = spawnSync('python3', ['-I', '-c', py, file], { encoding: 'utf8' })
-  assert.equal(r.status, 0, r.stderr)
-  return JSON.parse(r.stdout)
+  return JSON.parse(await runPython(py, [file]))
 }
 
 test('catalogue.xlsx is a valid workbook (zip with xl/workbook.xml) honouring the filters', async (tc) => {
@@ -492,7 +489,7 @@ test('catalogue.xlsx is a valid workbook (zip with xl/workbook.xml) honouring th
   assert.equal(res.headers.get('content-type'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   assert.ok(isZip(buf))
   assert.ok(buf.includes(Buffer.from('xl/workbook.xml')))
-  const s = openpyxlSummary(buf, 'catalogue.xlsx')
+  const s = await openpyxlSummary(buf, 'catalogue.xlsx')
   if (!s) return tc.skip('python3 + openpyxl not available')
   assert.deepEqual(s, { Catalogue: 1 + 37 })
 })
@@ -503,7 +500,7 @@ test('tally.xlsx has the six sheets and opens in openpyxl', async (tc) => {
   assert.match(res.headers.get('content-disposition')!, /holder_tally_.*\.xlsx/)
   assert.ok(isZip(buf))
   assert.ok(buf.includes(Buffer.from('xl/workbook.xml')))
-  const s = openpyxlSummary(buf, 'tally.xlsx')
+  const s = await openpyxlSummary(buf, 'tally.xlsx')
   if (!s) return tc.skip('python3 + openpyxl not available')
   assert.deepEqual(Object.keys(s), ['Articles', 'By type', 'By maker', 'By clamp Ø', 'By location', 'GL check'])
   assert.equal(s.Articles, 1 + 54)
