@@ -2,8 +2,8 @@
 // and "import a maker's data file" both end in the same proposals table, where a person approves rows and
 // fields. Nothing a scan or import reads is written until then — and stock is never touched here.
 import { esc, toast, toastError, emptyHTML, fmtDate, DATA_STATUS_LABEL } from '../ui.js'
-import { state, refreshSummary } from '../state.js'
-import { api } from '../api.js'
+import { state, refreshSummary, loadMeta } from '../state.js'
+import { api, newRequestKey } from '../api.js'
 
 const POLL_MS = 1000
 const MAX_FILE_BYTES = 10 * 1024 * 1024
@@ -163,7 +163,7 @@ export async function render(root, ctx) {
           <details class="small"><summary>Columns the import understands</summary>
             <ul class="vn-cols">
               <li><b>Order no.</b> (required): <span class="mono">order_no</span>, <span class="mono">ORDER_NO</span>, <span class="mono">Article</span> or <span class="mono">Art.-Nr.</span>; optional <span class="mono">manufacturer</span>.</li>
-              <li><b>ISO 13399:</b> <span class="mono">DCONWS</span> clamp Ø (or range "1-7"), <span class="mono">LPR</span> gauge length, <span class="mono">DLN</span> / <span class="mono">BD</span> nose Ø (DLN wins), <span class="mono">WT</span> mass kg, <span class="mono">RPMX</span> max rpm, <span class="mono">ADINTMS</span> must name the interface chosen above. Other ISO codes go to the maker dimensions.</li>
+              <li><b>ISO 13399:</b> <span class="mono">DCONWS</span> clamp Ø (or range "1-7"), <span class="mono">LPR</span> gauge length, <span class="mono">DLN</span> / <span class="mono">BD</span> nose Ø (DLN wins), <span class="mono">WT</span> mass kg, <span class="mono">RPMX</span> max rpm, <span class="mono">ADINTMS</span> must name the interface chosen above. These fill the holder's own fields and are not repeated in the maker dimensions (an existing entry with the same code, e.g. "DLN (diameter lock nut)", is updated). Other ISO codes go to the maker dimensions.</li>
               <li><b>Our columns:</b> spec_code, product_name, type_code, clamp_dia_mm, clamp_min_mm, clamp_max_mm, gauge_length_mm, nose_dia_mm, mass_kg, max_rpm, product_url, image_url, drawing_url, notes… For distributor lists put the maker's own number in <span class="mono">maker_order_no</span>.</li>
             </ul>
           </details>
@@ -175,7 +175,7 @@ export async function render(root, ctx) {
     <div class="vn-panels">
       <section class="card vn-images" aria-labelledby="vn-img-h">
         <h3 id="vn-img-h">Maker photos</h3>
-        <p class="note">Downloads each holder's maker photo into this PC's data folder (<span class="mono">images/vendor/</span>) so the catalogue shows it offline without linking to maker sites. Same polite rules; only real JPEG/PNG/WebP/GIF images up to 5 MB are kept.</p>
+        <p class="note">Downloads each holder's maker photo into this PC's data folder (<span class="mono">images/vendor/</span>) so the catalogue shows it offline without linking to maker sites. Same polite rules; only from the sites of makers the app can scan, and only real JPEG/PNG/WebP/GIF images up to 5 MB are kept.</p>
         <p data-imgstats></p>
         <div class="btnrow"><button class="btn" type="button" data-act="images">Cache maker photos</button>
           <button class="btn ghost" type="button" data-act="images-force" title="Download every photo again, replacing the copies already saved">Download all again</button></div>
@@ -217,9 +217,11 @@ export async function render(root, ctx) {
   }
 
   function renderImageStats() {
-    const s = ov.images || { with_url: 0, cached: 0 }
+    const s = ov.images || { with_url: 0, downloadable: 0, cached: 0 }
+    const other = s.with_url - (s.downloadable ?? s.with_url)
     $('[data-imgstats]').innerHTML = s.with_url
-      ? `<b class="mono">${esc(s.with_url)}</b> holders have a maker photo address; <b class="mono">${esc(s.cached)}</b> of them are saved on this PC.`
+      ? `<b class="mono">${esc(s.with_url)}</b> holders have a maker photo address; <b class="mono">${esc(s.cached)}</b> of them are saved on this PC.` +
+        (other > 0 ? ` <span class="muted">${esc(other)} ${other === 1 ? 'is' : 'are'} on a site the app has no reader for (e.g. a distributor) and ${other === 1 ? 'is' : 'are'} not downloaded.</span>` : '')
       : 'No holder has a maker photo address yet — scans fill these in when the maker page shows a photo.'
   }
 
@@ -327,6 +329,9 @@ export async function render(root, ctx) {
 
   function showProposals(w) {
     work = w
+    // One retry key per set of proposals: if an approval reached the server but its answer was lost, sending
+    // it again returns that first result instead of an "already applied" error.
+    w.reqKey = w.reqKey || newRequestKey()
     w.sel = w.sel || defaultSelection(w.proposals)
     w.filter = w.filter || 'all'
     w.confirmSame = w.confirmSame ?? true
@@ -457,7 +462,7 @@ export async function render(root, ctx) {
     btn.disabled = true
     btn.textContent = 'Saving…'
     try {
-      const res = await api.post('/api/vendors/apply', w.kind === 'scan' ? { job_id: w.key, approve: list } : { token: w.key, approve: list })
+      const res = await api.post('/api/vendors/apply', w.kind === 'scan' ? { job_id: w.key, approve: list } : { token: w.key, approve: list }, { idempotencyKey: w.reqKey })
       w.applied = true
       appliedKeys.add(w.key)
       const link = (x) => `<a href="#/holder/${encodeURIComponent(x.holder_id)}">${esc(x.holder_id)}</a> <span class="mono small">${esc(x.order_no)}</span>`
@@ -471,6 +476,9 @@ export async function render(root, ctx) {
       drawProposals()
       toast(`Approved: ${res.inserted.length} added, ${res.updated.length} updated`, 'ok')
       refreshSummary()
+      // New holders change the reference data other screens filter on (per-maker article counts in the
+      // Catalogue / Count / Add-holder maker lists): reload it so they show without restarting the app.
+      if (res.inserted.length) loadMeta().catch(() => null)
       await loadOverview().catch(() => null)
       if (me.dead) return
       renderMakers()
@@ -609,12 +617,17 @@ export async function render(root, ctx) {
         const box = $('[data-imgjob]')
         watchJob(res.job_id, box, async (j) => {
           const r = j.result
-          if (r)
+          if (r) {
+            const cached = r.skipped.filter((x) => (x.kind || 'cached') === 'cached')
+            const notHere = r.skipped.filter((x) => x.kind && x.kind !== 'cached')
+            const li = (id, text) => `<li><a href="#/holder/${encodeURIComponent(id)}">${esc(id)}</a>: ${esc(text)}</li>`
             box.insertAdjacentHTML(
               'beforeend',
-              `<div class="${r.failed.length ? 'warnbox' : 'okbox'} small">${r.downloaded.length} saved, ${r.skipped.length} already saved, ${r.failed.length} could not be downloaded.
-              ${r.failed.length ? `<details><summary>Why</summary><ul>${r.failed.map((x) => `<li><a href="#/holder/${encodeURIComponent(x.holder_id)}">${esc(x.holder_id)}</a>: ${esc(x.error)}</li>`).join('')}</ul></details>` : ''}</div>`,
+              `<div class="${r.failed.length ? 'warnbox' : 'okbox'} small">${r.downloaded.length} saved, ${cached.length} already saved, ${notHere.length} not downloaded (no reader for that site), ${r.failed.length} could not be downloaded.
+              ${notHere.length ? `<details data-skipped><summary>Not downloaded</summary><p class="muted">Photos are only downloaded from the sites of makers the app can scan (${esc(ov.vendors.filter((v) => v.automated).map((v) => v.maker).join(', '))}).</p><ul>${notHere.map((x) => li(x.holder_id, x.reason)).join('')}</ul></details>` : ''}
+              ${r.failed.length ? `<details><summary>Why</summary><ul>${r.failed.map((x) => li(x.holder_id, x.error)).join('')}</ul></details>` : ''}</div>`,
             )
+          }
           await loadOverview().catch(() => null)
           if (!me.dead) renderImageStats()
         })

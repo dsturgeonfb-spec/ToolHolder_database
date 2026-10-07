@@ -1,6 +1,8 @@
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync, readdirSync } from 'node:fs'
+import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
 import { FIXTURES, startTestApp, type TestApp } from '../helpers.js'
 import { today } from '../../src/server/domain.js'
@@ -53,7 +55,17 @@ test('GET /api/vendors: one card per maker with method, automated flag, robots n
   assert.equal(v.sources.find((s: any) => s.maker === 'SANDVIK COROMANT').vendor, 'SANDVIK COROMANT · none on site')
   assert.equal(v.user_agent, 'HolderCatalogue/0.1.0 (+contact not set)')
   assert.equal(v.vendor_contact_set, false)
-  assert.deepEqual(v.images, { with_url: 17, cached: 0 })
+  // 17 photo addresses; the 7 Ceratizit ones are on the distributor's CDN (no adapter), so 10 can be downloaded.
+  assert.deepEqual(v.images, { with_url: 17, downloadable: 10, cached: 0 })
+  // The CERATIZIT card counts live, not a fixed "7 holders".
+  assert.match(by.CERATIZIT.why, /All 7 Ceratizit holders in the catalogue carry data from the distributor Zedaro/)
+  // CUTWEL / SANDVIK: the decision to stay on the manual file-import route is stated on the cards and the notes.
+  for (const m of ['CUTWEL', 'SANDVIK COROMANT']) {
+    for (const text of [by[m].notes, by[m].why])
+      assert.match(text, /stays on the manual file-import route .*browser engine \(Playwright\) that is not bundled with the app, and the site could not be tested from the build environment/, m)
+    assert.match(by[m].method, /^File import/, m)
+    assert.doesNotMatch(v.sources.find((s: any) => s.maker === m).method, /Playwright/, m)
+  }
   // The contact e-mail set in Settings goes into the user agent.
   assert.equal((await t.api('PUT', '/api/settings', { vendor_contact: 'tooling@example.com' })).status, 200)
   const r2 = await t.api('GET', '/api/vendors')
@@ -69,6 +81,9 @@ test('scan validation: a person, a known automated maker, a known interface and 
   const cer = await t.api('POST', '/api/vendors/CERATIZIT/scan', {})
   assert.equal(cer.status, 400)
   assert.match(cer.body.error, /not scanned automatically: 403.*File import/)
+  const cut = await t.api('POST', '/api/vendors/CUTWEL/scan', {})
+  assert.equal(cut.status, 400)
+  assert.match(cut.body.error, /CUTWEL is not scanned automatically: .*manual file-import route.*File import/)
   const iface = await t.api('POST', '/api/vendors/HAIMER/scan', { interface_code: 'BT40' })
   assert.equal(iface.status, 400)
   assert.match(iface.body.error, /Unknown interface "BT40"/)
@@ -315,6 +330,72 @@ test('a running scan cannot be approved; cancelling keeps what was read', async 
   }
 })
 
+/** A stand-in for a service only reachable from the host PC: loopback only, records every request it gets. */
+async function internalService() {
+  const hits: string[] = []
+  const srv = createServer((req, res) => {
+    hits.push(req.url ?? '')
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+    res.end('<h1>INTERNAL-ONLY ADMIN PAGE</h1><table><tr><td>admin_password</td><td>hunter2</td></tr></table>')
+  })
+  await new Promise<void>((ok) => srv.listen(0, '127.0.0.1', ok))
+  const base = `http://127.0.0.1:${(srv.address() as AddressInfo).port}`
+  return { hits, base, close: () => new Promise<void>((ok) => srv.close(() => ok())) }
+}
+/** Maker sites answered from the fixtures; any other address goes to the real network (as the app would). */
+const fixturesElseNetwork = (fx: FixtureFetch, extra: Record<string, () => Response> = {}): FetchFn => async (url, init) => {
+  if (extra[url]) return extra[url]!()
+  const host = new URL(url).host
+  return ['shop.haimer.com', 'shop.mapal.com', 'www.kemmler-shop.de'].includes(host) ? fx(url, init) : fetch(url, init)
+}
+
+test('SSRF: stored links pointing at an internal address are never fetched — the scan reads the maker page instead', async () => {
+  const svc = await internalService()
+  const fx = fixtureFetch(DIR)
+  const saved = db().all<any>(`SELECT holder_id, product_url FROM holders WHERE order_no IN ('31270591', 'A63.182.03.8', 'A63.06.12.3')`)
+  const setUrl = (order: string, url: string) => db().run(`UPDATE holders SET product_url = ? WHERE order_no = ?`, [url, order])
+  setVendorHooks(t.app.ctx, { fetch: fixturesElseNetwork(fx), sleep: async () => {}, gates: new HostGates() })
+  try {
+    // The review's reproduction: the MAPAL address hidden in a query string on a loopback-only service.
+    setUrl('31270591', `${svc.base}/admin?ref=shop.mapal.com/en/p/31270591`)
+    setUrl('A63.182.03.8', `${svc.base}/x/A63.182.03.8`)
+    setUrl('A63.06.12.3', `${svc.base}/y/A63.06.12.3`)
+    for (const [maker, order] of [['MAPAL', '31270591'], ['HAIMER', 'A63.182.03.8'], ['KEMMLER', 'A63.06.12.3']] as const) {
+      const s = await scan(maker, { order_nos: [order] })
+      const p = s.result.proposals[0]
+      assert.notEqual(p.action, 'error', `${maker}: ${p.error}`)
+      assert.ok(p.record.product_url.startsWith(maker === 'KEMMLER' ? 'https://www.kemmler-shop.de/' : `https://shop.${maker.toLowerCase()}.com/`), p.record.product_url)
+      assert.deepEqual(p.fields.product_url?.old, `${svc.base}/${maker === 'MAPAL' ? 'admin?ref=shop.mapal.com/en/p/31270591' : maker === 'HAIMER' ? 'x/A63.182.03.8' : 'y/A63.06.12.3'}`, 'the bad link is proposed for replacement')
+      assert.doesNotMatch(JSON.stringify(s.job), /INTERNAL-ONLY|hunter2|127\.0\.0\.1:\d+: no robots/)
+      assert.match(s.job.log.join('\n'), new RegExp(`Only contacting ${maker === 'KEMMLER' ? 'www\\.kemmler-shop\\.de' : `shop\\.${maker.toLowerCase()}\\.com`}\\.`))
+    }
+    assert.deepEqual(svc.hits, [], 'the internal service was never contacted')
+  } finally {
+    for (const r of saved) db().run(`UPDATE holders SET product_url = ? WHERE holder_id = ?`, [r.product_url, r.holder_id])
+    setVendorHooks(t.app.ctx, { fetch: net, sleep: async () => {}, gates: new HostGates() })
+    await svc.close()
+  }
+})
+
+test('SSRF: a maker page that redirects to an internal address is not followed (every hop is checked)', async () => {
+  const svc = await internalService()
+  const fx = fixtureFetch(DIR)
+  const hop = () => new Response(null, { status: 302, headers: { location: `${svc.base}/admin-via-redirect` } })
+  setVendorHooks(t.app.ctx, { fetch: fixturesElseNetwork(fx, { 'https://shop.mapal.com/en/p/000000000030524702': hop }), sleep: async () => {}, gates: new HostGates() })
+  try {
+    const s = await scan('MAPAL', { order_nos: ['30524702', '31270591'] })
+    const p = s.result.proposals.find((x: any) => x.order_no === '30524702')
+    assert.equal(p.action, 'error')
+    assert.match(p.error, /shop\.mapal\.com redirected to http:\/\/127\.0\.0\.1:\d+ — not fetched\. This job only contacts shop\.mapal\.com\./)
+    assert.equal(s.result.proposals.find((x: any) => x.order_no === '31270591').action, 'same', 'the rest of the scan carries on')
+    assert.doesNotMatch(JSON.stringify(s.job), /INTERNAL-ONLY|hunter2/)
+    assert.deepEqual(svc.hits, [])
+  } finally {
+    setVendorHooks(t.app.ctx, { fetch: net, sleep: async () => {}, gates: new HostGates() })
+    await svc.close()
+  }
+})
+
 const CSV = [
   'ORDER_NO;ADINTMS;DCONWS;LPR;DLN;BD;WT;RPMX;product_name;spec_code',
   '84719607;HSK-A63;1-7;100;16;16;0,62;25000;Ceratizit CP.ISO12164-A63.SF.ER11.16.100.F CoreLine Prec. Collet chuck, Slim Version Centro-P;CP.ISO12164-A63.SF.ER11.16.100.F',
@@ -350,7 +431,10 @@ test('file import (ISO 13399 codes) → proposals → apply with the token: FILE
     ['84722615 (line 5)', 'error'],
   ])
   const upd = b.proposals[0]
-  assert.deepEqual(Object.keys(upd.fields).sort(), ['dims', 'mass_kg'], 'GL/clamp/nose already match the distributor data')
+  // GL/clamp/nose already match the distributor data. DCONWS/DLN went into columns and BD matches the holder's
+  // "BD (neck diameter)", so the maker dimensions do not change (they used to gain bare DCONWS/DLN/BD copies).
+  assert.deepEqual(Object.keys(upd.fields).sort(), ['mass_kg'], 'GL/clamp/nose already match the distributor data')
+  assert.doesNotMatch(upd.warnings.join(' '), /added as "Other"/, 'an existing holder keeps its type')
   assert.match(b.proposals[2].error, /ADINTMS "HSK-A100" is not HSK-A63/)
   assert.match(b.proposals[3].error, /appears twice in the file/)
   const ins = b.proposals[1]
@@ -378,6 +462,36 @@ test('file import (ISO 13399 codes) → proposals → apply with the token: FILE
   assert.equal((await t.api('POST', '/api/vendors/apply', { token: 'made-up', approve: [{ order_no: '84722615' }] })).status, 404)
 })
 
+test('file import update: no "will be added as Other" note, and DLN updates "DLN (diameter lock nut)" instead of adding a second nose Ø', async () => {
+  // The review's reproduction: an ER collet chuck already in the catalogue (H0010), type not stated in the file.
+  const csv = 'Article,ADINTMS,DCONWS,LPR,DLN,WT\r\n84719607,HSK-A63,1-7,100,17,"0,9"\r\n'
+  const r = await t.api('POST', importUrl({ maker: 'CERATIZIT', source: 'Ceratizit rep, corrected lock nut Ø', file: 'ceratizit_fix.csv' }), undefined, { raw: csv, contentType: 'text/csv' })
+  assert.equal(r.status, 200, JSON.stringify(r.body))
+  const p = r.body.proposals[0]
+  assert.equal(p.action, 'update')
+  assert.equal(p.holder_id, 'H0010')
+  assert.doesNotMatch(p.warnings.join(' '), /added as "Other"/)
+  assert.deepEqual(p.fields.nose_dia_mm, { old: 16, new: 17 })
+  assert.deepEqual(p.fields.dims.keys, ['DLN (diameter lock nut)'], 'only the existing labelled entry changes')
+  assert.equal(p.fields.dims.new['DLN (diameter lock nut)'], 17)
+  for (const code of ['DLN', 'DCONWS', 'LPR', 'WT']) assert.ok(!(code in p.fields.dims.new), `no bare ${code} entry`)
+  const a = await t.api('POST', '/api/vendors/apply', { token: r.body.token, approve: [{ order_no: '84719607' }] })
+  assert.equal(a.status, 200, JSON.stringify(a.body))
+  const h = await t.api('GET', '/api/holders/H0010')
+  assert.equal(h.body.type_code, 'ER_COLLET', 'the type of an existing holder is not touched')
+  assert.equal(h.body.nose_dia_mm, 17)
+  const dims = JSON.parse(holderBy('84719607').dims_json)
+  assert.deepEqual(dims, { 'DLN (diameter lock nut)': 17, 'BD (neck diameter)': 16, 'LSCX (clamping length maximum machine side)': 68, L2: '18 - 36 (12 - 26)' }, 'one nose Ø, no duplicates')
+  // The CERATIZIT card counts live: 8 holders now (84722615 came from the rep's file) and H0010's geometry now
+  // comes from the rep too (its source was replaced), so 6 still carry the distributor's data.
+  assert.equal(holderBy('84719607').data_source, 'Ceratizit rep, corrected lock nut Ø')
+  const v = await t.api('GET', '/api/vendors')
+  const cer = v.body.vendors.find((x: any) => x.maker === 'CERATIZIT')
+  assert.equal(cer.articles_in_catalogue, 8)
+  assert.match(cer.why, /6 of the 8 Ceratizit holders in the catalogue carry data from the distributor Zedaro/)
+  assert.doesNotMatch(cer.why, /your 7 holders/)
+})
+
 test('maker photo cache: real images saved as images/vendor/<id>.<ext>, non-images refused, existing ones skipped unless forced', async () => {
   const changesBefore = Number(db().value('SELECT COUNT(*) FROM holder_changes'))
   assert.equal((await t.api('POST', '/api/vendors/images', {}, { user: null })).status, 400)
@@ -388,9 +502,12 @@ test('maker photo cache: real images saved as images/vendor/<id>.<ext>, non-imag
   const job = await t.app.ctx.jobs.wait(r.body.job_id)
   const res = job.result as any
   assert.deepEqual(res.downloaded.map((d: any) => d.file).sort(), ['H0001.jpg', 'H0005.png'], 'format from the bytes (Kemmler served a PNG at a .jpg address)')
-  assert.equal(res.failed.length, 1)
-  assert.equal(res.failed[0].holder_id, 'H0010')
-  assert.match(res.failed[0].error, /not an image/)
+  // H0010 is a CERATIZIT holder whose photo is on the distributor's CDN: no adapter → skipped with the reason,
+  // and the CDN is never contacted (it used to be requested and answer an HTML page).
+  assert.deepEqual(res.failed, [])
+  assert.deepEqual(res.skipped.map((s: any) => [s.holder_id, s.kind]), [['H0010', 'not_allowed']])
+  assert.match(res.skipped[0].reason, /CERATIZIT has no automated reader.*no adapter for cdn\.shopify\.com/)
+  assert.ok(!net.requested.some((x) => new URL(x.url).host === 'cdn.shopify.com'), 'the distributor CDN was not contacted')
   const dir = join(t.dataDir, 'images', 'vendor')
   assert.deepEqual(readdirSync(dir).sort(), ['H0001.jpg', 'H0005.png'])
   const h = await t.api('GET', '/api/holders/H0001')
@@ -406,8 +523,33 @@ test('maker photo cache: real images saved as images/vendor/<id>.<ext>, non-imag
   assert.ok(existsSync(join(dir, 'H0001.jpg')))
   // A photo job never writes catalogue data.
   assert.equal(Number(db().value('SELECT COUNT(*) FROM holder_changes')), changesBefore)
-  // 17 seeded photo addresses + 4 from approved scans (H0026, the new HAIMER hydraulic, MAPAL 30524702, Kemmler A63.02.20.0).
-  assert.deepEqual((await t.api('GET', '/api/vendors')).body.images, { with_url: 21, cached: 2 })
+  // 17 seeded photo addresses + 4 from approved scans (H0026, the new HAIMER hydraulic, MAPAL 30524702, Kemmler A63.02.20.0);
+  // all but the 7 Ceratizit (distributor CDN) ones can be downloaded.
+  assert.deepEqual((await t.api('GET', '/api/vendors')).body.images, { with_url: 21, downloadable: 14, cached: 2 })
+})
+
+test('maker photo cache: only from the maker site of an automated adapter — an internal or foreign address is skipped, never requested', async () => {
+  const svc = await internalService()
+  const saved = db().all<any>(`SELECT holder_id, image_url FROM holders WHERE holder_id IN ('H0025', 'H0026')`)
+  setVendorHooks(t.app.ctx, { fetch: fixturesElseNetwork(fixtureFetch(DIR)), sleep: async () => {}, gates: new HostGates() })
+  try {
+    db().run(`UPDATE holders SET image_url = ? WHERE holder_id = 'H0025'`, [`${svc.base}/photo.jpg`]) // HAIMER holder, internal address
+    db().run(`UPDATE holders SET image_url = 'https://shop.mapal.com/medias/x.jpg' WHERE holder_id = 'H0026'`) // HAIMER holder, another maker's site
+    const r = await t.api('POST', '/api/vendors/images', { holder_ids: ['H0025', 'H0026', 'H0010'], force: true })
+    assert.equal(r.status, 200)
+    const res = (await t.app.ctx.jobs.wait(r.body.job_id)).result as any
+    assert.deepEqual(res.downloaded, [])
+    assert.deepEqual(res.failed, [])
+    const why = Object.fromEntries(res.skipped.map((s: any) => [s.holder_id, s.reason]))
+    assert.match(why.H0025, /^127\.0\.0\.1:\d+ is not HAIMER's own site \(shop\.haimer\.com\) — no adapter for this host, not downloaded\.$/)
+    assert.match(why.H0026, /shop\.mapal\.com is not HAIMER's own site/)
+    assert.match(why.H0010, /CERATIZIT has no automated reader/)
+    assert.deepEqual(svc.hits, [], 'the internal address was never requested')
+  } finally {
+    for (const s of saved) db().run(`UPDATE holders SET image_url = ? WHERE holder_id = ?`, [s.image_url, s.holder_id])
+    setVendorHooks(t.app.ctx, { fetch: net, sleep: async () => {}, gates: new HostGates() })
+    await svc.close()
+  }
 })
 
 test('GET /api/vendors/runs lists applied scans and imports, newest first', async () => {

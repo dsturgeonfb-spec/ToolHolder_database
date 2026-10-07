@@ -46,7 +46,8 @@ export function startScan(
   if (running) throw new HttpError(409, `A ${adapter.maker} scan is already running — wait for it or cancel it first.`, { job_id: running.id })
   const what = o.orderNos.length ? `${o.orderNos.length} order no${o.orderNos.length === 1 ? '' : 's'}.` : o.full ? 'full range' : 'catalogue holders'
   return ctx.jobs.start(SCAN_KIND, `Scan ${adapter.maker} for ${o.iface} (${what})`, async (job) => {
-    const fetcher = makeFetcher(ctx, { signal: job.signal, log: (m) => job.log(m) })
+    // The scan may only contact this maker's own site(s): every page and redirect hop is checked against them.
+    const fetcher = makeFetcher(ctx, { origins: adapter.origins ?? [], signal: job.signal, log: (m) => job.log(m) })
     const sc: ScanContext = { db: ctx.db, fetcher, log: (m) => job.log(m), signal: job.signal }
     const result: ScanResult = {
       maker: adapter.maker,
@@ -67,7 +68,7 @@ export function startScan(
       result.cancelled = job.signal.aborted
       return result
     }
-    job.log(`Started by ${o.user}. Identifying as "${fetcher.userAgent}".`)
+    job.log(`Started by ${o.user}. Identifying as "${fetcher.userAgent}". Only contacting ${fetcher.allowedOrigins.map((x) => new URL(x).host).join(', ') || 'no site'}.`)
     const known: ProductRef[] = ctx.db
       .all<{ holder_id: string; order_no: string; product_url: string | null }>(
         `SELECT h.holder_id, h.order_no, h.product_url FROM holders h JOIN manufacturers m ON m.manufacturer_id = h.manufacturer_id

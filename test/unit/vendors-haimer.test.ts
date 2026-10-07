@@ -12,7 +12,9 @@ const page = (order: string) => readFileSync(join(DIR, 'haimer', `${order}.html`
 const raw = (file: string) => JSON.parse(readFileSync(join(REPO, 'data', 'raw', file), 'utf8')) as any[]
 const rawShrink = new Map(raw('haimer_shrink.json').map((r) => [r.order_no, r]))
 const rawOther = new Map(raw('haimer_other_kemmler.json').map((r) => [r.order_no, r]))
-const fetcher = () => new PoliteFetcher({ userAgent: 'HolderCatalogue/test (+t@example.com)', fetch: fixtureFetch(DIR), sleep: async () => {}, gates: new HostGates() })
+// The scan's fetcher: HAIMER's own origin only (fixtures never touch DNS, so no address check here).
+const ONLY_HAIMER = { allowedOrigins: haimer.origins!, lookup: null }
+const fetcher = () => new PoliteFetcher({ userAgent: 'HolderCatalogue/test (+t@example.com)', ...ONLY_HAIMER, fetch: fixtureFetch(DIR), sleep: async () => {}, gates: new HostGates() })
 
 test('URL helpers: interface tokens and order no. = last URL segment (category pages excluded)', () => {
   assert.deepEqual(haimerUrlTokens('HSK-A63'), ['HSK-A63', '/A63.'])
@@ -39,13 +41,13 @@ test('discovery: one unreadable child sitemap is skipped (logged); the index fai
   const fx = fixtureFetch(DIR)
   const broken = (bad: RegExp, status: number) => async (url: string, init: RequestInit) => (bad.test(url) ? new Response('err', { status }) : fx(url, init))
   const log: string[] = []
-  const f = new PoliteFetcher({ userAgent: 'HolderCatalogue/test', fetch: broken(/-de-1\.xml\.gz$/, 500), sleep: async () => {}, gates: new HostGates() })
+  const f = new PoliteFetcher({ userAgent: 'HolderCatalogue/test', ...ONLY_HAIMER, fetch: broken(/-de-1\.xml\.gz$/, 500), sleep: async () => {}, gates: new HostGates() })
   const found = await haimerSitemapProducts(f, 'HSK-A63', (m) => log.push(m))
   assert.equal(found.size, 7)
   assert.match(log.join('\n'), /Could not read .*-de-1\.xml\.gz: .*HTTP 500.* — skipped/)
-  const g = new PoliteFetcher({ userAgent: 'HolderCatalogue/test', fetch: broken(/sitemap\.xml$/, 404), sleep: async () => {}, gates: new HostGates() })
+  const g = new PoliteFetcher({ userAgent: 'HolderCatalogue/test', ...ONLY_HAIMER, fetch: broken(/sitemap\.xml$/, 404), sleep: async () => {}, gates: new HostGates() })
   await assert.rejects(haimerSitemapProducts(g, 'HSK-A63', () => {}), /Page not found \(404\)/)
-  const h = new PoliteFetcher({ userAgent: 'HolderCatalogue/test', fetch: broken(/-en-1\.xml\.gz$/, 429), sleep: async () => {}, gates: new HostGates() })
+  const h = new PoliteFetcher({ userAgent: 'HolderCatalogue/test', ...ONLY_HAIMER, fetch: broken(/-en-1\.xml\.gz$/, 429), sleep: async () => {}, gates: new HostGates() })
   await assert.rejects(haimerSitemapProducts(h, 'HSK-A63', () => {}), /blocked — not retried/)
 })
 
@@ -68,6 +70,32 @@ test('discover(): stored product URLs are reused; entered order nos are found in
   const r3 = await haimer.discover!(sc, 'HSK-A63', { known, entered: [], full: true })
   assert.equal(r3.length, 7)
   assert.equal(r3.filter((r) => r.origin === 'discovered').length, 5)
+})
+
+test('discover(): a stored URL on another host is never reused, even when its last segment is the order no.; sitemap entries on other hosts are ignored', async () => {
+  const f = fetcher()
+  const log: string[] = []
+  const sc = { db: null as any, fetcher: f, log: (m: string) => log.push(m) }
+  const known = [{ order_no: 'A63.182.03.8', url: 'http://127.0.0.1:27499/admin/A63.182.03.8', origin: 'catalogue' as const }]
+  const refs = await haimer.discover!(sc, 'HSK-A63', { known, entered: [], full: false })
+  assert.equal(refs[0]!.url, 'https://shop.haimer.com/en/Power-Mini-Shrink-Chuck-DIN-69893-1-HSK-A63/A63.182.03.8', 'found through the sitemap instead')
+  const lookalike = [{ order_no: 'A63.182.03.8', url: 'https://shop.haimer.com.evil.example/en/x/A63.182.03.8', origin: 'catalogue' as const }]
+  assert.match((await haimer.discover!(sc, 'HSK-A63', { known: lookalike, entered: [], full: false }))[0]!.url!, /^https:\/\/shop\.haimer\.com\/en\//)
+  // fetch() refuses a foreign address outright (defence in depth behind discover()).
+  await assert.rejects(haimer.fetch!(sc, { order_no: 'A63.182.03.8', url: 'http://127.0.0.1:27499/A63.182.03.8', origin: 'catalogue' }, 'HSK-A63'), /not a shop\.haimer\.com address/)
+
+  // A sitemap index that lists another site: that entry is neither followed nor used.
+  const fx = fixtureFetch(DIR)
+  const xml = await (await fx('https://shop.haimer.com/sitemap.xml', {})).text()
+  const evil = xml.replace('</sitemapindex>', '<sitemap><loc>http://127.0.0.1:27499/sitemap.xml</loc></sitemap></sitemapindex>')
+  const requested: string[] = []
+  const net = async (url: string, init: RequestInit) => (requested.push(url), url === 'https://shop.haimer.com/sitemap.xml' ? new Response(evil, { headers: { 'content-type': 'application/xml' } }) : fx(url, init))
+  const g = new PoliteFetcher({ userAgent: 'HolderCatalogue/test', ...ONLY_HAIMER, fetch: net, sleep: async () => {}, gates: new HostGates() })
+  const glog: string[] = []
+  const found = await haimerSitemapProducts(g, 'HSK-A63', (m) => glog.push(m))
+  assert.equal(found.size, 7)
+  assert.match(glog.join('\n'), /1 address on other sites ignored/)
+  assert.ok(requested.every((u) => u.startsWith('https://shop.haimer.com/')), requested.join(', '))
 })
 
 test('product page → record in our column names, matching the values captured in data/raw/haimer_shrink.json', () => {

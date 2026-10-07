@@ -9,6 +9,8 @@
  *   WT → mass (kg), RPMX → max rpm, ADINTMS → must name the chosen interface (otherwise the row is an error).
  * Order no. headers: order_no, ORDER_NO, Article, Art.-Nr. (and a few common spellings). Other ISO-style
  * codes (BD1, LB, LSCX, ADINTWS…) are kept in the maker dimensions; other columns are reported as unused.
+ * A code that went into a holder column is not copied into the maker dimensions as well: it only updates a
+ * dimension the holder already carries under that code (e.g. "DLN (diameter lock nut)"), see dims_refresh.
  */
 import { parseCsvObjects } from '../lib/csv.js'
 import { DATA_STATUSES, type DataStatus } from '../domain.js'
@@ -134,6 +136,14 @@ function rowToRecord(
   // ISO 13399 codes first; our own column names (when both are present) win.
   let dln: number | null = null
   let bd: number | null = null
+  /**
+   * Codes that map to a holder column. Once the record is settled, each one that really ended up in its
+   * column is NOT copied into the maker dimensions (it would show twice on the holder page, and a stale copy
+   * after the next update); it only refreshes a dimension the holder already carries under that code. One
+   * that did not end up in a column (DCONWS on a tap chuck, BD when DLN gave the nose Ø) stays a dimension.
+   */
+  const mapped: Array<{ code: string; col: string; dim: string | number; landed: () => boolean; keepIfUnused: boolean }> = []
+  const near = (a: number | null | undefined, b: number | null | undefined) => a != null && b != null && Math.abs(a - b) < 1e-9
   for (const [col, code] of iso) {
     const v = (o[col] ?? '').trim()
     if (!v) continue
@@ -142,27 +152,44 @@ function rowToRecord(
         const range = parseRange(v)
         if (range) [rec.clamp_min_mm, rec.clamp_max_mm] = range
         else num('clamp_dia_mm', v)
-        rec.dims![col] = dimValue(v)
+        const single = range ? null : parseNum(v)
+        mapped.push({
+          code,
+          col,
+          dim: dimValue(v),
+          landed: () => (range ? near(rec.clamp_min_mm, range[0]) && near(rec.clamp_max_mm, range[1]) : near(rec.clamp_dia_mm, single)),
+          keepIfUnused: true,
+        })
         break
       }
-      case 'LPR':
+      case 'LPR': {
         num('gauge_length_mm', v)
         rec.gauge_length_ref = 'LPR'
+        const n = rec.gauge_length_mm
+        mapped.push({ code, col, dim: dimValue(v), landed: () => near(rec.gauge_length_mm, n), keepIfUnused: false })
         break
+      }
       case 'DLN':
         dln = parseNum(v)
-        rec.dims![col] = dimValue(v)
+        mapped.push({ code, col, dim: dimValue(v), landed: () => near(rec.nose_dia_mm, dln), keepIfUnused: true })
         break
       case 'BD':
         bd = parseNum(v)
-        rec.dims![col] = dimValue(v)
+        // BD is the nose Ø only when there is no DLN; otherwise it is a dimension of its own (the body/neck Ø).
+        mapped.push({ code, col, dim: dimValue(v), landed: () => dln == null && near(rec.nose_dia_mm, bd), keepIfUnused: true })
         break
-      case 'WT':
+      case 'WT': {
         num('mass_kg', v)
+        const n = rec.mass_kg
+        mapped.push({ code, col, dim: dimValue(v), landed: () => near(rec.mass_kg, n), keepIfUnused: false })
         break
-      case 'RPMX':
+      }
+      case 'RPMX': {
         num('max_rpm', v)
+        const n = rec.max_rpm
+        mapped.push({ code, col, dim: dimValue(v), landed: () => near(rec.max_rpm, n), keepIfUnused: false })
         break
+      }
       case 'ADINTMS': {
         const m = interfaceMatch(opts.iface, v)
         if (m === 'no') throw new Error(`ADINTMS "${v}" is not ${opts.iface} — not imported. Pick the right interface or remove the row.`)
@@ -210,5 +237,11 @@ function rowToRecord(
   const typeSeries =
     m === 'HAIMER' ? classifyHaimer(order) : m === 'CERATIZIT' ? classifyCeratizit(order, rec.spec_code, rec.product_name) : m === 'MAPAL' ? classifyMapal(rec.spec_code, rec.product_name) : m === 'KEMMLER' ? classifyKemmler(order) : null
   settleRecord(rec, typeSeries)
+  const refresh: Record<string, string | number> = {}
+  for (const x of mapped) {
+    if (x.landed()) refresh[x.code] = x.dim
+    else if (x.keepIfUnused) rec.dims![x.col] = x.dim
+  }
+  if (Object.keys(refresh).length) rec.dims_refresh = refresh
   return rec
 }

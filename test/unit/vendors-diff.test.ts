@@ -7,6 +7,7 @@ import { REPO } from '../helpers.js'
 import { migrate, openDatabase, type Db } from '../../src/server/db.js'
 import { mergeDims, parseApprove, proposalFor, sameValue, sanitizeRecord, statusAfter } from '../../src/server/vendors/diff.js'
 import type { HolderRecord } from '../../src/server/vendors/types.js'
+import { OTHER_TYPE_WARNING } from '../../src/server/vendors/classify.js'
 
 let db: Db
 let dir: string
@@ -96,7 +97,39 @@ test('sanitize: implausible numbers, non-web links and unknown types are dropped
   assert.equal(r.drawing_url, null)
   assert.equal(r.type_code, 'OTHER')
   assert.equal(r.product_name, 'Power Chuck')
-  assert.equal(r.warnings!.length, 6)
+  assert.equal(r.warnings!.length, 5)
+  // The unknown type is noted separately: it only matters if the record becomes a new holder.
+  assert.deepEqual(r.type_warnings, ['Holder type "LASER" is not one of ours — it will be added as "Other".'])
+})
+
+test('"will be added as Other" is only said on an insert proposal — an existing holder keeps its type', () => {
+  const unclear = { product_name: 'Coolant tube', type_code: null, type_warnings: [OTHER_TYPE_WARNING] }
+  // Existing ER collet chuck (H0010, CERATIZIT 84719607) read from a file whose type could not be worked out.
+  const upd = proposalFor(db, rec({ manufacturer: 'CERATIZIT', order_no: '84719607', ...unclear, type_code: 'OTHER', mass_kg: 0.9 }), 'HSK-A63')
+  assert.equal(upd.action, 'update')
+  assert.doesNotMatch(upd.warnings.join(' '), /added as "Other"/)
+  assert.doesNotMatch(JSON.stringify(upd.record), /added as \\"Other\\"/)
+  const odd = proposalFor(db, rec({ manufacturer: 'CERATIZIT', order_no: '84719607', type_code: 'LASER', mass_kg: 0.9 }), 'HSK-A63')
+  assert.doesNotMatch(odd.warnings.join(' '), /added as "Other"/)
+  const same = proposalFor(db, rec({ type_code: 'LASER', clamp_dia_mm: 3, gauge_length_mm: 160 }), 'HSK-A63')
+  assert.equal(same.holder_id, 'H0025')
+  assert.doesNotMatch(same.warnings.join(' '), /added as "Other"/)
+  // A new holder: the note is shown, because that is what will happen.
+  const ins = proposalFor(db, rec({ order_no: 'Z-NEW-1', ...unclear, type_code: 'OTHER' }), 'HSK-A63')
+  assert.equal(ins.action, 'insert')
+  assert.match(ins.warnings.join(' '), /it will be added as "Other"; set the right type/)
+  assert.match(proposalFor(db, rec({ order_no: 'Z-NEW-2', type_code: 'LASER' }), 'HSK-A63').warnings.join(' '), /"LASER" is not one of ours — it will be added as "Other"/)
+})
+
+test('dims: a bare ISO code from a file updates our labelled entry instead of adding a second one; refresh values never add labels', () => {
+  const ours = { 'DLN (diameter lock nut)': 16, 'BD (neck diameter)': 16, 'LSCX (clamping length maximum machine side)': 68, L2: '18 - 36 (12 - 26)' }
+  const a = mergeDims(ours, { BD: 16, LSCX: 70, BD1: 40 }, { DLN: 17, DCONWS: '1-7', LPR: 100 })
+  assert.deepEqual(a.merged, { 'DLN (diameter lock nut)': 17, 'BD (neck diameter)': 16, 'LSCX (clamping length maximum machine side)': 70, L2: '18 - 36 (12 - 26)', BD1: 40 })
+  assert.deepEqual(a.changed, ['LSCX (clamping length maximum machine side)', 'BD1', 'DLN (diameter lock nut)'])
+  assert.deepEqual(mergeDims({}, undefined, { DLN: 17 }), { merged: {}, changed: [] }, 'nothing to refresh → nothing added')
+  // Ambiguous (two labels carry the code) → treated as a new label, never a guess.
+  assert.deepEqual(mergeDims({ 'D1 a': 1, 'D1 b': 2 }, { D1: 3 }).merged, { 'D1 a': 1, 'D1 b': 2, D1: 3 })
+  assert.deepEqual(mergeDims({ 'D1 a': 1, 'D1 b': 2 }, undefined, { D1: 3 }).changed, [])
 })
 
 test('data status after apply: never claims more than was checked', () => {

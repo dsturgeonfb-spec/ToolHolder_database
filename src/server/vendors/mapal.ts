@@ -14,6 +14,23 @@ import type { DiscoverOptions, HolderRecord, ProductRef, ScanContext, VendorAdap
 export const MAPAL_ORIGIN = 'https://shop.mapal.com'
 export const mapalProductUrl = (orderNo: string) => `${MAPAL_ORIGIN}/en/p/0000000000${orderNo}`
 
+/** A MAPAL product page address: https://shop.mapal.com/…/p/<digits> — anchored, so nothing can hide it in a query string. */
+const MAPAL_PRODUCT_URL = /^https:\/\/shop\.mapal\.com\/(?:[^/?#]+\/)*p\/0*(\d+)\/?(?:[?#]|$)/
+
+/** The order no. in a MAPAL product address, or null for any other address (another site, a category page…). */
+export function mapalOrderFromUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  const m = MAPAL_PRODUCT_URL.exec(url)
+  if (!m) return null
+  try {
+    const u = new URL(url)
+    if (u.origin !== MAPAL_ORIGIN || u.username || u.password) return null
+  } catch {
+    return null
+  }
+  return m[1]!
+}
+
 export interface MapalDesignation {
   family: string
   form: string
@@ -41,7 +58,7 @@ const SKIP_LABEL = /order ?no|order ?number|material ?no|article|^ean\b|gtin|pri
 export function parseMapalPage(html: string, pageUrl: string, orderNo: string, requestedUrl?: string): HolderRecord {
   const $ = loadPage(html)
   const name = firstText($, 'h1.product-details__name', 'h1[itemprop="name"]', 'h1') ?? metaContent($, 'og:title')
-  const urlOrder = /\/p\/0*(\d+)(?:[/?#]|$)/.exec(canonicalUrl($, pageUrl) ?? pageUrl)?.[1]
+  const urlOrder = mapalOrderFromUrl(canonicalUrl($, pageUrl)) ?? mapalOrderFromUrl(pageUrl) ?? undefined
   const textOrder = /(\d{8})/.exec(firstText($, '.product-details__code', '[itemprop="sku"]') ?? '')?.[1]
   const pageOrder = textOrder ?? urlOrder
   if (pageOrder && pageOrder !== orderNo.replace(/^0+/, ''))
@@ -155,7 +172,8 @@ export const mapal: VendorAdapter = {
     return [...refs.values()].map((r) => ({
       ...r,
       error: /^\d{6,10}$/.test(r.order_no) ? r.error : `"${r.order_no}" is not a MAPAL order no. (8 digits, e.g. 30524702).`,
-      url: r.url && /shop\.mapal\.com\/.*\/p\/0*\d+/.test(r.url) ? r.url : mapalProductUrl(r.order_no),
+      // A stored address is reused only when it is a MAPAL product page for this very order no.
+      url: mapalOrderFromUrl(r.url) === r.order_no.replace(/^0+/, '') ? r.url : mapalProductUrl(r.order_no),
     }))
   },
 

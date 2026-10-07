@@ -26,13 +26,24 @@ const lastSegment = (url: string) => {
   }
 }
 
+/** True for an address on Kemmler's own shop (https://www.kemmler-shop.de, no user name or other port). */
+export function isKemmlerUrl(url: string | null | undefined): boolean {
+  if (!url) return false
+  try {
+    const u = new URL(url)
+    return u.origin === KEMMLER_ORIGIN && !u.username && !u.password
+  } catch {
+    return false
+  }
+}
+
 /** Product links on a Kemmler search page whose last URL segment is the order no. */
 export function kemmlerSearchHits(html: string, pageUrl: string, orderNo: string): string[] {
   const $ = loadPage(html)
   const hits = new Set<string>()
   $('a[href]').each((_, a) => {
     const href = absUrl($(a).attr('href'), pageUrl)
-    if (href && new URL(href).host === new URL(KEMMLER_ORIGIN).host && lastSegment(href).toUpperCase() === orderNo.toUpperCase()) hits.add(href.split('#')[0]!)
+    if (href && isKemmlerUrl(href) && lastSegment(href).toUpperCase() === orderNo.toUpperCase()) hits.add(href.split('#')[0]!)
   })
   return [...hits]
 }
@@ -182,12 +193,13 @@ export const kemmler: VendorAdapter = {
     const refs = new Map<string, ProductRef>()
     for (const e of o.entered) refs.set(e.toUpperCase(), known.get(e.toUpperCase()) ?? { order_no: e, origin: 'entered' })
     if (!o.entered.length || o.full) for (const k of o.known) if (!refs.has(k.order_no.toUpperCase())) refs.set(k.order_no.toUpperCase(), k)
-    // Only a stored address that is the product page itself is reused; otherwise search by order no.
-    return [...refs.values()].map((r) => ({ ...r, url: r.url && lastSegment(r.url).toUpperCase() === r.order_no.toUpperCase() ? r.url : null }))
+    // Only a stored address that is the product page itself, on Kemmler's shop, is reused; otherwise search by order no.
+    return [...refs.values()].map((r) => ({ ...r, url: isKemmlerUrl(r.url) && lastSegment(r.url!).toUpperCase() === r.order_no.toUpperCase() ? r.url : null }))
   },
 
   async fetch(sc: ScanContext, ref: ProductRef): Promise<HolderRecord> {
     let page: { url: string; text: string }
+    if (ref.url && !isKemmlerUrl(ref.url)) throw new Error(`${ref.url} is not a kemmler-shop.de address — not read.`)
     if (ref.url) page = await sc.fetcher.getText(ref.url)
     else {
       const search = await sc.fetcher.getText(kemmlerSearchUrl(ref.order_no))

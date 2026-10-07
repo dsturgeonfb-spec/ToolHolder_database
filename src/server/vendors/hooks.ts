@@ -8,14 +8,20 @@
  *    and every vendor request is answered from that folder (crawl delays are shortened to ≤ 0.25 s because
  *    no maker site is contacted). Never set this on a production PC.
  * Without either, the real network is used, with the polite rules in fetcher.ts.
+ *
+ * The origin allow-list (the adapter's own sites) applies in every mode — fixtures answer the makers' real
+ * addresses. The public-address (DNS) check runs on the real network only: a hook's injected fetch never
+ * touches DNS, so it is skipped there unless the hook supplies its own `lookup`. Nothing else can turn it off.
  */
 import type { AppContext } from '../context.js'
 import { getSetting } from '../domain.js'
-import { HostGates, PoliteFetcher, SHARED_GATES, defaultSleep, userAgent, type FetchFn, type SleepFn } from './fetcher.js'
+import { HostGates, PoliteFetcher, SHARED_GATES, defaultSleep, userAgent, type FetchFn, type LookupFn, type SleepFn } from './fetcher.js'
 import { fixtureFetch } from './fixtures.js'
 
 export interface VendorHooks {
   fetch?: FetchFn
+  /** Stand-in resolver for the public-address check (tests). Without it, an injected fetch skips the check. */
+  lookup?: LookupFn
   sleep?: SleepFn
   now?: () => number
   gates?: HostGates
@@ -58,11 +64,19 @@ export function currentUserAgent(ctx: AppContext): string {
   return userAgent(ctx.version, getSetting<string>(ctx.db, 'vendor_contact', ''))
 }
 
-export function makeFetcher(ctx: AppContext, opts: { signal?: AbortSignal; log?: (m: string) => void } = {}): PoliteFetcher {
+/**
+ * A fetcher for one job. `origins` = the only sites it may contact (the adapter's own, or the photo sites of
+ * the makers with an automated adapter) — required, so no job can reach an arbitrary address.
+ */
+export function makeFetcher(ctx: AppContext, opts: { origins: readonly string[]; signal?: AbortSignal; log?: (m: string) => void }): PoliteFetcher {
   const h = vendorHooks(ctx)
   return new PoliteFetcher({
     userAgent: currentUserAgent(ctx),
+    allowedOrigins: opts.origins,
     fetch: h.fetch,
+    // Real network → real DNS check. An injected test network never resolves names, so it has no check
+    // unless the hook brings its own resolver.
+    lookup: h.lookup ?? (h.fetch ? null : undefined),
     sleep: h.sleep,
     now: h.now,
     gates: h.gates ?? SHARED_GATES,

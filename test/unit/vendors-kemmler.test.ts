@@ -70,7 +70,7 @@ test('LPR in the technical data is the gauge length (partial + warning); disagre
 
 test('fetch(): search → product page; a search that redirects straight to the product is followed', async () => {
   const net = fixtureFetch(DIR)
-  const f = new PoliteFetcher({ userAgent: 'HolderCatalogue/test', fetch: net, sleep: async () => {}, gates: new HostGates() })
+  const f = new PoliteFetcher({ userAgent: 'HolderCatalogue/test', allowedOrigins: kemmler.origins!, lookup: null, fetch: net, sleep: async () => {}, gates: new HostGates() })
   const sc = { db: null as any, fetcher: f, log: () => {} }
   const refs = await kemmler.discover!(sc, 'HSK-A63', { known: [], entered: ['A63.02.20.0', 'A63.06.12.3'], full: false })
   assert.ok(refs.every((r) => r.url === null))
@@ -88,4 +88,23 @@ test('fetch(): search → product page; a search that redirects straight to the 
       'https://www.kemmler-shop.de/en/Milling-arbors-for-screw-in-cutters-HSK-63-M12-126-LB100/A63.06.12.3',
     ],
   )
+})
+
+test('discover(): a stored URL is reused only on kemmler-shop.de — one on another host falls back to the shop search', async () => {
+  const f = new PoliteFetcher({ userAgent: 'HolderCatalogue/test', allowedOrigins: kemmler.origins!, lookup: null, fetch: fixtureFetch(DIR), sleep: async () => {}, gates: new HostGates() })
+  const sc = { db: null as any, fetcher: f, log: () => {} }
+  const own = 'https://www.kemmler-shop.de/en/Milling-arbors-for-screw-in-cutters-HSK-63-M12-126-LB100/A63.06.12.3'
+  const refs = await kemmler.discover!(sc, 'HSK-A63', {
+    known: [
+      { order_no: 'A63.06.12.3', url: own, origin: 'catalogue' },
+      { order_no: 'A63.02.20.0', url: 'http://127.0.0.1:27499/admin/A63.02.20.0', origin: 'catalogue' },
+    ],
+    entered: [],
+    full: false,
+  })
+  assert.deepEqual(refs.map((r) => r.url), [own, null])
+  await assert.rejects(kemmler.fetch!(sc, { order_no: 'A63.02.20.0', url: 'http://10.0.0.8/A63.02.20.0', origin: 'catalogue' }, 'HSK-A63'), /not a kemmler-shop\.de address/)
+  // Search hits only ever point at the shop itself.
+  const html = '<a href="http://127.0.0.1/x/A63.02.20.0">evil</a><a href="https://www.kemmler-shop.de.evil.example/A63.02.20.0">look-alike</a>'
+  assert.deepEqual(kemmlerSearchHits(html, 'https://www.kemmler-shop.de/search?search=A63.02.20.0', 'A63.02.20.0'), [])
 })
