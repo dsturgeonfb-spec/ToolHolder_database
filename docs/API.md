@@ -197,6 +197,23 @@ All `holders` columns, plus:
   keeps the newest 30. Returns the backup entry.
 - `POST /api/system/open` (host only) — `{what: 'data'|'backups'|'logs'}` → opens the folder via the desktop hook.
 
+## Desktop bridge (Electron preload → `window.desktop`)
+
+Present only inside the Electron window (absent in a plain browser / network client — always feature-detect):
+
+```js
+window.desktop = {
+  isDesktop: true,
+  version: '0.1.0',
+  pickFile({ title, filters: [{ name, extensions: ['html','htm','txt'] }], defaultPath }) // → Promise<string|null> absolute path
+  openExternal(url)          // opens http(s) links in the system browser
+  showItemInFolder(path)     // reveals a file in Explorer
+}
+```
+
+Links with `target="_blank"` to http(s) sites open in the system browser automatically (the main process routes them);
+`/api/export/*.html` printable pages open in a new app window.
+
 ## UI conventions
 
 - Views are ES modules in `ui/js/views/` exporting `render(root, ctx)` (and optional `teardown()`).
@@ -210,5 +227,7 @@ All `holders` columns, plus:
   flags: `ctx.refreshSummary()`.
 - Downloads: `api.download('/api/export/…')`. Printable pages: `api.openPrintable('/api/export/….html')`.
 - Holder link: `#/holder/<holder_id>`. Count a holder: `#/count?holder=<id>`.
+- Styles: put view-specific CSS in your module's `ui/css/<module>.css` (already linked from index.html); reuse
+  the tokens and components in `app.css` (`.card`, `.btn`, `.chip`, `.row`, `.fld`, `table.data`, `.tag`…).
 - Shop-floor first: big touch targets in count mode, works at tablet width (≥ 768 px) and phone width.
 - Dates shown DD/MM/YYYY (`fmtDate`); stored ISO.
