@@ -1,1 +1,101 @@
-/* Styles owned by the flags module. Base tokens and components are in app.css. */
+/* Styles owned by the flags module (Issues view, hyperMILL write-back, flag dialogs).
+   Base tokens and components are in app.css — colours come only from its variables so dark mode works. */
+
+.iss{display:flex;flex-direction:column;gap:14px}
+
+/* summary: open issues by severity; INFO kept apart because it is not an "open issue" */
+.iss-sum{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:10px 14px}
+.iss-sum .loading{padding:4px 0}
+.iss-total{display:flex;align-items:baseline;gap:6px}
+.iss-total .v{font-family:var(--f-display);font-size:30px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.iss-total .k{font-size:14px;color:var(--ink-2)}
+.iss-chips,.iss-info{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.iss-info{padding-left:14px;border-left:1px solid var(--rule)}
+.iss-closed{margin-left:auto}
+.iss-chip{cursor:pointer;font:inherit;font-size:13px;padding:3px 10px;min-height:28px}
+.iss-chip:hover{border-color:currentColor}
+
+/* sub-sections: all issues / hyperMILL write-back */
+.iss-sub{align-self:flex-start;max-width:100%;overflow-x:auto}
+.iss-sub a{padding:7px 14px;text-decoration:none;color:var(--ink-2);font-size:14px;white-space:nowrap}
+.iss-sub a[aria-current="page"]{background:var(--accent);color:var(--accent-ink)}
+.iss-sub a:not([aria-current="page"]):hover{background:var(--accent-soft);color:var(--ink)}
+.iss-sub .n{font-family:var(--f-data);font-size:12px;opacity:.85}
+
+/* filters */
+.iss-filters .seg button{min-height:34px}
+.iss-q input{width:min(280px,70vw)}
+.iss-hpill{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 10px;font-size:13px}
+.iss-hpill .x{font-size:18px;padding:0 4px}
+
+/* the list */
+.iss-list{min-height:80px}
+.iss-row{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:6px 14px;padding:11px 14px;border-bottom:1px solid var(--rule-2);border-left:4px solid transparent;align-items:start}
+.iss-row:last-child{border-bottom:0}
+.iss-row.sev-HIGH{border-left-color:var(--high)}
+.iss-row.sev-MEDIUM{border-left-color:var(--med)}
+.iss-row.sev-LOW{border-left-color:var(--low)}
+.iss-row.sev-INFO{border-left-color:var(--rule)}
+.iss-row.sev-INFO .iss-msg{color:var(--ink-2)}
+.iss-row.is-closed{background:var(--paper)}
+.iss-row.is-closed .iss-msg,.iss-row.is-closed .iss-act{color:var(--ink-3)}
+.iss-sev{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.iss-what{display:flex;flex-direction:column;gap:3px;min-width:0}
+.iss-who{font-size:14px;overflow-wrap:anywhere}
+.iss-holder{font-weight:600;font-size:14.5px}
+a.iss-holder{text-decoration:none}
+a.iss-holder:hover{text-decoration:underline}
+.iss-cam{overflow-wrap:anywhere}
+.iss-msg{font-size:14.5px;overflow-wrap:anywhere}
+.iss-act{font-size:13.5px;color:var(--ink-2);white-space:pre-line;overflow-wrap:anywhere}
+.iss-done{font-size:13.5px;color:var(--ok);background:var(--ok-soft);border-radius:4px;padding:4px 8px;margin-top:2px;overflow-wrap:anywhere}
+.iss-btns{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.iss-btns .btn{min-height:36px}
+.iss-emptybtn{justify-content:center;padding:0 0 18px}
+
+/* hyperMILL write-back checklist */
+.iss-wb .view-head h2{font-size:22px}
+.wb-list{display:flex;flex-direction:column;gap:12px}
+.wb-holder{border:1px solid var(--rule);border-radius:var(--r);overflow:hidden}
+.wb-head{display:flex;flex-direction:column;gap:6px;padding:10px 14px;background:var(--paper);border-bottom:1px solid var(--rule-2)}
+.wb-cam{font-size:13.5px}
+.wb-cam dd.mono{font-size:13px}
+.wb-fixes{list-style:none;margin:0;padding:0}
+.wb-fix{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"h b" "m b" "a b";gap:3px 14px;padding:10px 14px;border-bottom:1px solid var(--rule-2);align-items:start}
+.wb-fix:last-child{border-bottom:0}
+.wb-fixhead{grid-area:h;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px}
+.wb-fix .iss-msg{grid-area:m}
+.wb-fix .iss-act{grid-area:a;color:var(--ink)}
+.wb-btn{grid-area:b;align-self:center}
+.wb-btn .btn{min-height:36px}
+
+/* holder picker (step 1 of "Raise an issue") */
+.pick-list{display:flex;flex-direction:column;margin-top:10px;border:1px solid var(--rule);border-radius:var(--r);max-height:min(48vh,420px);overflow:auto;background:var(--panel)}
+.pick-list:has(> .pick-hint:only-child){border-style:dashed}
+.pick{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--rule-2);padding:9px 12px;min-height:48px;cursor:pointer;color:var(--ink)}
+.pick:last-child{border-bottom:0}
+.pick:hover,.pick:focus-visible{background:var(--accent-soft)}
+.pick-id{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline}
+.pick-cam{overflow-wrap:anywhere}
+.pick-hint{margin:0;padding:10px 12px;color:var(--ink-3)}
+
+/* app.css marks every span of a required field with "*", help text included; not in the flag dialogs */
+.dlg-body:has(.flagdlg) .fld.req > .help::after{content:none}
+
+/* flag summary inside the close dialog */
+.flagdlg-sum{display:block;border:1px solid var(--rule-2);border-radius:var(--r);background:var(--paper);padding:8px 10px;margin-bottom:8px;color:var(--ink)}
+.flagdlg-sum .msg{display:block;margin-top:4px;font-size:14.5px}
+.flagdlg-sum .act{display:block;margin-top:4px;color:var(--ink-2);font-size:13.5px;white-space:pre-line}
+
+@media (max-width:640px){
+  .iss-row{grid-template-columns:minmax(0,1fr)}
+  .iss-sev{flex-direction:row;align-items:center}
+  .iss-btns{flex-direction:row;align-items:center}
+  .iss-info{padding-left:0;border-left:0}
+  .iss-closed{margin-left:0}
+  .wb-fix{grid-template-columns:minmax(0,1fr);grid-template-areas:"h" "m" "a" "b"}
+  .wb-btn{align-self:start}
+}
+@media print{
+  .iss-filters,.iss-sub,.iss-btns,.wb-btn{display:none!important}
+}
